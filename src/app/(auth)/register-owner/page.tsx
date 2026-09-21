@@ -1,23 +1,21 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { registerOwner } from "@/features/auth/api/auth.api";
-import { registerOwnerSchema } from "@/features/auth/schemas/auth.schema";
-import { ApiError } from "@/lib/api-client";
-import { Button } from "@/components/ui/button";
+import type { z } from "zod";
+import { registerOwner } from "../../../actions/auth.action";
+import { Button } from "../../../components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "../../../components/ui/card";
 import {
   Form,
   FormControl,
@@ -25,26 +23,16 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from "../../../components/ui/form";
+import { Input } from "../../../components/ui/input";
+import { registerOwnerSchema } from "../../../features/auth/schemas/auth.schema";
 
-const ownerSchema = z.object({
-  fullName: z.string().trim().min(1, "Enter your full name."),
-  email: z.string().trim().email("Enter a valid email address."),
-  password: z.string().min(6, "Use at least 6 characters."),
-  organizationName: z.string().trim().min(1, "Enter an organization name."),
-  organizationSlug: z
-    .string()
-    .trim()
-    .min(1, "Enter an organization slug.")
-    .regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers, and hyphens."),
-});
-type OwnerValues = z.infer<typeof ownerSchema>;
+type OwnerValues = z.infer<typeof registerOwnerSchema>;
 
 export default function RegisterOwnerPage() {
   const router = useRouter();
   const form = useForm<OwnerValues>({
-    resolver: zodResolver(ownerSchema),
+    resolver: zodResolver(registerOwnerSchema),
     mode: "onChange",
     defaultValues: {
       fullName: "",
@@ -57,7 +45,8 @@ export default function RegisterOwnerPage() {
 
   async function onSubmit(values: OwnerValues) {
     try {
-      await registerOwner(registerOwnerSchema.parse(values));
+      const result = await registerOwner(values);
+      if (!result.success) throw new Error(result.message);
       toast.success("Workspace created", {
         description: "You can now sign in to Orbrin.",
       });
@@ -65,7 +54,7 @@ export default function RegisterOwnerPage() {
     } catch (error) {
       toast.error("Registration failed", {
         description:
-          error instanceof ApiError ? error.message : "Please try again.",
+          error instanceof Error ? error.message : "Please try again.",
       });
     }
   }

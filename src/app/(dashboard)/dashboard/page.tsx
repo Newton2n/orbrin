@@ -1,9 +1,3 @@
-"use client";
-
-import Link from "next/link";
-import { useProjects } from "@/hooks/use-projects";
-import { useAuthStore } from "@/store/use-auth-store";
-import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import {
   ArrowUpRight,
   CheckCircle2,
@@ -12,8 +6,15 @@ import {
   Plus,
   Users,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
+import { getCurrentUser } from "../../../actions/auth.action";
+import { Badge } from "../../../components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../components/ui/card";
 
 const workstreams = [
   {
@@ -36,14 +37,10 @@ const workstreams = [
   },
 ];
 
-export default function DashboardPage() {
-  const fallbackUser = useAuthStore((state) => state.user);
-  const { data: currentUser } = useCurrentUser();
-  const firstName = (
-    currentUser?.fullName ??
-    fallbackUser?.fullName ??
-    "there"
-  ).split(" ")[0];
+export default async function DashboardPage() {
+  const result = await getCurrentUser();
+  const currentUser = result.success ? result.data : null;
+  const firstName = (currentUser?.fullName ?? "there").split(" ")[0];
   return (
     <section className="flex flex-col gap-8">
       <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">

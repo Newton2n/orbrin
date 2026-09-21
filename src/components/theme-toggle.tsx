@@ -3,7 +3,7 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "./ui/button";
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -36,10 +36,7 @@ export function ThemeToggle() {
 export function ThemeOptions() {
   const { theme, setTheme } = useTheme();
   return (
-    <div
-      className="flex items-center gap-1 rounded-md border border-border/70 p-1"
-      aria-label="Theme preference"
-    >
+    <div className="flex items-center gap-1 rounded-md border border-border/70 p-1">
       <Button
         variant={theme === "light" ? "secondary" : "ghost"}
         size="sm"

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { z } from "zod";
+import { createProject } from "../../actions/project.action";
+import { Button } from "../ui/button";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "../ui/dialog";
 import {
   Form,
   FormControl,
@@ -22,10 +23,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useProjectMutations } from "@/hooks/use-projects";
+} from "../ui/form";
+import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Project name is required."),
@@ -43,7 +43,6 @@ export function CreateProjectDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { createProject } = useProjectMutations();
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     mode: "onChange",
@@ -55,7 +54,13 @@ export function CreateProjectDialog({
 
   async function onSubmit(values: Values) {
     try {
-      await createProject.mutateAsync(values);
+      const formData = new FormData();
+      formData.append("name", values.name);
+      if (values.description)
+        formData.append("description", values.description);
+      if (values.document) formData.append("document", values.document);
+      const result = await createProject(formData);
+      if (!result.success) throw new Error(result.message);
       toast.success("Project created", {
         description: `${values.name} is ready for planning.`,
       });
@@ -151,9 +156,11 @@ export function CreateProjectDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={createProject.isPending || !form.formState.isValid}
+                disabled={
+                  form.formState.isSubmitting || !form.formState.isValid
+                }
               >
-                {createProject.isPending && (
+                {form.formState.isSubmitting && (
                   <Loader2 className="animate-spin" />
                 )}{" "}
                 Create project

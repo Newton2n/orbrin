@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   ArrowRight,
   Check,
@@ -11,16 +10,12 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import Link from "next/link";
+import { ThemeToggle } from "./theme-toggle";
+import { Button } from "./ui/button";
+import { Card, CardContent } from "./ui/card";
+import { Separator } from "./ui/separator";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "./ui/sheet";
 
 const links = [
   { href: "/features", label: "Features" },
@@ -220,9 +215,9 @@ export function ProductPreview() {
               </span>
             </div>
             <div className="mt-4 flex items-end gap-1">
-              {[35, 52, 44, 68, 61, 82, 74, 90].map((height, index) => (
+              {[35, 52, 44, 68, 61, 82, 74, 90].map((height) => (
                 <span
-                  key={index}
+                  key={height}
                   className="flex-1 rounded-t bg-primary/70"
                   style={{ height: `${height / 2}px` }}
                 />

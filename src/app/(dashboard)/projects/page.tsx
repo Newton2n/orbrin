@@ -1,22 +1,32 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
 import {
+  type ColumnDef,
   flexRender,
   stockFeatures,
+  type TableFeatures,
   useTable,
-  type ColumnDef,
 } from "@tanstack/react-table";
 import {
   MoreHorizontal,
+  Pencil,
   Plus,
   Search,
+  Trash2,
   Upload,
   Users,
-  Pencil,
-  Trash2,
 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  deleteProject,
+  getProjects,
+  type PaginatedResponse,
+  type Project,
+  updateProject,
+  uploadProjectDocument,
+} from "../../../actions/project.action";
+import { CreateProjectDialog } from "../../../components/projects/create-project-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,26 +36,25 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { CreateProjectDialog } from "@/components/projects/create-project-dialog";
+} from "../../../components/ui/alert-dialog";
+import { Badge } from "../../../components/ui/badge";
+import { Button } from "../../../components/ui/button";
+import { Card, CardContent } from "../../../components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+} from "../../../components/ui/dropdown-menu";
+import { Input } from "../../../components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "../../../components/ui/select";
 import {
   Table,
   TableBody,
@@ -53,12 +62,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import {
-  useProjectMutations,
-  useProjects,
-  type Project,
-} from "@/hooks/use-projects";
+} from "../../../components/ui/table";
 
 const statusStyles: Record<string, string> = {
   ACTIVE: "bg-emerald-100 text-emerald-700",
@@ -76,20 +80,35 @@ export default function ProjectsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const [uploadTarget, setUploadTarget] = useState<string | null>(null);
-  const params = {
-    page,
+  const [projects, setProjects] = useState<PaginatedResponse<Project>>({
+    items: [],
+    total: 0,
+    page: 1,
     limit: 10,
-    search: search || undefined,
-    sortBy: "createdAt",
-    sortOrder: "desc" as const,
-    status: status === "all" ? undefined : status,
-  };
-  const projects = useProjects(params);
-  const { deleteProject, updateProject, uploadDocument } =
-    useProjectMutations();
-  const rows = projects.data?.items ?? [];
+    totalPages: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    getProjects({
+      page,
+      limit: 10,
+      search: search || undefined,
+      sortBy: "createdAt",
+      sortOrder: "desc",
+      status: status === "all" ? undefined : status,
+    }).then((result) => {
+      if (active && result.success) setProjects(result.data);
+      if (active) setLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [page, search, status]);
+  const rows = projects.items;
 
-  const columns = useMemo<ColumnDef<any, any, any>[]>(
+  const columns = useMemo<ColumnDef<TableFeatures, Project, unknown>[]>(
     () => [
       {
         accessorKey: "name",
@@ -149,10 +168,10 @@ export default function ProjectsPage() {
                 onClick={() => {
                   const name = window.prompt("Project name", row.original.name);
                   if (name?.trim())
-                    updateProject.mutate({
+                    void updateProject({
                       id: row.original.id,
                       name: name.trim(),
-                    });
+                    }).then(() => window.location.reload());
                 }}
               >
                 <Pencil /> Edit
@@ -186,7 +205,7 @@ export default function ProjectsPage() {
         ),
       },
     ],
-    [updateProject],
+    [],
   );
   const table = useTable({
     features: stockFeatures,
@@ -197,7 +216,8 @@ export default function ProjectsPage() {
   async function confirmDelete() {
     if (!deleteTarget) return;
     try {
-      await deleteProject.mutateAsync(deleteTarget.id);
+      const result = await deleteProject(deleteTarget.id);
+      if (!result.success) throw new Error(result.message);
       toast.success("Project deleted");
       setDeleteTarget(null);
     } catch (error) {
@@ -211,7 +231,8 @@ export default function ProjectsPage() {
     const file = event.target.files?.[0];
     if (!file || !uploadTarget) return;
     try {
-      await uploadDocument.mutateAsync({ id: uploadTarget, document: file });
+      const result = await uploadProjectDocument(uploadTarget, file);
+      if (!result.success) throw new Error(result.message);
       toast.success("Document uploaded");
     } catch (error) {
       toast.error("Could not upload document", {
@@ -299,9 +320,9 @@ export default function ProjectsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {projects.isLoading ? (
-              Array.from({ length: 5 }, (_, index) => (
-                <TableRow key={index}>
+            {loading ? (
+              [1, 2, 3, 4, 5].map((rowNumber) => (
+                <TableRow key={rowNumber}>
                   <TableCell colSpan={4}>
                     <div className="h-10 animate-pulse rounded bg-muted" />
                   </TableCell>
@@ -344,7 +365,7 @@ export default function ProjectsPage() {
           </TableBody>
         </Table>
         <div className="flex items-center justify-between border-t border-border/70 px-4 py-3 text-xs text-muted-foreground">
-          <span>{projects.data?.total ?? 0} projects</span>
+          <span>{projects.total} projects</span>
           <div className="flex gap-2">
             <Button
               size="sm"
@@ -357,7 +378,7 @@ export default function ProjectsPage() {
             <Button
               size="sm"
               variant="outline"
-              disabled={!projects.data || page >= projects.data.totalPages}
+              disabled={page >= projects.totalPages}
               onClick={() => setPage((value) => value + 1)}
             >
               Next
@@ -387,11 +408,8 @@ export default function ProjectsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              disabled={deleteProject.isPending}
-            >
-              {deleteProject.isPending ? "Deleting..." : "Delete project"}
+            <AlertDialogAction onClick={confirmDelete} disabled={false}>
+              Delete project
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

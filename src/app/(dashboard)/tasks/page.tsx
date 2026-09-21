@@ -1,25 +1,39 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import {
+  type ColumnDef,
   flexRender,
   stockFeatures,
+  type TableFeatures,
   useTable,
-  type ColumnDef,
 } from "@tanstack/react-table";
 import { LayoutGrid, List, Search } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import {
+  getTasks,
+  type Task,
+  type TaskPriority,
+  type TaskStatus,
+} from "../../../actions/task.action";
+import { SprintOverview } from "../../../components/sprints/sprint-overview";
+import { TaskDetailSheet } from "../../../components/tasks/task-detail-sheet";
+import { Badge } from "../../../components/ui/badge";
+import { Button } from "../../../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../components/ui/card";
+import { Input } from "../../../components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "../../../components/ui/select";
 import {
   Table,
   TableBody,
@@ -27,17 +41,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { SprintOverview } from "@/components/sprints/sprint-overview";
-import { TaskDetailSheet } from "@/components/tasks/task-detail-sheet";
-import {
-  useTasks,
-  type Task,
-  type TaskPriority,
-  type TaskStatus,
-} from "@/hooks/use-tasks";
+} from "../../../components/ui/table";
 
-const columns: ColumnDef<any, any, any>[] = [
+const columns: ColumnDef<TableFeatures, Task, unknown>[] = [
   {
     accessorKey: "title",
     header: "Task",
@@ -92,16 +98,28 @@ export default function TasksPage() {
   const [status, setStatus] = useState("all");
   const [priority, setPriority] = useState("all");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const tasks = useTasks(projectId, {
-    page: 1,
-    limit: 50,
-    search: search || undefined,
-    status: status === "all" ? undefined : (status as TaskStatus),
-    priority: priority === "all" ? undefined : (priority as TaskPriority),
-    sortBy: "createdAt",
-    sortOrder: "desc",
-  });
-  const rows = tasks.data?.items ?? [];
+  const [rows, setRows] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (!projectId) return;
+    let active = true;
+    setLoading(true);
+    getTasks(projectId, {
+      page: 1,
+      limit: 50,
+      search: search || undefined,
+      status: status === "all" ? undefined : (status as TaskStatus),
+      priority: priority === "all" ? undefined : (priority as TaskPriority),
+      sortBy: "createdAt",
+      sortOrder: "desc",
+    }).then((result) => {
+      if (active && result.success) setRows(result.data.items);
+      if (active) setLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [projectId, search, status, priority]);
   const table = useTable({
     features: stockFeatures,
     data: rows,
@@ -130,11 +148,7 @@ export default function TasksPage() {
             Turn plans into visible, accountable progress.
           </p>
         </div>
-        <div
-          className="flex items-center gap-1 rounded-md border border-border bg-card p-1"
-          role="group"
-          aria-label="Task view"
-        >
+        <div className="flex items-center gap-1 rounded-md border border-border bg-card p-1">
           <Button
             size="sm"
             variant={view === "board" ? "secondary" : "ghost"}
@@ -285,7 +299,7 @@ export default function TasksPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tasks.isLoading ? (
+                  {loading ? (
                     <TableRow>
                       <TableCell colSpan={4}>
                         <div className="h-40 animate-pulse bg-muted" />
@@ -298,16 +312,20 @@ export default function TasksPage() {
                         className="cursor-pointer"
                         onClick={() => setSelectedTask(row)}
                       >
-                        {(row.getAllCells as unknown as () => Array<any>)().map(
-                          (cell) => (
-                            <TableCell key={cell.id}>
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext(),
-                              )}
-                            </TableCell>
-                          ),
-                        )}
+                        {(
+                          row.getAllCells as unknown as () => Array<{
+                            id: string;
+                            column: { columnDef: { cell: unknown } };
+                            getContext: () => unknown;
+                          }>
+                        )().map((cell) => (
+                          <TableCell key={cell.id}>
+                            {flexRender(
+                              cell.column.columnDef.cell as never,
+                              cell.getContext() as never,
+                            )}
+                          </TableCell>
+                        ))}
                       </TableRow>
                     ))
                   )}
@@ -318,7 +336,6 @@ export default function TasksPage() {
           <SprintOverview projectId={projectId} />
           <TaskDetailSheet
             task={selectedTask}
-            projectId={projectId}
             open={Boolean(selectedTask)}
             onOpenChange={(open) => !open && setSelectedTask(null)}
           />

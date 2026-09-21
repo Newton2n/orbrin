@@ -3,13 +3,13 @@
 import * as React from "react";
 import {
   Controller,
-  ControllerProps,
-  FieldPath,
-  FieldValues,
+  type ControllerProps,
+  type FieldPath,
+  type FieldValues,
   FormProvider,
   useFormContext,
 } from "react-hook-form";
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 
 const Form = FormProvider;
 
@@ -89,6 +89,7 @@ const FormLabel = React.forwardRef<
   const { error, formItemId } = useFormField();
 
   return (
+    // biome-ignore lint/a11y/noLabelWithoutControl: the consuming FormField supplies the control association.
     <label
       ref={ref}
       className={cn(

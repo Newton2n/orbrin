@@ -1,9 +1,10 @@
 "use client";
 
 import { CalendarDays, Flag } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSprints } from "@/hooks/use-sprints";
+import { useEffect, useState } from "react";
+import { getSprints, type Sprint } from "../../actions/sprint.action";
+import { Badge } from "../ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 function formatDate(value?: string) {
   return value
@@ -14,8 +15,16 @@ function formatDate(value?: string) {
 }
 
 export function SprintOverview({ projectId }: { projectId: string }) {
-  const sprints = useSprints(projectId);
-  const items = sprints.data?.items ?? [];
+  const [items, setItems] = useState<Sprint[]>([]);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (!projectId) return;
+    setLoading(true);
+    getSprints(projectId).then((result) => {
+      if (result.success) setItems(result.data.items);
+      setLoading(false);
+    });
+  }, [projectId]);
   return (
     <section aria-labelledby="sprints-heading" className="space-y-3">
       <div className="flex items-center justify-between">
@@ -40,7 +49,7 @@ export function SprintOverview({ projectId }: { projectId: string }) {
             Select a project to view its sprint plan.
           </CardContent>
         </Card>
-      ) : sprints.isLoading ? (
+      ) : loading ? (
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="h-28 animate-pulse rounded-lg bg-muted" />
           <div className="h-28 animate-pulse rounded-lg bg-muted" />

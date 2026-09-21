@@ -1,17 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { Loader2, MessageSquare } from "lucide-react";
+import { MessageSquare } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import {
+  addComment,
+  getTaskComments,
+  type Task,
+  type TaskInput,
+  type TaskPriority,
+  type TaskStatus,
+  updateTask,
+} from "../../actions/task.action";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "../ui/select";
 import {
   Sheet,
   SheetContent,
@@ -19,16 +28,8 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  useTaskComments,
-  useTaskMutations,
-  type Task,
-  type TaskInput,
-  type TaskPriority,
-  type TaskStatus,
-} from "@/hooks/use-tasks";
+} from "../ui/sheet";
+import { Textarea } from "../ui/textarea";
 
 const priorities: TaskPriority[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 const statuses: TaskStatus[] = ["TODO", "IN_PROGRESS", "DONE"];
@@ -41,24 +42,34 @@ const priorityClass: Record<TaskPriority, string> = {
 
 export function TaskDetailSheet({
   task,
-  projectId,
   open,
   onOpenChange,
 }: {
   task: Task | null;
-  projectId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
   const [comment, setComment] = useState("");
-  const { updateTask, addComment } = useTaskMutations(projectId);
-  const comments = useTaskComments(task?.id ?? "");
+  const [comments, setComments] = useState<
+    Awaited<ReturnType<typeof getTaskComments>>["data"]
+  >([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  useEffect(() => {
+    if (!task) return;
+    setCommentsLoading(true);
+    getTaskComments(task.id).then((result) => {
+      if (result.success) setComments(result.data);
+      setCommentsLoading(false);
+    });
+  }, [task]);
   if (!task) return null;
   const currentTask = task;
   async function update(values: Partial<TaskInput>) {
     try {
-      await updateTask.mutateAsync({ id: currentTask.id, ...values });
+      const result = await updateTask(currentTask.id, values);
+      if (!result.success) throw new Error(result.message);
       toast.success("Task updated");
+      window.location.reload();
     } catch (error) {
       toast.error("Could not update task", {
         description:
@@ -69,11 +80,11 @@ export function TaskDetailSheet({
   async function submitComment() {
     if (!comment.trim()) return;
     try {
-      await addComment.mutateAsync({
-        taskId: currentTask.id,
-        content: comment.trim(),
-      });
+      const result = await addComment(currentTask.id, comment.trim());
+      if (!result.success) throw new Error(result.message);
       setComment("");
+      const refreshed = await getTaskComments(currentTask.id);
+      if (refreshed.success) setComments(refreshed.data);
     } catch (error) {
       toast.error("Could not add comment", {
         description:
@@ -98,7 +109,7 @@ export function TaskDetailSheet({
         </SheetHeader>
         <div className="space-y-6 px-6">
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-2 text-xs font-medium">
+            <div className="space-y-2 text-xs font-medium">
               Status
               <Select
                 value={task.status}
@@ -117,8 +128,8 @@ export function TaskDetailSheet({
                   ))}
                 </SelectContent>
               </Select>
-            </label>
-            <label className="space-y-2 text-xs font-medium">
+            </div>
+            <div className="space-y-2 text-xs font-medium">
               Priority
               <Select
                 value={task.priority}
@@ -137,7 +148,7 @@ export function TaskDetailSheet({
                   ))}
                 </SelectContent>
               </Select>
-            </label>
+            </div>
           </div>
           <section aria-labelledby="comments-heading">
             <div className="mb-3 flex items-center gap-2">
@@ -150,12 +161,12 @@ export function TaskDetailSheet({
               </h3>
             </div>
             <div className="space-y-3">
-              {comments.isLoading ? (
+              {commentsLoading ? (
                 <p className="text-sm text-muted-foreground">
                   Loading comments...
                 </p>
-              ) : comments.data?.length ? (
-                comments.data.map((item) => (
+              ) : comments?.length ? (
+                comments.map((item) => (
                   <div key={item.id} className="rounded-md bg-muted/60 p-3">
                     <p className="text-sm">{item.content}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
@@ -179,9 +190,8 @@ export function TaskDetailSheet({
               <Button
                 size="sm"
                 onClick={submitComment}
-                disabled={!comment.trim() || addComment.isPending}
+                disabled={!comment.trim()}
               >
-                {addComment.isPending && <Loader2 className="animate-spin" />}{" "}
                 Add comment
               </Button>
             </div>

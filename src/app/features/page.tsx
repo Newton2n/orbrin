@@ -3,7 +3,7 @@ import {
   PublicLayout,
   SectionIntro,
   WorkflowSteps,
-} from "@/components/public-site";
+} from "../../components/public-site";
 export default function FeaturesPage() {
   return (
     <PublicLayout>

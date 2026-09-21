@@ -1,8 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
 import {
   BarChart3,
   CheckSquare,
@@ -14,17 +11,15 @@ import {
   Menu,
   Users,
 } from "lucide-react";
-import { useAuthStore } from "@/store/use-auth-store";
-import { useQueryClient } from "@tanstack/react-query";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { type ReactNode, useState } from "react";
+import { logout } from "../actions/auth.action";
+import type { AuthUser } from "../features/auth/types/auth.types";
+import { cn } from "../lib/utils";
+import { ThemeToggle } from "./theme-toggle";
+import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Button } from "./ui/button";
 import {
   Command,
   CommandDialog,
@@ -34,7 +29,7 @@ import {
   CommandItem,
   CommandList,
   CommandShortcut,
-} from "@/components/ui/command";
+} from "./ui/command";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,8 +37,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+} from "./ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "./ui/sheet";
 
 const navigation = [
   { href: "/dashboard", label: "Overview", icon: BarChart3 },
@@ -100,10 +95,7 @@ function Navigation({
   );
 }
 
-function UserMenu() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const { user, logout } = useAuthStore();
+function UserMenu({ user }: { user: AuthUser }) {
   const label = user?.fullName || user?.email || "Account";
   return (
     <DropdownMenu>
@@ -132,13 +124,7 @@ function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => {
-            logout();
-            queryClient.removeQueries({ queryKey: ["auth"] });
-            queryClient.removeQueries({ queryKey: ["projects"] });
-            queryClient.removeQueries({ queryKey: ["tasks"] });
-            queryClient.removeQueries({ queryKey: ["sprints"] });
-            queryClient.removeQueries({ queryKey: ["teams"] });
-            router.replace("/login");
+            void logout();
           }}
         >
           <LogOut className="size-4" />
@@ -197,11 +183,16 @@ function CommandMenu({
   );
 }
 
-export function DashboardShell({ children }: { children: ReactNode }) {
+export function DashboardShell({
+  children,
+  user,
+}: {
+  children: ReactNode;
+  user: AuthUser;
+}) {
   const [collapsed, setCollapsed] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const pathname = usePathname();
-  const { user } = useAuthStore();
   const current =
     navigation.find((item) => item.href === pathname) ||
     navigation.find(
@@ -246,7 +237,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             {!collapsed && (
               <>
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                  {user?.organizationId || "Current organization"}
+                  {user?.memberships[0]?.organizationId ||
+                    "Current organization"}
                 </span>
                 <ChevronDown className="size-3.5" />
               </>
@@ -318,7 +310,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                 ))}
               </div>
               <p className="truncate text-xs text-muted-foreground sm:text-sm">
-                {user?.organizationId || "Workspace"}
+                {user?.memberships[0]?.organizationId || "Workspace"}
               </p>
             </div>
           </div>
@@ -342,7 +334,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             >
               <CommandIcon />
             </Button>
-            <UserMenu />
+            <UserMenu user={user} />
           </div>
         </header>
         <CommandMenu open={commandOpen} onOpenChange={setCommandOpen} />

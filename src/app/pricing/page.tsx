@@ -1,8 +1,14 @@
-import Link from "next/link";
 import { Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PublicLayout, SectionIntro } from "@/components/public-site";
+import Link from "next/link";
+import { PublicLayout, SectionIntro } from "../../components/public-site";
+import { Button } from "../../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+
 const plans = [
   {
     name: "Enterprise",

@@ -1,24 +1,21 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { login } from "@/features/auth/api/auth.api";
-import { loginSchema } from "@/features/auth/schemas/auth.schema";
-import { ApiError } from "@/lib/api-client";
-import { useAuthStore } from "@/store/use-auth-store";
-import { Button } from "@/components/ui/button";
+import { z } from "zod";
+import { login } from "../../../actions/auth.action";
+import { Button } from "../../../components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "../../../components/ui/card";
 import {
   Form,
   FormControl,
@@ -26,8 +23,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from "../../../components/ui/form";
+import { Input } from "../../../components/ui/input";
+import type { loginSchema } from "../../../features/auth/schemas/auth.schema";
 
 const loginPageSchema = z.object({
   email: z.string().trim().email("Enter a valid email address."),
@@ -37,7 +35,6 @@ type LoginValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const setSession = useAuthStore((state) => state.setSession);
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginPageSchema),
     mode: "onChange",
@@ -46,21 +43,8 @@ export default function LoginPage() {
 
   async function onSubmit(values: LoginValues) {
     try {
-      const response = await login(loginPageSchema.parse(values));
-      const session = {
-        accessToken: response.accessToken,
-        organizationId: response.jwtPayload.organizationId,
-        user: {
-          id: response.jwtPayload.id,
-          email: response.jwtPayload.email,
-          fullName:
-            response.jwtPayload.fullName ??
-            (response.jwtPayload as unknown as { name: string }).name,
-          role: response.jwtPayload.role,
-          organizationId: response.jwtPayload.organizationId,
-        },
-      };
-      setSession(session);
+      const result = await login(loginPageSchema.parse(values));
+      if (!result.success) throw new Error(result.message);
       toast.success("Welcome back", {
         description: "Your workspace is ready.",
       });
@@ -68,11 +52,7 @@ export default function LoginPage() {
     } catch (error) {
       toast.error("Unable to sign in", {
         description:
-          error instanceof ApiError
-            ? error.message
-            : error instanceof Error
-              ? error.message
-              : "Please try again.",
+          error instanceof Error ? error.message : "Please try again.",
       });
     }
   }

@@ -1,31 +1,30 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type InputHTMLAttributes } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { type InputHTMLAttributes, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient, ApiError } from "@/lib/api-client";
+import { z } from "zod";
 import {
+  forgotPassword,
   login,
   registerMember,
   registerOwner,
+  resetPassword,
   sendVerificationEmail,
   verifyEmail,
-} from "@/features/auth/api/auth.api";
-import { useAuthStore } from "@/store/use-auth-store";
-import { Button } from "@/components/ui/button";
+} from "../actions/auth.action";
+import { Button } from "./ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "./ui/card";
 import {
   Form,
   FormControl,
@@ -33,8 +32,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from "./ui/form";
+import { Input } from "./ui/input";
 
 const schemas = {
   login: z.object({
@@ -76,43 +75,37 @@ type Mode = keyof typeof schemas;
 type Values = Record<string, string>;
 const copy: Record<
   Mode,
-  { title: string; description: string; action: string; endpoint: string }
+  { title: string; description: string; action: string }
 > = {
   login: {
     title: "Welcome back",
     description: "Sign in to continue to your workspace.",
     action: "Sign in",
-    endpoint: "/auth/login",
   },
   register: {
     title: "Create your workspace",
     description: "Set up an organization for your team.",
     action: "Create workspace",
-    endpoint: "/auth/register-owner",
   },
   member: {
     title: "Join your organization",
     description: "Create your member account.",
     action: "Join organization",
-    endpoint: "/auth/register-member",
   },
   forgot: {
     title: "Reset your password",
     description: "We’ll send instructions to your email.",
     action: "Send reset instructions",
-    endpoint: "/users/forgot-password",
   },
   reset: {
     title: "Choose a new password",
     description: "Use the code from your reset email.",
     action: "Update password",
-    endpoint: "/users/reset-password",
   },
   verify: {
     title: "Verify your email",
     description: "Enter the code from your verification email.",
     action: "Verify email",
-    endpoint: "/auth/verify-email",
   },
 };
 
@@ -184,8 +177,6 @@ const fields: Record<
 
 export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const setSession = useAuthStore((state) => state.setSession);
   const [showPassword, setShowPassword] = useState(false);
   const [success, setSuccess] = useState(false);
   const config = copy[mode];
@@ -200,51 +191,43 @@ export function AuthForm({ mode }: { mode: Mode }) {
   async function submit(values: Values) {
     try {
       if (mode === "login") {
-        const response = await login({
+        const result = await login({
           email: values.email,
           password: values.password,
         });
-        setSession({
-          accessToken: response.accessToken,
-          organizationId: response.jwtPayload.organizationId,
-          user: {
-            id: response.jwtPayload.id,
-            email: response.jwtPayload.email,
-            fullName:
-              response.jwtPayload.fullName ??
-              (response.jwtPayload as unknown as { name: string }).name,
-            role: response.jwtPayload.role,
-            organizationId: response.jwtPayload.organizationId,
-          },
-        });
+        if (!result.success) throw new Error(result.message);
         router.push("/dashboard");
         return;
       }
       if (mode === "register") {
-        await registerOwner({
+        const result = await registerOwner({
           fullName: values.fullName,
           email: values.email,
           password: values.password,
           organizationName: values.organizationName,
           organizationSlug: values.organizationSlug,
         });
+        if (!result.success) throw new Error(result.message);
       } else if (mode === "member") {
-        await registerMember({
+        const result = await registerMember({
           fullName: values.fullName,
           email: values.email,
           password: values.password,
           organizationId: values.organizationId,
         });
+        if (!result.success) throw new Error(result.message);
       } else if (mode === "verify") {
-        await verifyEmail(values.email, values.otp);
-        await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-      } else if (mode === "forgot") {
-        await apiClient(config.endpoint, {
-          method: "POST",
-          body: { email: values.email },
+        const result = await verifyEmail({
+          email: values.email,
+          otp: values.otp,
         });
+        if (!result.success) throw new Error(result.message);
+      } else if (mode === "forgot") {
+        const result = await forgotPassword(values.email);
+        if (!result.success) throw new Error(result.message);
       } else if (mode === "reset") {
-        await apiClient(config.endpoint, { method: "POST", body: values });
+        const result = await resetPassword(values);
+        if (!result.success) throw new Error(result.message);
       }
       setSuccess(true);
       toast.success(
@@ -257,9 +240,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
     } catch (error) {
       toast.error("Request failed", {
         description:
-          error instanceof ApiError || error instanceof Error
-            ? error.message
-            : "Please try again.",
+          error instanceof Error ? error.message : "Please try again.",
       });
     }
   }
@@ -400,11 +381,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
             className="mt-3 w-full text-center text-sm text-muted-foreground hover:text-foreground"
             onClick={() =>
               sendVerificationEmail(form.getValues("email"))
-                .then(() =>
+                .then((result) => {
+                  if (!result.success) throw new Error(result.message);
                   toast.success(
                     "If the account exists and requires verification, a verification code has been sent.",
-                  ),
-                )
+                  );
+                })
                 .catch((error) =>
                   toast.error("Unable to resend", {
                     description:
