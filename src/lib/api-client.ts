@@ -1,35 +1,18 @@
+import { appConfig } from "@/lib/config";
+import { ApiError, normalizeApiError } from "@/lib/api-errors";
+import { toQueryString, type QueryParams } from "@/lib/query-params";
 import { useAuthStore } from "@/store/use-auth-store";
 
-export const API_BASE_URL = "https://orbrin-api.vercel.app/api/v1";
+export const API_BASE_URL = appConfig.apiUrl;
 export type QueryValue = string | number | boolean | null | undefined;
 export type ApiRequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
-  params?: Record<string, QueryValue | QueryValue[]>;
+  params?: QueryParams;
+  skipAuthRefresh?: boolean;
 };
 
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    public readonly status: number,
-    public readonly details?: unknown,
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
-}
-
-function serializeParams(params: ApiRequestOptions["params"]): string {
-  if (!params) return "";
-  const searchParams = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (value === null || value === undefined) continue;
-    for (const item of Array.isArray(value) ? value : [value]) {
-      if (item !== null && item !== undefined)
-        searchParams.append(key, String(item));
-    }
-  }
-  return searchParams.toString();
-}
+type RefreshResponse = { accessToken?: string; token?: string };
+let refreshPromise: Promise<string | null> | null = null;
 
 function isRawBody(body: unknown): body is BodyInit {
   return (
@@ -41,45 +24,56 @@ function isRawBody(body: unknown): body is BodyInit {
   );
 }
 
-export async function apiClient<T>(
-  endpoint: string,
-  options: ApiRequestOptions = {},
-): Promise<T> {
-  const { params, body, headers: customHeaders, ...requestConfig } = options;
-  const query = serializeParams(params);
-  const url = `${API_BASE_URL}${endpoint}${query ? `?${query}` : ""}`;
-  const token = useAuthStore.getState().accessToken;
-  const headers = new Headers(customHeaders);
-  const serializedBody =
-    body === undefined || isRawBody(body) ? body : JSON.stringify(body);
+async function refreshAccessToken() {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  })
+    .then(async (response) => {
+      if (!response.ok) return null;
+      const payload = (await response.json().catch(() => null)) as RefreshResponse | null;
+      const token = payload?.accessToken ?? payload?.token ?? null;
+      if (token) useAuthStore.getState().setAccessToken(token);
+      return token;
+    })
+    .catch(() => null)
+    .finally(() => {
+      refreshPromise = null;
+    });
+  return refreshPromise;
+}
 
-  if (body !== undefined && !isRawBody(body) && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
+async function request<T>(endpoint: string, options: ApiRequestOptions, tokenOverride?: string | null) {
+  const { params, body, headers: customHeaders, skipAuthRefresh, ...requestConfig } = options;
+  const headers = new Headers(customHeaders);
+  const serializedBody = body === undefined || isRawBody(body) ? body : JSON.stringify(body);
+  if (body !== undefined && !isRawBody(body) && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  headers.set("Accept", "application/json");
+  const token = tokenOverride ?? useAuthStore.getState().accessToken;
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const response = await fetch(url, {
+  const response = await fetch(`${API_BASE_URL}${endpoint}${toQueryString(params)}`, {
     ...requestConfig,
     body: serializedBody,
     credentials: "include",
     headers,
   });
   const contentType = response.headers.get("content-type") ?? "";
-  const responseBody =
-    response.status === 204
-      ? null
-      : contentType.includes("application/json")
-        ? await response.json().catch(() => null)
-        : await response.text().catch(() => "");
+  const payload = response.status === 204 ? null : contentType.includes("application/json") ? await response.json().catch(() => null) : await response.text().catch(() => "");
 
-  if (!response.ok) {
-    const message =
-      typeof responseBody === "object" &&
-      responseBody !== null &&
-      "message" in responseBody
-        ? String(responseBody.message)
-        : `Request failed with status ${response.status}`;
-    throw new ApiError(message, response.status, responseBody);
+  if (response.status === 401 && !skipAuthRefresh && endpoint !== "/auth/refresh") {
+    const refreshedToken = await refreshAccessToken();
+    if (refreshedToken) return request<T>(endpoint, { ...options, skipAuthRefresh: true }, refreshedToken);
+    useAuthStore.getState().logout();
   }
-  return responseBody as T;
+  if (!response.ok) throw normalizeApiError(response.status, payload);
+  return payload as T;
 }
+
+export async function apiClient<T>(endpoint: string, options: ApiRequestOptions = {}) {
+  return request<T>(endpoint, options);
+}
+
+export { ApiError };
