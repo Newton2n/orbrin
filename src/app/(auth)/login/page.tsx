@@ -7,8 +7,10 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient, ApiError } from "@/lib/api-client";
-import { useAuthStore, type AuthSession } from "@/store/use-auth-store";
+import { login } from "@/features/auth/api/auth.api";
+import { loginSchema } from "@/features/auth/schemas/auth.schema";
+import { ApiError } from "@/lib/api-client";
+import { useAuthStore } from "@/store/use-auth-store";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,7 +29,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-const loginSchema = z.object({
+const loginPageSchema = z.object({
   email: z.string().trim().email("Enter a valid email address."),
   password: z.string().min(1, "Enter your password."),
 });
@@ -37,28 +39,28 @@ export default function LoginPage() {
   const router = useRouter();
   const setSession = useAuthStore((state) => state.setSession);
   const form = useForm<LoginValues>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(loginPageSchema),
     mode: "onChange",
     defaultValues: { email: "", password: "" },
   });
 
   async function onSubmit(values: LoginValues) {
     try {
-      console.log("Submitting login form with values:", values);
-      const response = await apiClient("/auth/login", { method: "POST", body: values });
-      console.log("Login response:", response);
-
-      const accessToken = response.data.accessToken 
-
-      if (!accessToken) {
-        throw new Error("The server did not return an access token.");
-      }
-
-      setSession({
-        accessToken,
-        organizationId: response.organizationId,
-        user: response.user,
-      });
+      const response = await login(loginPageSchema.parse(values));
+      const session = {
+        accessToken: response.accessToken,
+        organizationId: response.jwtPayload.organizationId,
+        user: {
+          id: response.jwtPayload.id,
+          email: response.jwtPayload.email,
+          fullName:
+            response.jwtPayload.fullName ??
+            (response.jwtPayload as unknown as { name: string }).name,
+          role: response.jwtPayload.role,
+          organizationId: response.jwtPayload.organizationId,
+        },
+      };
+      setSession(session);
       toast.success("Welcome back", {
         description: "Your workspace is ready.",
       });

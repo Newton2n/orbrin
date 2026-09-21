@@ -7,7 +7,9 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient, ApiError } from "@/lib/api-client";
+import { registerOwner } from "@/features/auth/api/auth.api";
+import { registerOwnerSchema } from "@/features/auth/schemas/auth.schema";
+import { ApiError } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,14 +29,14 @@ import {
 import { Input } from "@/components/ui/input";
 
 const ownerSchema = z.object({
-  fullName: z.string().trim().min(2, "Enter your full name."),
+  fullName: z.string().trim().min(1, "Enter your full name."),
   email: z.string().trim().email("Enter a valid email address."),
-  password: z.string().min(8, "Use at least 8 characters."),
-  organizationName: z.string().trim().min(2, "Enter an organization name."),
+  password: z.string().min(6, "Use at least 6 characters."),
+  organizationName: z.string().trim().min(1, "Enter an organization name."),
   organizationSlug: z
     .string()
     .trim()
-    .min(2, "Enter an organization slug.")
+    .min(1, "Enter an organization slug.")
     .regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers, and hyphens."),
 });
 type OwnerValues = z.infer<typeof ownerSchema>;
@@ -55,7 +57,7 @@ export default function RegisterOwnerPage() {
 
   async function onSubmit(values: OwnerValues) {
     try {
-      await apiClient("/auth/register-owner", { method: "POST", body: values });
+      await registerOwner(registerOwnerSchema.parse(values));
       toast.success("Workspace created", {
         description: "You can now sign in to Orbrin.",
       });

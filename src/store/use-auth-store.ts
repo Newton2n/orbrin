@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { Role } from "@/features/auth/types/auth.types";
 
 interface AuthState {
   accessToken: string | null;
@@ -12,19 +13,17 @@ interface AuthState {
 }
 
 export interface AuthUser {
-  id?: string;
-  fullName?: string;
-  email?: string;
-  role?: string;
-  status?: string;
-  organizationId?: string;
-  [key: string]: unknown;
+  id: string;
+  fullName: string;
+  email: string;
+  role: Role;
+  organizationId: string;
 }
 
 export interface AuthSession {
   accessToken: string;
-  organizationId?: string | null;
-  user?: AuthUser | null;
+  organizationId: string;
+  user: AuthUser;
 }
 
 export const useAuthStore = create<AuthState>()(

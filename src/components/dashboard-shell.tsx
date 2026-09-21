@@ -15,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { useAuthStore } from "@/store/use-auth-store";
+import { useQueryClient } from "@tanstack/react-query";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -101,6 +102,7 @@ function Navigation({
 
 function UserMenu() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user, logout } = useAuthStore();
   const label = user?.fullName || user?.email || "Account";
   return (
@@ -131,6 +133,11 @@ function UserMenu() {
         <DropdownMenuItem
           onClick={() => {
             logout();
+            queryClient.removeQueries({ queryKey: ["auth"] });
+            queryClient.removeQueries({ queryKey: ["projects"] });
+            queryClient.removeQueries({ queryKey: ["tasks"] });
+            queryClient.removeQueries({ queryKey: ["sprints"] });
+            queryClient.removeQueries({ queryKey: ["teams"] });
             router.replace("/login");
           }}
         >

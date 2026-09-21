@@ -3,13 +3,21 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type InputHTMLAttributes } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient, ApiError } from "@/lib/api-client";
-import { useAuthStore, type AuthSession } from "@/store/use-auth-store";
+import {
+  login,
+  registerMember,
+  registerOwner,
+  sendVerificationEmail,
+  verifyEmail,
+} from "@/features/auth/api/auth.api";
+import { useAuthStore } from "@/store/use-auth-store";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -34,23 +42,20 @@ const schemas = {
     password: z.string().min(1, "Enter your password."),
   }),
   register: z.object({
-    fullName: z.string().trim().min(2, "Enter your full name."),
+    fullName: z.string().trim().min(1, "Enter your full name."),
     email: z.string().trim().email("Enter a valid email address."),
-    password: z.string().min(8, "Use at least 8 characters."),
-    organizationName: z.string().trim().min(2, "Enter an organization name."),
+    password: z.string().min(6, "Use at least 6 characters."),
+    organizationName: z.string().trim().min(1, "Enter an organization name."),
     organizationSlug: z
       .string()
       .trim()
-      .min(2, "Enter an organization slug.")
-      .regex(
-        /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-        "Use lowercase letters, numbers, and hyphens.",
-      ),
+      .min(1, "Enter an organization slug.")
+      .regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers, and hyphens."),
   }),
   member: z.object({
-    fullName: z.string().trim().min(2, "Enter your full name."),
+    fullName: z.string().trim().min(1, "Enter your full name."),
     email: z.string().trim().email("Enter a valid email address."),
-    password: z.string().min(8, "Use at least 8 characters."),
+    password: z.string().min(6, "Use at least 6 characters."),
     organizationId: z.string().trim().min(1, "Enter your organization ID."),
   }),
   forgot: z.object({
@@ -58,19 +63,17 @@ const schemas = {
   }),
   reset: z.object({
     email: z.string().trim().email("Enter a valid email address."),
-    otp: z.string().trim().min(4, "Enter the verification code."),
+    otp: z.string().regex(/^\d{6}$/, "Enter the 6-digit verification code."),
     password: z.string().min(8, "Use at least 8 characters."),
   }),
   verify: z.object({
     email: z.string().trim().email("Enter a valid email address."),
-    otp: z.string().trim().min(4, "Enter the verification code."),
+    otp: z.string().regex(/^\d{6}$/, "Enter the 6-digit verification code."),
   }),
 } as const;
 
 type Mode = keyof typeof schemas;
 type Values = Record<string, string>;
-type AuthResponse = Partial<AuthSession> & { token?: string };
-
 const copy: Record<
   Mode,
   { title: string; description: string; action: string; endpoint: string }
@@ -181,6 +184,7 @@ const fields: Record<
 
 export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const setSession = useAuthStore((state) => state.setSession);
   const [showPassword, setShowPassword] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -195,22 +199,61 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   async function submit(values: Values) {
     try {
-      const response = await apiClient<AuthResponse>(config.endpoint, {
-        method: "POST",
-        body: values,
-      });
-      const token = response.accessToken ?? response.token;
-      if (mode === "login" && token) {
+      if (mode === "login") {
+        const response = await login({
+          email: values.email,
+          password: values.password,
+        });
         setSession({
-          accessToken: token,
-          organizationId: response.organizationId,
-          user: response.user,
+          accessToken: response.accessToken,
+          organizationId: response.jwtPayload.organizationId,
+          user: {
+            id: response.jwtPayload.id,
+            email: response.jwtPayload.email,
+            fullName:
+              response.jwtPayload.fullName ??
+              (response.jwtPayload as unknown as { name: string }).name,
+            role: response.jwtPayload.role,
+            organizationId: response.jwtPayload.organizationId,
+          },
         });
         router.push("/dashboard");
         return;
       }
+      if (mode === "register") {
+        await registerOwner({
+          fullName: values.fullName,
+          email: values.email,
+          password: values.password,
+          organizationName: values.organizationName,
+          organizationSlug: values.organizationSlug,
+        });
+      } else if (mode === "member") {
+        await registerMember({
+          fullName: values.fullName,
+          email: values.email,
+          password: values.password,
+          organizationId: values.organizationId,
+        });
+      } else if (mode === "verify") {
+        await verifyEmail(values.email, values.otp);
+        await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      } else if (mode === "forgot") {
+        await apiClient(config.endpoint, {
+          method: "POST",
+          body: { email: values.email },
+        });
+      } else if (mode === "reset") {
+        await apiClient(config.endpoint, { method: "POST", body: values });
+      }
       setSuccess(true);
-      toast.success(mode === "verify" ? "Email verified" : "Request completed");
+      toast.success(
+        mode === "verify"
+          ? "Email verified"
+          : mode === "forgot"
+            ? "If the account exists and requires a reset, instructions have been sent."
+            : "Request completed",
+      );
     } catch (error) {
       toast.error("Request failed", {
         description:
@@ -356,11 +399,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
             type="button"
             className="mt-3 w-full text-center text-sm text-muted-foreground hover:text-foreground"
             onClick={() =>
-              apiClient("/auth/send-verification-email", {
-                method: "POST",
-                body: { email: form.getValues("email") },
-              })
-                .then(() => toast.success("Verification email sent"))
+              sendVerificationEmail(form.getValues("email"))
+                .then(() =>
+                  toast.success(
+                    "If the account exists and requires verification, a verification code has been sent.",
+                  ),
+                )
                 .catch((error) =>
                   toast.error("Unable to resend", {
                     description:

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useProjects } from "@/hooks/use-projects";
 import { useAuthStore } from "@/store/use-auth-store";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import {
   ArrowUpRight,
   CheckCircle2,
@@ -36,6 +37,13 @@ const workstreams = [
 ];
 
 export default function DashboardPage() {
+  const fallbackUser = useAuthStore((state) => state.user);
+  const { data: currentUser } = useCurrentUser();
+  const firstName = (
+    currentUser?.fullName ??
+    fallbackUser?.fullName ??
+    "there"
+  ).split(" ")[0];
   return (
     <section className="flex flex-col gap-8">
       <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
@@ -45,7 +53,7 @@ export default function DashboardPage() {
             overview
           </div>
           <h1 className="font-heading text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
-            Good morning, Nathan
+            Good morning, {firstName}
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
             A clear view of the work that matters. Connect your workspace data

@@ -11,7 +11,11 @@ export type ApiRequestOptions = Omit<RequestInit, "body"> & {
   skipAuthRefresh?: boolean;
 };
 
-type RefreshResponse = { accessToken?: string; token?: string };
+type RefreshResponse = {
+  accessToken?: string;
+  data?: { accessToken?: string };
+  result?: { accessToken?: string };
+};
 let refreshPromise: Promise<string | null> | null = null;
 
 function isRawBody(body: unknown): body is BodyInit {
@@ -26,17 +30,25 @@ function isRawBody(body: unknown): body is BodyInit {
 
 async function refreshAccessToken() {
   if (refreshPromise) return refreshPromise;
-  refreshPromise = fetch(`${API_BASE_URL}/auth/refresh`, {
+  const currentToken = useAuthStore.getState().accessToken;
+  refreshPromise = fetch(`${API_BASE_URL}/auth/refresh-token`, {
     method: "POST",
     credentials: "include",
-    headers: { Accept: "application/json" },
+    headers: {
+      Accept: "application/json",
+      ...(currentToken ? { Authorization: `Bearer ${currentToken}` } : {}),
+    },
   })
     .then(async (response) => {
       if (!response.ok) return null;
       const payload = (await response
         .json()
         .catch(() => null)) as RefreshResponse | null;
-      const token = payload?.accessToken ?? payload?.token ?? null;
+      const token =
+        payload?.accessToken ??
+        payload?.data?.accessToken ??
+        payload?.result?.accessToken ??
+        null;
       if (token) useAuthStore.getState().setAccessToken(token);
       return token;
     })
@@ -88,7 +100,7 @@ async function request<T>(
   if (
     response.status === 401 &&
     !skipAuthRefresh &&
-    endpoint !== "/auth/refresh"
+    endpoint !== "/auth/refresh-token"
   ) {
     const refreshedToken = await refreshAccessToken();
     if (refreshedToken)
