@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useProjects } from "@/hooks/use-projects";
+import { useAuthStore } from "@/store/use-auth-store";
 import { ArrowUpRight, CheckCircle2, CircleDashed, FolderKanban, Plus, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
