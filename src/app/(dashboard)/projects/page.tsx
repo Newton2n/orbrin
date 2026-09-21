@@ -1,13 +1,6 @@
 "use client";
 
 import {
-  type ColumnDef,
-  flexRender,
-  stockFeatures,
-  type TableFeatures,
-  useTable,
-} from "@tanstack/react-table";
-import {
   MoreHorizontal,
   Pencil,
   Plus,
@@ -16,7 +9,7 @@ import {
   Upload,
   Users,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   deleteProject,
@@ -107,111 +100,6 @@ export default function ProjectsPage() {
     };
   }, [page, search, status]);
   const rows = projects.items;
-
-  const columns = useMemo<ColumnDef<TableFeatures, Project, unknown>[]>(
-    () => [
-      {
-        accessorKey: "name",
-        header: "Project",
-        cell: ({ row }) => (
-          <div>
-            <p className="font-medium">{row.original.name}</p>
-            <p className="max-w-sm truncate text-xs text-muted-foreground">
-              {row.original.description || "No description"}
-            </p>
-          </div>
-        ),
-      },
-      {
-        accessorKey: "status",
-        header: "Status",
-        cell: ({ row }) => (
-          <Badge
-            className={
-              statusStyles[row.original.status ?? "ACTIVE"] ??
-              "bg-muted text-muted-foreground"
-            }
-          >
-            {readable(row.original.status)}
-          </Badge>
-        ),
-      },
-      {
-        accessorKey: "createdAt",
-        header: "Created",
-        cell: ({ row }) =>
-          row.original.createdAt
-            ? new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(
-                new Date(row.original.createdAt),
-              )
-            : "-",
-      },
-      {
-        id: "actions",
-        header: "",
-        enableSorting: false,
-        cell: ({ row }) => (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Actions for ${row.original.name}`}
-                />
-              }
-            >
-              <MoreHorizontal />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => {
-                  const name = window.prompt("Project name", row.original.name);
-                  if (name?.trim())
-                    void updateProject({
-                      id: row.original.id,
-                      name: name.trim(),
-                    }).then(() => window.location.reload());
-                }}
-              >
-                <Pencil /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() =>
-                  toast.info("Team assignment", {
-                    description: "Team assignment controls are coming next.",
-                  })
-                }
-              >
-                <Users /> Assign team
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  setUploadTarget(row.original.id);
-                  fileInput.current?.click();
-                }}
-              >
-                <Upload /> Upload document
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => setDeleteTarget(row.original)}
-              >
-                <Trash2 /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ),
-      },
-    ],
-    [],
-  );
-  const table = useTable({
-    features: stockFeatures,
-    data: rows,
-    columns,
-  });
 
   async function confirmDelete() {
     if (!deleteTarget) return;
@@ -305,18 +193,10 @@ export default function ProjectsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              {table
-                .getHeaderGroups()
-                .map((group) =>
-                  group.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                    </TableHead>
-                  )),
-                )}
+              <TableHead>Project</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -328,17 +208,89 @@ export default function ProjectsPage() {
                   </TableCell>
                 </TableRow>
               ))
-            ) : table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
-                  ))}
+            ) : rows.length ? (
+              rows.map((project) => (
+                <TableRow key={project.id}>
+                  <TableCell>
+                    <p className="font-medium">{project.name}</p>
+                    <p className="max-w-sm truncate text-xs text-muted-foreground">
+                      {project.description || "No description"}
+                    </p>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={
+                        statusStyles[project.status ?? "ACTIVE"] ??
+                        "bg-muted text-muted-foreground"
+                      }
+                    >
+                      {readable(project.status)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {project.createdAt
+                      ? new Intl.DateTimeFormat("en", {
+                          dateStyle: "medium",
+                        }).format(new Date(project.createdAt))
+                      : "-"}
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Actions for ${project.name}`}
+                          />
+                        }
+                      >
+                        <MoreHorizontal />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const name = window.prompt(
+                              "Project name",
+                              project.name,
+                            );
+                            if (name?.trim())
+                              void updateProject({
+                                id: project.id,
+                                name: name.trim(),
+                              }).then(() => window.location.reload());
+                          }}
+                        >
+                          <Pencil /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            toast.info("Team assignment", {
+                              description:
+                                "Team assignment controls are coming next.",
+                            })
+                          }
+                        >
+                          <Users /> Assign team
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setUploadTarget(project.id);
+                            fileInput.current?.click();
+                          }}
+                        >
+                          <Upload /> Upload document
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setDeleteTarget(project)}
+                        >
+                          <Trash2 /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (

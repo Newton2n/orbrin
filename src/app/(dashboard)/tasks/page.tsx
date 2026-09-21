@@ -1,12 +1,5 @@
 "use client";
 
-import {
-  type ColumnDef,
-  flexRender,
-  stockFeatures,
-  type TableFeatures,
-  useTable,
-} from "@tanstack/react-table";
 import { LayoutGrid, List, Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -43,44 +36,6 @@ import {
   TableRow,
 } from "../../../components/ui/table";
 
-const columns: ColumnDef<TableFeatures, Task, unknown>[] = [
-  {
-    accessorKey: "title",
-    header: "Task",
-    cell: ({ row }) => (
-      <div>
-        <p className="font-medium">{row.original.title}</p>
-        <p className="max-w-sm truncate text-xs text-muted-foreground">
-          {row.original.description || "No description"}
-        </p>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <Badge variant="secondary">{row.original.status.replace("_", " ")}</Badge>
-    ),
-  },
-  {
-    accessorKey: "priority",
-    header: "Priority",
-    cell: ({ row }) => (
-      <span className="text-xs font-medium">{row.original.priority}</span>
-    ),
-  },
-  {
-    accessorKey: "dueDate",
-    header: "Due",
-    cell: ({ row }) =>
-      row.original.dueDate
-        ? new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(
-            new Date(row.original.dueDate),
-          )
-        : "-",
-  },
-];
 const statuses: TaskStatus[] = ["TODO", "IN_PROGRESS", "DONE"];
 const priorities: TaskPriority[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 const priorityStyles: Record<TaskPriority, string> = {
@@ -120,11 +75,6 @@ export default function TasksPage() {
       active = false;
     };
   }, [projectId, search, status, priority]);
-  const table = useTable({
-    features: stockFeatures,
-    data: rows,
-    columns,
-  });
   const grouped = useMemo(
     () =>
       statuses.map((value) => ({
@@ -285,17 +235,10 @@ export default function TasksPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {table
-                      .getHeaderGroups()
-                      .flatMap((group) => group.headers)
-                      .map((header) => (
-                        <TableHead key={header.id}>
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
-                        </TableHead>
-                      ))}
+                    <TableHead>Task</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>Due</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -306,26 +249,35 @@ export default function TasksPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    rows.map((row) => (
+                    rows.map((task) => (
                       <TableRow
-                        key={row.id}
+                        key={task.id}
                         className="cursor-pointer"
-                        onClick={() => setSelectedTask(row)}
+                        onClick={() => setSelectedTask(task)}
                       >
-                        {(
-                          row.getAllCells as unknown as () => Array<{
-                            id: string;
-                            column: { columnDef: { cell: unknown } };
-                            getContext: () => unknown;
-                          }>
-                        )().map((cell) => (
-                          <TableCell key={cell.id}>
-                            {flexRender(
-                              cell.column.columnDef.cell as never,
-                              cell.getContext() as never,
-                            )}
-                          </TableCell>
-                        ))}
+                        <TableCell>
+                          <p className="font-medium">{task.title}</p>
+                          <p className="max-w-sm truncate text-xs text-muted-foreground">
+                            {task.description || "No description"}
+                          </p>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">
+                            {task.status.replace("_", " ")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs font-medium">
+                            {task.priority}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {task.dueDate
+                            ? new Intl.DateTimeFormat("en", {
+                                dateStyle: "medium",
+                              }).format(new Date(task.dueDate))
+                            : "-"}
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
