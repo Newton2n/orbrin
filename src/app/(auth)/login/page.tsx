@@ -44,12 +44,16 @@ export default function LoginPage() {
 
   async function onSubmit(values: LoginValues) {
     try {
-      const response = await apiClient<
-        Partial<AuthSession> & { token?: string; user?: AuthSession["user"] }
-      >("/auth/login", { method: "POST", body: values });
-      const accessToken = response.accessToken ?? response.token;
-      if (!accessToken)
+      console.log("Submitting login form with values:", values);
+      const response = await apiClient("/auth/login", { method: "POST", body: values });
+      console.log("Login response:", response);
+
+      const accessToken = response.data.accessToken 
+
+      if (!accessToken) {
         throw new Error("The server did not return an access token.");
+      }
+
       setSession({
         accessToken,
         organizationId: response.organizationId,

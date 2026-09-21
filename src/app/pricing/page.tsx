@@ -5,20 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PublicLayout, SectionIntro } from "@/components/public-site";
 const plans = [
   {
-    name: "Workspace",
-    desc: "A focused foundation for a growing team.",
-    items: ["Projects and tasks", "Team workspace", "Organization context"],
-  },
-  {
-    name: "Scale",
-    desc: "A flexible structure for teams with more complexity.",
-    items: [
-      "Everything in Workspace",
-      "Sprints and delivery rhythm",
-      "Member and role controls",
-    ],
-  },
-  {
     name: "Enterprise",
     desc: "A considered setup for larger organizations.",
     items: [
