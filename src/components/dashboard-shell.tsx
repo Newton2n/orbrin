@@ -12,13 +12,10 @@ import {
   FolderKanban,
   LogOut,
   Menu,
-  Moon,
-  Settings,
-  Sun,
   Users,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { useAuthStore } from "@/store/use-auth-store";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -74,7 +71,6 @@ function Navigation({ collapsed = false, onNavigate }: { collapsed?: boolean; on
 function UserMenu() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
-  const { theme, setTheme } = useTheme();
   const label = user?.fullName || user?.email || "Account";
   return (
     <DropdownMenu>
@@ -86,7 +82,6 @@ function UserMenu() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="font-normal"><p className="truncate text-sm font-medium">{label}</p><p className="truncate text-xs text-muted-foreground">{user?.email || "Signed-in workspace user"}</p></DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => setTheme(theme === "dark" ? "light" : "dark")}><Sun className="size-4 dark:hidden" /><Moon className="hidden size-4 dark:block" />{theme === "dark" ? "Use light theme" : "Use dark theme"}</DropdownMenuItem>
         <DropdownMenuItem onClick={() => { logout(); router.replace("/login"); }}><LogOut className="size-4" />Sign out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -131,7 +126,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex min-h-16 items-center justify-between gap-3 border-b border-border/70 bg-card/80 px-4 backdrop-blur sm:px-6">
           <div className="flex min-w-0 items-center gap-3"><Sheet><SheetTrigger className="inline-flex size-9 items-center justify-center rounded-md hover:bg-accent md:hidden" aria-label="Open navigation"><Menu /></SheetTrigger><SheetContent side="left" className="flex w-72 flex-col bg-sidebar p-0 text-sidebar-foreground"><SheetTitle className="sr-only">Workspace navigation</SheetTitle><div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-5"><div className="grid size-8 place-items-center rounded-md bg-sidebar-primary font-bold text-sidebar-primary-foreground">O</div><span className="font-heading text-lg font-semibold">Orbrin</span></div><Navigation onNavigate={() => undefined} /></SheetContent></Sheet><div className="min-w-0"><div className="flex items-center gap-2 text-xs text-muted-foreground">{breadcrumbs.map((crumb, index) => <span key={crumb} className="flex items-center gap-2"><span className={cn(index === breadcrumbs.length - 1 && "text-foreground")}>{crumb}</span>{index < breadcrumbs.length - 1 && <span aria-hidden="true">/</span>}</span>)}</div><p className="truncate text-xs text-muted-foreground sm:text-sm">{user?.organizationId || "Workspace"}</p></div></div>
-          <div className="flex items-center gap-1 sm:gap-2"><Button variant="outline" size="sm" className="hidden gap-2 text-muted-foreground sm:flex" onClick={() => setCommandOpen(true)}><CommandIcon className="size-3.5" />Search<span className="text-xs">⌘K</span></Button><Button variant="ghost" size="icon" className="sm:hidden" onClick={() => setCommandOpen(true)} aria-label="Open command menu"><CommandIcon /></Button><UserMenu /></div>
+          <div className="flex items-center gap-1 sm:gap-2"><ThemeToggle /><Button variant="outline" size="sm" className="hidden gap-2 text-muted-foreground sm:flex" onClick={() => setCommandOpen(true)}><CommandIcon className="size-3.5" />Search<span className="text-xs">⌘K</span></Button><Button variant="ghost" size="icon" className="sm:hidden" onClick={() => setCommandOpen(true)} aria-label="Open command menu"><CommandIcon /></Button><UserMenu /></div>
         </header>
         <CommandMenu open={commandOpen} onOpenChange={setCommandOpen} />
         <main className="flex-1 overflow-auto"><div className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">{children}</div></main>
