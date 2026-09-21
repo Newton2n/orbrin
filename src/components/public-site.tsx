@@ -1,35 +1,367 @@
 import Link from "next/link";
-import { ArrowRight, Check, Circle, Command, FolderKanban, Menu, ShieldCheck, Sparkles, Users, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  Circle,
+  Command,
+  FolderKanban,
+  Menu,
+  ShieldCheck,
+  Sparkles,
+  Users,
+  Zap,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
-const links = [{ href: "/features", label: "Features" }, { href: "/pricing", label: "Pricing" }, { href: "/about", label: "About" }];
+const links = [
+  { href: "/features", label: "Features" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/about", label: "About" },
+];
 
 export function PublicHeader() {
-  return <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl"><div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8"><Link href="/" className="flex items-center gap-2 font-heading text-lg font-semibold tracking-tight"><span className="grid size-8 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">O</span> ORBRIN</Link><nav className="hidden items-center gap-7 md:flex">{links.map((link) => <Link key={link.href} href={link.href} className="text-sm text-muted-foreground transition-colors hover:text-foreground">{link.label}</Link>)}</nav><div className="hidden items-center gap-2 md:flex"><ThemeToggle /><Button variant="ghost" asChild><Link href="/login">Sign in</Link></Button><Button asChild><Link href="/register">Get started <ArrowRight data-icon="inline-end" /></Link></Button></div><Sheet><SheetTrigger><Button variant="ghost" size="icon" className="md:hidden" aria-label="Open navigation"><Menu /></Button></SheetTrigger><SheetContent><SheetTitle>ORBRIN navigation</SheetTitle><nav className="mt-8 flex flex-col gap-2">{links.map((link) => <Link key={link.href} href={link.href} className="rounded-md px-3 py-3 text-sm hover:bg-muted">{link.label}</Link>)}<Separator className="my-2" /><Link href="/login" className="rounded-md px-3 py-3 text-sm hover:bg-muted">Sign in</Link><Button asChild className="mt-2"><Link href="/register">Get started</Link></Button></nav></SheetContent></Sheet></div></header>
+  return (
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
+        <Link
+          href="/"
+          className="flex items-center gap-2 font-heading text-lg font-semibold tracking-tight"
+        >
+          <span className="grid size-8 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+            O
+          </span>{" "}
+          ORBRIN
+        </Link>
+        <nav className="hidden items-center gap-7 md:flex">
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="hidden items-center gap-2 md:flex">
+          <ThemeToggle />
+          <Button variant="ghost" asChild>
+            <Link href="/login">Sign in</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/register">
+              Get started <ArrowRight data-icon="inline-end" />
+            </Link>
+          </Button>
+        </div>
+        <Sheet>
+          <SheetTrigger>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              aria-label="Open navigation"
+            >
+              <Menu />
+            </Button>
+          </SheetTrigger>
+          <SheetContent>
+            <SheetTitle>ORBRIN navigation</SheetTitle>
+            <nav className="mt-8 flex flex-col gap-2">
+              {links.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="rounded-md px-3 py-3 text-sm hover:bg-muted"
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <Separator className="my-2" />
+              <Link
+                href="/login"
+                className="rounded-md px-3 py-3 text-sm hover:bg-muted"
+              >
+                Sign in
+              </Link>
+              <Button asChild className="mt-2">
+                <Link href="/register">Get started</Link>
+              </Button>
+            </nav>
+          </SheetContent>
+        </Sheet>
+      </div>
+    </header>
+  );
 }
 
 export function PublicFooter() {
-  return <footer className="border-t border-border/70 bg-card/30"><div className="mx-auto grid max-w-7xl gap-10 px-5 py-12 sm:grid-cols-2 lg:grid-cols-5 lg:px-8"><div className="lg:col-span-2"><Link href="/" className="font-heading text-lg font-semibold">ORBRIN</Link><p className="mt-3 max-w-xs text-sm leading-6 text-muted-foreground">A focused workspace for teams that want clarity without complexity.</p></div>{[{ title: "Product", items: [["Features", "/features"], ["Pricing", "/pricing"]] }, { title: "Company", items: [["About", "/about"], ["Contact", "/contact"]] }, { title: "Account", items: [["Sign in", "/login"], ["Get started", "/register"]] }].map((group) => <div key={group.title}><p className="text-sm font-semibold">{group.title}</p><div className="mt-4 flex flex-col gap-3">{group.items.map(([label, href]) => <Link key={href} href={href} className="text-sm text-muted-foreground hover:text-foreground">{label}</Link>)}</div></div>)}</div><div className="mx-auto flex max-w-7xl flex-col gap-3 border-t border-border/60 px-5 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-8"><span>© {new Date().getFullYear()} ORBRIN</span><span>Built for thoughtful delivery.</span></div></footer>
+  return (
+    <footer className="border-t border-border/70 bg-card/30">
+      <div className="mx-auto grid max-w-7xl gap-10 px-5 py-12 sm:grid-cols-2 lg:grid-cols-5 lg:px-8">
+        <div className="lg:col-span-2">
+          <Link href="/" className="font-heading text-lg font-semibold">
+            ORBRIN
+          </Link>
+          <p className="mt-3 max-w-xs text-sm leading-6 text-muted-foreground">
+            A focused workspace for teams that want clarity without complexity.
+          </p>
+        </div>
+        {[
+          {
+            title: "Product",
+            items: [
+              ["Features", "/features"],
+              ["Pricing", "/pricing"],
+            ],
+          },
+          {
+            title: "Company",
+            items: [
+              ["About", "/about"],
+              ["Contact", "/contact"],
+            ],
+          },
+          {
+            title: "Account",
+            items: [
+              ["Sign in", "/login"],
+              ["Get started", "/register"],
+            ],
+          },
+        ].map((group) => (
+          <div key={group.title}>
+            <p className="text-sm font-semibold">{group.title}</p>
+            <div className="mt-4 flex flex-col gap-3">
+              {group.items.map(([label, href]) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                >
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mx-auto flex max-w-7xl flex-col gap-3 border-t border-border/60 px-5 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-8">
+        <span>© {new Date().getFullYear()} ORBRIN</span>
+        <span>Built for thoughtful delivery.</span>
+      </div>
+    </footer>
+  );
 }
 
 export function ProductPreview() {
-  return <div className="overflow-hidden rounded-2xl border border-border/80 bg-card text-left shadow-2xl shadow-primary/10"><div className="flex items-center gap-2 border-b border-border/70 px-4 py-3"><span className="size-2 rounded-full bg-destructive/70" /><span className="size-2 rounded-full bg-accent" /><span className="size-2 rounded-full bg-primary/70" /><span className="ml-3 text-xs text-muted-foreground">orbrin / workspace</span></div><div className="grid min-h-72 sm:grid-cols-[150px_1fr]"><div className="hidden border-r border-border/70 bg-sidebar p-4 text-sidebar-foreground sm:block"><div className="mb-8 flex items-center gap-2 text-xs font-semibold"><span className="grid size-5 place-items-center rounded bg-sidebar-primary text-sidebar-primary-foreground">O</span> ORBRIN</div><div className="flex flex-col gap-3 text-xs text-sidebar-foreground/70"><span className="rounded bg-sidebar-accent px-2 py-1 text-sidebar-foreground">Overview</span><span>Projects</span><span>Tasks</span><span>Teams</span></div></div><div className="p-5 sm:p-7"><p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">Workspace overview</p><h3 className="mt-2 font-heading text-xl font-semibold">Good morning, team.</h3><div className="mt-5 grid gap-3 sm:grid-cols-3">{["Active projects", "Open tasks", "Team members"].map((label) => <div key={label} className="rounded-lg border border-border/70 p-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-3 text-2xl font-semibold">—</p><p className="mt-1 text-[10px] text-muted-foreground">Connect your data</p></div>)}</div><div className="mt-4 rounded-lg border border-border/70 p-4"><div className="flex items-center justify-between"><span className="text-xs font-medium">Delivery health</span><span className="text-[10px] text-muted-foreground">Ready for live data</span></div><div className="mt-4 flex items-end gap-1">{[35, 52, 44, 68, 61, 82, 74, 90].map((height, index) => <span key={index} className="flex-1 rounded-t bg-primary/70" style={{ height: `${height / 2}px` }} />)}</div></div></div></div></div>
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border/80 bg-card text-left shadow-2xl shadow-primary/10">
+      <div className="flex items-center gap-2 border-b border-border/70 px-4 py-3">
+        <span className="size-2 rounded-full bg-destructive/70" />
+        <span className="size-2 rounded-full bg-accent" />
+        <span className="size-2 rounded-full bg-primary/70" />
+        <span className="ml-3 text-xs text-muted-foreground">
+          orbrin / workspace
+        </span>
+      </div>
+      <div className="grid min-h-72 sm:grid-cols-[150px_1fr]">
+        <div className="hidden border-r border-border/70 bg-sidebar p-4 text-sidebar-foreground sm:block">
+          <div className="mb-8 flex items-center gap-2 text-xs font-semibold">
+            <span className="grid size-5 place-items-center rounded bg-sidebar-primary text-sidebar-primary-foreground">
+              O
+            </span>{" "}
+            ORBRIN
+          </div>
+          <div className="flex flex-col gap-3 text-xs text-sidebar-foreground/70">
+            <span className="rounded bg-sidebar-accent px-2 py-1 text-sidebar-foreground">
+              Overview
+            </span>
+            <span>Projects</span>
+            <span>Tasks</span>
+            <span>Teams</span>
+          </div>
+        </div>
+        <div className="p-5 sm:p-7">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
+            Workspace overview
+          </p>
+          <h3 className="mt-2 font-heading text-xl font-semibold">
+            Good morning, team.
+          </h3>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            {["Active projects", "Open tasks", "Team members"].map((label) => (
+              <div
+                key={label}
+                className="rounded-lg border border-border/70 p-3"
+              >
+                <p className="text-[11px] text-muted-foreground">{label}</p>
+                <p className="mt-3 text-2xl font-semibold">—</p>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  Connect your data
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 rounded-lg border border-border/70 p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium">Delivery health</span>
+              <span className="text-[10px] text-muted-foreground">
+                Ready for live data
+              </span>
+            </div>
+            <div className="mt-4 flex items-end gap-1">
+              {[35, 52, 44, 68, 61, 82, 74, 90].map((height, index) => (
+                <span
+                  key={index}
+                  className="flex-1 rounded-t bg-primary/70"
+                  style={{ height: `${height / 2}px` }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-export const featureCards = [{ icon: FolderKanban, title: "Projects", body: "Keep initiatives, documents, teams, and delivery context together." }, { icon: Check, title: "Tasks", body: "Turn plans into clear next actions with ownership and priority." }, { icon: Zap, title: "Sprints", body: "Create a steady operating rhythm around focused delivery windows." }, { icon: Users, title: "Teams", body: "Make responsibilities and collaboration visible across the organization." }, { icon: ShieldCheck, title: "Organization control", body: "Manage members, roles, and workspace settings with confidence." }, { icon: Command, title: "One workspace", body: "Give every team a shared source of truth without extra ceremony." }];
+export const featureCards = [
+  {
+    icon: FolderKanban,
+    title: "Projects",
+    body: "Keep initiatives, documents, teams, and delivery context together.",
+  },
+  {
+    icon: Check,
+    title: "Tasks",
+    body: "Turn plans into clear next actions with ownership and priority.",
+  },
+  {
+    icon: Zap,
+    title: "Sprints",
+    body: "Create a steady operating rhythm around focused delivery windows.",
+  },
+  {
+    icon: Users,
+    title: "Teams",
+    body: "Make responsibilities and collaboration visible across the organization.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Organization control",
+    body: "Manage members, roles, and workspace settings with confidence.",
+  },
+  {
+    icon: Command,
+    title: "One workspace",
+    body: "Give every team a shared source of truth without extra ceremony.",
+  },
+];
 
-export function FeatureGrid() { return <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{featureCards.map(({ icon: Icon, title, body }) => <Card key={title} className="border-border/70 bg-card/50 shadow-none"><CardContent className="p-6"><Icon className="size-5 text-primary" /><h3 className="mt-8 font-heading text-base font-semibold">{title}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{body}</p></CardContent></Card>)}</div> }
+export function FeatureGrid() {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {featureCards.map(({ icon: Icon, title, body }) => (
+        <Card key={title} className="border-border/70 bg-card/50 shadow-none">
+          <CardContent className="p-6">
+            <Icon className="size-5 text-primary" />
+            <h3 className="mt-8 font-heading text-base font-semibold">
+              {title}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              {body}
+            </p>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
 
-export function SectionIntro({ eyebrow, title, body }: { eyebrow: string; title: string; body: string }) { return <div className="max-w-2xl"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">{eyebrow}</p><h2 className="mt-3 font-heading text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">{title}</h2><p className="mt-4 text-base leading-7 text-muted-foreground">{body}</p></div> }
+export function SectionIntro({
+  eyebrow,
+  title,
+  body,
+}: {
+  eyebrow: string;
+  title: string;
+  body: string;
+}) {
+  return (
+    <div className="max-w-2xl">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+        {eyebrow}
+      </p>
+      <h2 className="mt-3 font-heading text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
+        {title}
+      </h2>
+      <p className="mt-4 text-base leading-7 text-muted-foreground">{body}</p>
+    </div>
+  );
+}
 
-export function PublicLayout({ children }: { children: React.ReactNode }) { return <div className="min-h-svh"><PublicHeader />{children}<PublicFooter /></div> }
+export function PublicLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-svh">
+      <PublicHeader />
+      {children}
+      <PublicFooter />
+    </div>
+  );
+}
 
-export function WorkflowSteps() { return <div className="grid gap-3 md:grid-cols-4">{[{ n: "01", title: "Plan", body: "Shape the work and define the outcome." }, { n: "02", title: "Organize", body: "Connect projects, teams, and ownership." }, { n: "03", title: "Execute", body: "Move tasks forward with shared context." }, { n: "04", title: "Deliver", body: "Review progress and keep momentum." }].map((step) => <div key={step.n} className="border-l border-border px-5 py-2"><span className="font-mono text-xs text-primary">{step.n}</span><h3 className="mt-5 font-heading font-semibold">{step.title}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{step.body}</p></div>)}</div> }
+export function WorkflowSteps() {
+  return (
+    <div className="grid gap-3 md:grid-cols-4">
+      {[
+        {
+          n: "01",
+          title: "Plan",
+          body: "Shape the work and define the outcome.",
+        },
+        {
+          n: "02",
+          title: "Organize",
+          body: "Connect projects, teams, and ownership.",
+        },
+        {
+          n: "03",
+          title: "Execute",
+          body: "Move tasks forward with shared context.",
+        },
+        {
+          n: "04",
+          title: "Deliver",
+          body: "Review progress and keep momentum.",
+        },
+      ].map((step) => (
+        <div key={step.n} className="border-l border-border px-5 py-2">
+          <span className="font-mono text-xs text-primary">{step.n}</span>
+          <h3 className="mt-5 font-heading font-semibold">{step.title}</h3>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            {step.body}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-export function HeroIcon() { return <Sparkles className="size-4" aria-hidden="true" /> }
-export function Dot() { return <Circle className="size-3 fill-primary text-primary" aria-hidden="true" /> }
-
+export function HeroIcon() {
+  return <Sparkles className="size-4" aria-hidden="true" />;
+}
+export function Dot() {
+  return (
+    <Circle className="size-3 fill-primary text-primary" aria-hidden="true" />
+  );
+}

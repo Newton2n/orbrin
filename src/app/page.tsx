@@ -1,6 +1,90 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FeatureGrid, ProductPreview, PublicLayout, SectionIntro, WorkflowSteps } from "@/components/public-site";
+import {
+  FeatureGrid,
+  ProductPreview,
+  PublicLayout,
+  SectionIntro,
+  WorkflowSteps,
+} from "@/components/public-site";
 
-export default function Home() { return <PublicLayout><main><section className="mx-auto max-w-7xl px-5 pb-20 pt-20 lg:px-8 lg:pb-28 lg:pt-28"><div className="mx-auto max-w-3xl text-center"><p className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">The operating layer for modern teams</p><h1 className="mt-7 font-heading text-5xl font-semibold tracking-[-0.055em] sm:text-7xl">Make meaningful work easier to move.</h1><p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">ORBRIN brings projects, tasks, sprints, teams, and organization context into one calm workspace.</p><div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row"><Button size="lg" asChild><Link href="/register">Start building clarity <ArrowRight data-icon="inline-end" /></Link></Button><Button size="lg" variant="outline" asChild><Link href="/features">Explore the workspace</Link></Button></div></div><div className="mx-auto mt-16 max-w-5xl"><ProductPreview /></div></section><section className="border-y border-border/70 bg-card/30"><div className="mx-auto max-w-7xl px-5 py-20 lg:px-8"><SectionIntro eyebrow="One shared system" title="The right context, at every step." body="ORBRIN is designed for teams who want the speed of lightweight tools with the confidence of a connected system." /><div className="mt-10"><FeatureGrid /></div></div></section><section className="mx-auto max-w-7xl px-5 py-20 lg:px-8"><SectionIntro eyebrow="A better rhythm" title="From first idea to finished work." body="A simple operating rhythm helps teams spend less time coordinating and more time delivering." /><div className="mt-12"><WorkflowSteps /></div></section><section className="mx-5 mb-20 rounded-3xl bg-primary px-6 py-14 text-primary-foreground sm:px-12 lg:mx-auto lg:max-w-7xl"><div className="max-w-2xl"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-foreground/70">Start with clarity</p><h2 className="mt-4 font-heading text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">Give your team a workspace that keeps up.</h2><p className="mt-4 text-base leading-7 text-primary-foreground/75">Bring the shape of your organization and the details of execution into one thoughtful place.</p><Button className="mt-8 bg-secondary text-secondary-foreground hover:bg-secondary/85" asChild><Link href="/register">Create your workspace <ArrowRight data-icon="inline-end" /></Link></Button></div></section></main></PublicLayout> }
+export default function Home() {
+  return (
+    <PublicLayout>
+      <main>
+        <section className="mx-auto max-w-7xl px-5 pb-20 pt-20 lg:px-8 lg:pb-28 lg:pt-28">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+              The operating layer for modern teams
+            </p>
+            <h1 className="mt-7 font-heading text-5xl font-semibold tracking-[-0.055em] sm:text-7xl">
+              Make meaningful work easier to move.
+            </h1>
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
+              ORBRIN brings projects, tasks, sprints, teams, and organization
+              context into one calm workspace.
+            </p>
+            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+              <Button size="lg" asChild>
+                <Link href="/register">
+                  Start building clarity <ArrowRight data-icon="inline-end" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/features">Explore the workspace</Link>
+              </Button>
+            </div>
+          </div>
+          <div className="mx-auto mt-16 max-w-5xl">
+            <ProductPreview />
+          </div>
+        </section>
+        <section className="border-y border-border/70 bg-card/30">
+          <div className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
+            <SectionIntro
+              eyebrow="One shared system"
+              title="The right context, at every step."
+              body="ORBRIN is designed for teams who want the speed of lightweight tools with the confidence of a connected system."
+            />
+            <div className="mt-10">
+              <FeatureGrid />
+            </div>
+          </div>
+        </section>
+        <section className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
+          <SectionIntro
+            eyebrow="A better rhythm"
+            title="From first idea to finished work."
+            body="A simple operating rhythm helps teams spend less time coordinating and more time delivering."
+          />
+          <div className="mt-12">
+            <WorkflowSteps />
+          </div>
+        </section>
+        <section className="mx-5 mb-20 rounded-3xl bg-primary px-6 py-14 text-primary-foreground sm:px-12 lg:mx-auto lg:max-w-7xl">
+          <div className="max-w-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-foreground/70">
+              Start with clarity
+            </p>
+            <h2 className="mt-4 font-heading text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
+              Give your team a workspace that keeps up.
+            </h2>
+            <p className="mt-4 text-base leading-7 text-primary-foreground/75">
+              Bring the shape of your organization and the details of execution
+              into one thoughtful place.
+            </p>
+            <Button
+              className="mt-8 bg-secondary text-secondary-foreground hover:bg-secondary/85"
+              asChild
+            >
+              <Link href="/register">
+                Create your workspace <ArrowRight data-icon="inline-end" />
+              </Link>
+            </Button>
+          </div>
+        </section>
+      </main>
+    </PublicLayout>
+  );
+}

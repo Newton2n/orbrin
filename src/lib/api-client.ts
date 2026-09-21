@@ -33,7 +33,9 @@ async function refreshAccessToken() {
   })
     .then(async (response) => {
       if (!response.ok) return null;
-      const payload = (await response.json().catch(() => null)) as RefreshResponse | null;
+      const payload = (await response
+        .json()
+        .catch(() => null)) as RefreshResponse | null;
       const token = payload?.accessToken ?? payload?.token ?? null;
       if (token) useAuthStore.getState().setAccessToken(token);
       return token;
@@ -45,34 +47,66 @@ async function refreshAccessToken() {
   return refreshPromise;
 }
 
-async function request<T>(endpoint: string, options: ApiRequestOptions, tokenOverride?: string | null) {
-  const { params, body, headers: customHeaders, skipAuthRefresh, ...requestConfig } = options;
+async function request<T>(
+  endpoint: string,
+  options: ApiRequestOptions,
+  tokenOverride?: string | null,
+) {
+  const {
+    params,
+    body,
+    headers: customHeaders,
+    skipAuthRefresh,
+    ...requestConfig
+  } = options;
   const headers = new Headers(customHeaders);
-  const serializedBody = body === undefined || isRawBody(body) ? body : JSON.stringify(body);
-  if (body !== undefined && !isRawBody(body) && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  const serializedBody =
+    body === undefined || isRawBody(body) ? body : JSON.stringify(body);
+  if (body !== undefined && !isRawBody(body) && !headers.has("Content-Type"))
+    headers.set("Content-Type", "application/json");
   headers.set("Accept", "application/json");
   const token = tokenOverride ?? useAuthStore.getState().accessToken;
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}${toQueryString(params)}`, {
-    ...requestConfig,
-    body: serializedBody,
-    credentials: "include",
-    headers,
-  });
+  const response = await fetch(
+    `${API_BASE_URL}${endpoint}${toQueryString(params)}`,
+    {
+      ...requestConfig,
+      body: serializedBody,
+      credentials: "include",
+      headers,
+    },
+  );
   const contentType = response.headers.get("content-type") ?? "";
-  const payload = response.status === 204 ? null : contentType.includes("application/json") ? await response.json().catch(() => null) : await response.text().catch(() => "");
+  const payload =
+    response.status === 204
+      ? null
+      : contentType.includes("application/json")
+        ? await response.json().catch(() => null)
+        : await response.text().catch(() => "");
 
-  if (response.status === 401 && !skipAuthRefresh && endpoint !== "/auth/refresh") {
+  if (
+    response.status === 401 &&
+    !skipAuthRefresh &&
+    endpoint !== "/auth/refresh"
+  ) {
     const refreshedToken = await refreshAccessToken();
-    if (refreshedToken) return request<T>(endpoint, { ...options, skipAuthRefresh: true }, refreshedToken);
+    if (refreshedToken)
+      return request<T>(
+        endpoint,
+        { ...options, skipAuthRefresh: true },
+        refreshedToken,
+      );
     useAuthStore.getState().logout();
   }
   if (!response.ok) throw normalizeApiError(response.status, payload);
   return payload as T;
 }
 
-export async function apiClient<T>(endpoint: string, options: ApiRequestOptions = {}) {
+export async function apiClient<T>(
+  endpoint: string,
+  options: ApiRequestOptions = {},
+) {
   return request<T>(endpoint, options);
 }
 

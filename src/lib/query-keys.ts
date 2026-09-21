@@ -10,7 +10,8 @@ export const queryKeys = {
   },
   projects: {
     all: ["projects"] as const,
-    list: (params?: Record<string, unknown>) => ["projects", "list", params ?? {}] as const,
+    list: (params?: Record<string, unknown>) =>
+      ["projects", "list", params ?? {}] as const,
     detail: (projectId: string) => ["projects", "detail", projectId] as const,
   },
   tasks: {
@@ -19,7 +20,8 @@ export const queryKeys = {
   },
   sprints: {
     all: ["sprints"] as const,
-    byProject: (projectId: string) => ["sprints", "project", projectId] as const,
+    byProject: (projectId: string) =>
+      ["sprints", "project", projectId] as const,
   },
   teams: {
     all: ["teams"] as const,

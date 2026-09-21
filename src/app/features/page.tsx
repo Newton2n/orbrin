@@ -1,2 +1,32 @@
-import { FeatureGrid, PublicLayout, SectionIntro, WorkflowSteps } from "@/components/public-site";
-export default function FeaturesPage() { return <PublicLayout><main className="mx-auto max-w-7xl px-5 py-20 lg:px-8"><SectionIntro eyebrow="The workspace" title="Everything your team needs to keep work moving." body="ORBRIN connects planning and execution without adding another layer of process." /><div className="mt-12"><FeatureGrid /></div><div className="mt-24"><SectionIntro eyebrow="How it works" title="A clear path through the work." body="Keep your operating rhythm visible from planning through delivery." /><div className="mt-10"><WorkflowSteps /></div></div></main></PublicLayout> }
+import {
+  FeatureGrid,
+  PublicLayout,
+  SectionIntro,
+  WorkflowSteps,
+} from "@/components/public-site";
+export default function FeaturesPage() {
+  return (
+    <PublicLayout>
+      <main className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
+        <SectionIntro
+          eyebrow="The workspace"
+          title="Everything your team needs to keep work moving."
+          body="ORBRIN connects planning and execution without adding another layer of process."
+        />
+        <div className="mt-12">
+          <FeatureGrid />
+        </div>
+        <div className="mt-24">
+          <SectionIntro
+            eyebrow="How it works"
+            title="A clear path through the work."
+            body="Keep your operating rhythm visible from planning through delivery."
+          />
+          <div className="mt-10">
+            <WorkflowSteps />
+          </div>
+        </div>
+      </main>
+    </PublicLayout>
+  );
+}

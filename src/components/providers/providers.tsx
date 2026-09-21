@@ -1,4 +1,4 @@
-"tsx"
+"tsx";
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -14,12 +14,10 @@ export function Providers({ children }: { children: ReactNode }) {
             refetchOnWindowFocus: false,
           },
         },
-      })
+      }),
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 }

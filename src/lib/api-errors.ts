@@ -14,7 +14,8 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
     this.status = status;
-    this.code = getPayloadString(payload, "code") ?? getPayloadString(payload, "error");
+    this.code =
+      getPayloadString(payload, "code") ?? getPayloadString(payload, "error");
     this.details = payload;
   }
 
