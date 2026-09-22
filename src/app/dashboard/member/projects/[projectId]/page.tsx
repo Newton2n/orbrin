@@ -1,4 +1,5 @@
 import { getProjectById } from "@/actions/project.action";
+import { SprintList } from "@/components/sprints/sprint-list";
 import { TaskList } from "@/components/tasks/task-list";
 
 export default async function MemberProjectDetailsPage({
@@ -22,6 +23,7 @@ export default async function MemberProjectDetailsPage({
           {project?.description || "Review project work and current ownership."}
         </p>
       </div>
+      <SprintList projectId={projectId} canViewDetails />
       {/* biome-ignore lint/a11y/useValidAriaRole: role is an application permission prop, not a DOM role */}
       <TaskList role="MEMBER" projectId={projectId} canViewDetails />
     </div>

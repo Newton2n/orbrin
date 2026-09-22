@@ -347,6 +347,7 @@ export function TaskList({
         task={details}
         canEdit={canEdit}
         canDelete={canDelete}
+        canManageComments={canEdit}
         onEdit={() => details && setForm({ mode: "edit", task: details })}
         onDelete={() => details && setDeleteTarget(details)}
       />

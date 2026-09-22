@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { TaskCommentsSection } from "./task-comments-section";
 
 export type TaskDetailsDialogProps = {
   open: boolean;
@@ -18,6 +19,7 @@ export type TaskDetailsDialogProps = {
   task: Task | null;
   canEdit?: boolean;
   canDelete?: boolean;
+  canManageComments?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
 };
@@ -41,13 +43,14 @@ export function TaskDetailsDialog({
   task,
   canEdit = false,
   canDelete = false,
+  canManageComments = canEdit,
   onEdit,
   onDelete,
 }: TaskDetailsDialogProps) {
   if (!task) return null;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{task.title}</DialogTitle>
           <DialogDescription>
@@ -118,6 +121,7 @@ export function TaskDetailsDialog({
             </p>
           </div>
         </div>
+        <TaskCommentsSection taskId={task.id} canManage={canManageComments} />
         <DialogFooter>
           <div className="flex w-full justify-end gap-2">
             {canEdit && (

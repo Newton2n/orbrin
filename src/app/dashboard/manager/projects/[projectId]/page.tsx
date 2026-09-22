@@ -1,4 +1,6 @@
 import { getProjectById } from "@/actions/project.action";
+import { ProjectDetailControls } from "@/components/projects/project-detail-controls";
+import { SprintList } from "@/components/sprints/sprint-list";
 import { TaskList } from "@/components/tasks/task-list";
 
 export default async function ManagerProjectDetailsPage({
@@ -22,6 +24,8 @@ export default async function ManagerProjectDetailsPage({
           {project?.description || "Coordinate the next pieces of delivery."}
         </p>
       </div>
+      <SprintList projectId={projectId} canCreate canEdit canViewDetails />
+      {project && <ProjectDetailControls project={project} canManageTeams />}
       {/* biome-ignore lint/a11y/useValidAriaRole: role is an application permission prop, not a DOM role */}
       <TaskList
         role="MANAGER"
