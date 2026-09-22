@@ -1,14 +1,10 @@
 import { Check, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { hasValidAccessToken } from "../../actions/auth.action";
-import { PublicLayout, SectionIntro } from "../../components/public-site";
-import { Button } from "../../components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/card";
+import { hasValidAccessToken } from "@/actions/auth.action";
+import { PublicLayout } from "@/components/public-site";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function PricingPage() {
   const isAuthenticated = await hasValidAccessToken();

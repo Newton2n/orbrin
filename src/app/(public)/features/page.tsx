@@ -9,14 +9,14 @@ import {
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
-import { hasValidAccessToken } from "../../actions/auth.action";
+import { hasValidAccessToken } from "../../../actions/auth.action";
 import {
   FeatureGrid,
   PublicLayout,
   SectionIntro,
   WorkflowSteps,
-} from "../../components/public-site";
-import { Button } from "../../components/ui/button";
+} from "../../../components/public-site";
+import { Button } from "../../../components/ui/button";
 
 export default async function FeaturesPage() {
   const isAuthenticated = await hasValidAccessToken();

@@ -1,4 +1,4 @@
-import { PublicLayout, SectionIntro } from "../../components/public-site";
+import { PublicLayout, SectionIntro } from "@/components/public-site";
 export default function AboutPage() {
   return (
     <PublicLayout>
