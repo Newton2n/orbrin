@@ -1,9 +1,9 @@
 import { cookies } from "next/headers";
 
-const backendUrl = process.env.BACKEND_API;
+const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API;
 
 if (!backendUrl) {
-  throw new Error("BACKEND_API environment variable is not defined.");
+  throw new Error("NEXT_PUBLIC_BACKEND_API environment variable is not defined.");
 }
 console.log("backendUrl:", backendUrl); // Log the backendUrl for debugging
 

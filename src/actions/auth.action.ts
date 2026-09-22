@@ -56,7 +56,7 @@ export async function getNewAccessToken() {
 
   try {
     const res = await fetch(
-      `${process.env.BACKEND_API}/auth/refresh-token`,
+      `${process.env.NEXT_PUBLIC_BACKEND_API}/auth/refresh-token`,
       {
         method: "POST",
         headers: {
