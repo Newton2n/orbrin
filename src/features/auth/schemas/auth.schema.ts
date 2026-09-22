@@ -38,6 +38,12 @@ export const verifyEmailSchema = z.object({
   otp: z.string().regex(/^\d{6}$/, "Enter the 6-digit verification code."),
 });
 
+export const resetSchema = z.object({
+  email: z.string().trim().email(),
+  otp: z.string().min(1),
+  password: z.string().min(8),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterOwnerInput = z.infer<typeof registerOwnerSchema>;
 export type RegisterMemberInput = z.infer<typeof registerMemberSchema>;

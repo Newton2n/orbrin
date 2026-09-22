@@ -30,6 +30,10 @@ export async function backendRequest<T>(
     .getAll()
     .map(({ name, value }) => `${name}=${value}`)
     .join("; ");
+
+    console.log("cookieHeader:", cookieHeader); // Log the cookie header for debugging
+
+
   const { body, headers: customHeaders, ...requestInit } = options;
   const headers = new Headers(customHeaders);
   const serializedBody =

@@ -73,6 +73,7 @@ const schemas = {
 
 type Mode = keyof typeof schemas;
 type Values = Record<string, string>;
+
 const copy: Record<
   Mode,
   { title: string; description: string; action: string }
@@ -175,7 +176,12 @@ const fields: Record<
   ],
 };
 
-export function AuthForm({ mode }: { mode: Mode }) {
+interface AuthFormProps {
+  mode: Mode;
+  onSuccess?: () => void;
+}
+
+export function AuthForm({ mode, onSuccess }: AuthFormProps) {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -225,18 +231,32 @@ export function AuthForm({ mode }: { mode: Mode }) {
       } else if (mode === "forgot") {
         const result = await forgotPassword(values.email);
         if (!result.success) throw new Error(result.message);
+        
+        toast.success("Instructions sent", {
+          description: "If the account exists, instructions have been sent.",
+        });
+
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push("/reset-password");
+        }
+        return;
       } else if (mode === "reset") {
         const result = await resetPassword(values);
         if (!result.success) throw new Error(result.message);
       }
+      
       setSuccess(true);
       toast.success(
         mode === "verify"
           ? "Email verified"
-          : mode === "forgot"
-            ? "If the account exists and requires a reset, instructions have been sent."
-            : "Request completed",
+          : "Request completed",
       );
+
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error) {
       toast.error("Request failed", {
         description:

@@ -1,4 +1,17 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import { AuthForm } from "../../../components/auth-form";
+
 export default function ForgotPasswordPage() {
-  return <AuthForm mode="forgot" />;
+  const router = useRouter();
+
+  return (
+    <AuthForm
+      mode="forgot"
+      onSuccess={() => {
+        router.push("/reset-password");
+      }}
+    />
+  );
 }

@@ -16,6 +16,7 @@ import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Separator } from "./ui/separator";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "./ui/sheet";
+import { LogoutButton } from "./logout-button";
 
 const links = [
   { href: "/features", label: "Features" },
@@ -23,7 +24,11 @@ const links = [
   { href: "/about", label: "About" },
 ];
 
-export function PublicHeader() {
+interface PublicHeaderProps {
+  isAuthenticated?: boolean;
+}
+
+export function PublicHeader({ isAuthenticated = false }: PublicHeaderProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
@@ -47,19 +52,29 @@ export function PublicHeader() {
             </Link>
           ))}
         </nav>
+        
+        {/* Desktop Navigation Actions */}
         <div className="hidden items-center gap-2 md:flex">
           <ThemeToggle />
-          <Button variant="ghost" asChild>
-            <Link href="/login">Sign in</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/register">
-              Get started <ArrowRight data-icon="inline-end" />
-            </Link>
-          </Button>
+          {isAuthenticated ? (
+            <LogoutButton variant="ghost" />
+          ) : (
+            <>
+              <Button variant="ghost" asChild>
+                <Link href="/login">Sign in</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/register">
+                  Get started <ArrowRight data-icon="inline-end" />
+                </Link>
+              </Button>
+            </>
+          )}
         </div>
+
+        {/* Mobile Navigation Sheet */}
         <Sheet>
-          <SheetTrigger>
+          <SheetTrigger >
             <Button
               variant="ghost"
               size="icon"
@@ -82,15 +97,25 @@ export function PublicHeader() {
                 </Link>
               ))}
               <Separator className="my-2" />
-              <Link
-                href="/login"
-                className="rounded-md px-3 py-3 text-sm hover:bg-muted"
-              >
-                Sign in
-              </Link>
-              <Button asChild className="mt-2">
-                <Link href="/register">Get started</Link>
-              </Button>
+              
+              {isAuthenticated ? (
+                <LogoutButton 
+                  variant="ghost" 
+                  className="w-full justify-start px-3 py-3 text-sm h-auto" 
+                />
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="rounded-md px-3 py-3 text-sm hover:bg-muted"
+                  >
+                    Sign in
+                  </Link>
+                  <Button asChild className="mt-2">
+                    <Link href="/register">Get started</Link>
+                  </Button>
+                </>
+              )}
             </nav>
           </SheetContent>
         </Sheet>
@@ -305,10 +330,16 @@ export function SectionIntro({
   );
 }
 
-export function PublicLayout({ children }: { children: React.ReactNode }) {
+export function PublicLayout({ 
+  children, 
+  isAuthenticated = false 
+}: { 
+  children: React.ReactNode; 
+  isAuthenticated?: boolean; 
+}) {
   return (
     <div className="min-h-svh">
-      <PublicHeader />
+      <PublicHeader isAuthenticated={isAuthenticated} />
       {children}
       <PublicFooter />
     </div>
