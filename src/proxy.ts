@@ -5,7 +5,13 @@ import { NextResponse } from "next/server";
 import { getNewAccessToken } from "./actions/auth.action";
 import { jwtUtils } from "./utils/jwt";
 
-const AUTH_ROUTES = ["/login", "/register-owner", "/register-member", "/forgot-password", "/reset-password"];
+const AUTH_ROUTES = [
+  "/login",
+  "/register-owner",
+  "/register-member",
+  "/forgot-password",
+  "/reset-password",
+];
 const PUBLIC_ROUTES = ["/", "/features", "/pricing", "/about"];
 
 export async function proxy(request: NextRequest) {
@@ -67,9 +73,7 @@ export async function proxy(request: NextRequest) {
     } else if (userRole === "MANAGER") {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     } else if (userRole === "MEMBER") {
-      return NextResponse.redirect(
-        new URL("/dashboard", request.url),
-      );
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     } else {
       return NextResponse.redirect(new URL("/", request.url));
     }

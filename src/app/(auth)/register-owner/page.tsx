@@ -222,9 +222,7 @@ export default function RegisterOwnerPage() {
             <Button
               className="mt-1 h-11 w-full rounded-md bg-zinc-900 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
               type="submit"
-              disabled={
-                form.formState.isSubmitting || !form.formState.isValid
-              }
+              disabled={form.formState.isSubmitting || !form.formState.isValid}
             >
               {form.formState.isSubmitting && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -45,7 +45,7 @@ export default function LoginPage() {
       const result = await login(values);
 
       if (!result.success) throw new Error(result.message);
-      
+
       toast.success("Welcome back", {
         description: "Your workspace is ready.",
       });

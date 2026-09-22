@@ -42,7 +42,13 @@ function PublicNav({ isMobile = false, closeSheet }: PublicNavProps) {
   const pathname = usePathname();
 
   return (
-    <nav className={isMobile ? "mt-6 flex flex-col gap-1" : "hidden items-center gap-7 md:flex"}>
+    <nav
+      className={
+        isMobile
+          ? "mt-6 flex flex-col gap-1"
+          : "hidden items-center gap-7 md:flex"
+      }
+    >
       {links.map((link) => {
         const isActive = pathname === link.href;
 
@@ -94,10 +100,10 @@ export function PublicHeader({ isAuthenticated = false }: PublicHeaderProps) {
           </span>{" "}
           ORBRIN
         </Link>
-        
+
         {/* Desktop Navigation Links */}
         <PublicNav />
-        
+
         {/* Desktop Navigation Actions */}
         <div className="hidden items-center gap-2 md:flex">
           <ThemeToggle />
@@ -105,10 +111,17 @@ export function PublicHeader({ isAuthenticated = false }: PublicHeaderProps) {
             <LogoutButton variant="ghost" />
           ) : (
             <>
-              <Button variant="ghost" asChild className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white">
+              <Button
+                variant="ghost"
+                asChild
+                className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white"
+              >
                 <Link href="/login">Sign in</Link>
               </Button>
-              <Button asChild className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white">
+              <Button
+                asChild
+                className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+              >
                 <Link href="/register">
                   Get started <ArrowRight className="ml-1.5 size-4" />
                 </Link>
@@ -119,7 +132,7 @@ export function PublicHeader({ isAuthenticated = false }: PublicHeaderProps) {
 
         {/* Mobile Navigation Sheet */}
         <Sheet>
-          <SheetTrigger >
+          <SheetTrigger>
             <Button
               variant="ghost"
               size="icon"
@@ -132,19 +145,21 @@ export function PublicHeader({ isAuthenticated = false }: PublicHeaderProps) {
           <SheetContent className="flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between border-b border-zinc-200 pb-4 dark:border-zinc-800">
-                <SheetTitle className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">ORBRIN navigation</SheetTitle>
+                <SheetTitle className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  ORBRIN navigation
+                </SheetTitle>
               </div>
-              
+
               {/* Mobile Navigation Links with Active Status */}
               <PublicNav isMobile />
-              
+
               <Separator className="my-3 dark:bg-zinc-800" />
-              
+
               <div className="flex flex-col gap-1">
                 {isAuthenticated ? (
-                  <LogoutButton 
-                    variant="ghost" 
-                    className="w-full justify-start px-3 py-2.5 text-sm h-auto text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900" 
+                  <LogoutButton
+                    variant="ghost"
+                    className="w-full justify-start px-3 py-2.5 text-sm h-auto text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
                   />
                 ) : (
                   <>
@@ -154,7 +169,10 @@ export function PublicHeader({ isAuthenticated = false }: PublicHeaderProps) {
                     >
                       Sign in
                     </Link>
-                    <Button asChild className="mt-2 w-full bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white">
+                    <Button
+                      asChild
+                      className="mt-2 w-full bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+                    >
                       <Link href="/register">Get started</Link>
                     </Button>
                   </>
@@ -164,7 +182,9 @@ export function PublicHeader({ isAuthenticated = false }: PublicHeaderProps) {
 
             {/* Mobile Theme Options Footer inside Sheet */}
             <div className="border-t border-zinc-200 pt-4 dark:border-zinc-800">
-              <p className="mb-2 text-xs font-medium text-zinc-400 dark:text-zinc-500">Theme preference</p>
+              <p className="mb-2 text-xs font-medium text-zinc-400 dark:text-zinc-500">
+                Theme preference
+              </p>
               <div className="flex justify-center">
                 <ThemeOptions />
               </div>
@@ -181,7 +201,10 @@ export function PublicFooter() {
     <footer className="border-t border-zinc-200/80 bg-zinc-50/50 dark:border-zinc-800 dark:bg-zinc-900/30">
       <div className="mx-auto grid max-w-7xl gap-10 px-5 py-12 sm:grid-cols-2 lg:grid-cols-5 lg:px-8">
         <div className="lg:col-span-2">
-          <Link href="/" className="font-heading text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+          <Link
+            href="/"
+            className="font-heading text-lg font-semibold text-zinc-900 dark:text-zinc-50"
+          >
             ORBRIN
           </Link>
           <p className="mt-3 max-w-xs text-sm leading-6 text-zinc-500 dark:text-zinc-400">
@@ -212,7 +235,9 @@ export function PublicFooter() {
           },
         ].map((group) => (
           <div key={group.title}>
-            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-200">{group.title}</p>
+            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-200">
+              {group.title}
+            </p>
             <div className="mt-4 flex flex-col gap-3">
               {group.items.map(([label, href]) => (
                 <Link
@@ -242,9 +267,7 @@ export function ProductPreview() {
         <span className="size-2 rounded-full bg-red-400" />
         <span className="size-2 rounded-full bg-amber-400" />
         <span className="size-2 rounded-full bg-emerald-400" />
-        <span className="ml-3 text-xs text-zinc-400">
-          orbrin / workspace
-        </span>
+        <span className="ml-3 text-xs text-zinc-400">orbrin / workspace</span>
       </div>
       <div className="grid min-h-72 sm:grid-cols-[150px_1fr]">
         <div className="hidden border-r border-zinc-200 bg-zinc-50/50 p-4 text-zinc-600 sm:block dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-400">
@@ -276,8 +299,12 @@ export function ProductPreview() {
                 key={label}
                 className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800"
               >
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">{label}</p>
-                <p className="mt-3 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">—</p>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                  {label}
+                </p>
+                <p className="mt-3 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+                  —
+                </p>
                 <p className="mt-1 text-[10px] text-zinc-400">
                   Connect your data
                 </p>
@@ -286,7 +313,9 @@ export function ProductPreview() {
           </div>
           <div className="mt-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-zinc-900 dark:text-zinc-200">Delivery health</span>
+              <span className="text-xs font-medium text-zinc-900 dark:text-zinc-200">
+                Delivery health
+              </span>
               <span className="text-[10px] text-zinc-400">
                 Ready for live data
               </span>
@@ -344,7 +373,10 @@ export function FeatureGrid() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {featureCards.map(({ icon: Icon, title, body }) => (
-        <Card key={title} className="border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <Card
+          key={title}
+          className="border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+        >
           <CardContent className="p-6">
             <Icon className="size-5 text-zinc-900 dark:text-zinc-100" />
             <h3 className="mt-6 text-base font-semibold text-zinc-900 dark:text-zinc-50">
@@ -377,17 +409,19 @@ export function SectionIntro({
       <h2 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-4xl">
         {title}
       </h2>
-      <p className="mt-4 text-base leading-7 text-zinc-500 dark:text-zinc-400">{body}</p>
+      <p className="mt-4 text-base leading-7 text-zinc-500 dark:text-zinc-400">
+        {body}
+      </p>
     </div>
   );
 }
 
-export function PublicLayout({ 
-  children, 
-  isAuthenticated = false 
-}: { 
-  children: React.ReactNode; 
-  isAuthenticated?: boolean; 
+export function PublicLayout({
+  children,
+  isAuthenticated = false,
+}: {
+  children: React.ReactNode;
+  isAuthenticated?: boolean;
 }) {
   return (
     <div className="min-h-svh bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
@@ -423,9 +457,16 @@ export function WorkflowSteps() {
           body: "Review progress and keep momentum.",
         },
       ].map((step) => (
-        <div key={step.n} className="border-l border-zinc-200 px-5 py-2 dark:border-zinc-800">
-          <span className="font-mono text-xs font-semibold text-zinc-400">{step.n}</span>
-          <h3 className="mt-4 font-semibold text-zinc-900 dark:text-zinc-50">{step.title}</h3>
+        <div
+          key={step.n}
+          className="border-l border-zinc-200 px-5 py-2 dark:border-zinc-800"
+        >
+          <span className="font-mono text-xs font-semibold text-zinc-400">
+            {step.n}
+          </span>
+          <h3 className="mt-4 font-semibold text-zinc-900 dark:text-zinc-50">
+            {step.title}
+          </h3>
           <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
             {step.body}
           </p>
@@ -440,6 +481,9 @@ export function HeroIcon() {
 }
 export function Dot() {
   return (
-    <Circle className="size-3 fill-zinc-900 text-zinc-900 dark:fill-zinc-100 dark:text-zinc-100" aria-hidden="true" />
+    <Circle
+      className="size-3 fill-zinc-900 text-zinc-900 dark:fill-zinc-100 dark:text-zinc-100"
+      aria-hidden="true"
+    />
   );
 }

@@ -16,9 +16,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       </div>
 
       {/* Content */}
-      <div className="relative z-0 w-full max-w-sm sm:max-w-md">
-        {children}
-      </div>
+      <div className="relative z-0 w-full max-w-sm sm:max-w-md">{children}</div>
     </main>
   );
 }
