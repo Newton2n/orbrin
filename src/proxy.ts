@@ -69,11 +69,11 @@ export async function proxy(request: NextRequest) {
   //   user is logged in and trying to access login or register page, redirect to dashboard or root home page
   if (accessToken && AUTH_ROUTES.includes(pathname)) {
     if (userRole === "ADMIN") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return NextResponse.redirect(new URL("/dashboard/admin", request.url));
     } else if (userRole === "MANAGER") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return NextResponse.redirect(new URL("/dashboard/manager", request.url));
     } else if (userRole === "MEMBER") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return NextResponse.redirect(new URL("/dashboard/member", request.url));
     } else {
       return NextResponse.redirect(new URL("/", request.url));
     }
@@ -97,16 +97,16 @@ export async function proxy(request: NextRequest) {
   }
 
   // Authorization : Role based access control
-  // if (pathname.startsWith("/dashboard/customer") && userRole !== "CUSTOMER") {
-  //   return NextResponse.redirect(new URL("/not-found", request.url));
-  // } else if (pathname.startsWith("/dashboard/admin") && userRole !== "ADMIN") {
-  //   return NextResponse.redirect(new URL("/not-found", request.url));
-  // } else if (
-  //   pathname.startsWith("/dashboard/technician") &&
-  //   userRole !== "TECHNICIAN"
-  // ) {
-  //   return NextResponse.redirect(new URL("/not-found", request.url));
-  // }
+  if (pathname.startsWith("/dashboard/member") && userRole !== "MEMBER") {
+    return NextResponse.redirect(new URL("/not-found", request.url));
+  } else if (pathname.startsWith("/dashboard/admin") && userRole !== "ADMIN") {
+    return NextResponse.redirect(new URL("/not-found", request.url));
+  } else if (
+    pathname.startsWith("/dashboard/manager") &&
+    userRole !== "MANAGER"
+  ) {
+    return NextResponse.redirect(new URL("/not-found", request.url));
+  }
 
   return NextResponse.next();
 }

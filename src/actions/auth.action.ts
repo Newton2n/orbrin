@@ -120,8 +120,11 @@ export async function login(input: unknown) {
     );
   }
   const payload = unwrapPayload<LoginResponse>(result.payload);
+  console.log("login payload:", payload);
   await saveSession(payload);
-  return actionSuccess(payload, "Welcome back.");
+
+  console.log("Action success:login", actionSuccess(payload, "Welcome back."));
+  return actionSuccess<LoginResponse>(payload, "Welcome back.");
 }
 
 // Register owner function

@@ -61,7 +61,7 @@ export interface SessionUser {
 export interface LoginResponse {
   accessToken: string;
   refreshToken?: string;
-  jwtPayload: SessionUser;
+  user: SessionUser;
 }
 
 export interface RefreshTokenResponse {

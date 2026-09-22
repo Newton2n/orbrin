@@ -77,6 +77,7 @@ export function actionFailure<T>(message: string, data: T) {
 }
 
 export function actionSuccess<T>(data: T, message = "Request completed") {
+  console.log("Action success:", { success: true as const, message, data });
   return { success: true as const, message, data };
 }
 
