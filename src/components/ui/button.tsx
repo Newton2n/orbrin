@@ -44,6 +44,7 @@ function Button({
   size = "default",
   asChild = false,
   children,
+  nativeButton,
   ...props
 }: ButtonPrimitive.Props &
   VariantProps<typeof buttonVariants> & { asChild?: boolean }) {
@@ -52,6 +53,7 @@ function Button({
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
       render={asChild ? (children as ReactElement) : undefined}
+      nativeButton={asChild ? false : nativeButton}
       {...props}
     >
       {asChild ? undefined : children}

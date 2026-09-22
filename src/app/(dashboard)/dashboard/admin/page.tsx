@@ -1,5 +1,5 @@
 import { getCurrentUser } from "../../../../actions/auth.action";
-import { RoleDashboard } from "../../../../components/dashboard-content";
+import { RoleDashboard } from "../../../../components/dashboard/shared/dashboard-content";
 
 export default async function AdminDashboardPage() {
   const result = await getCurrentUser();

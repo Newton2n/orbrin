@@ -6,7 +6,6 @@ import {
   Clock3,
   FolderKanban,
   ListTodo,
-  MoreHorizontal,
   MoveUpRight,
   Plus,
   Sparkles,
@@ -14,11 +13,15 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import type { AuthUser } from "../features/auth/types/auth.types";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Progress } from "./ui/progress";
+import { ActivityFeed } from "@/components/dashboard/activity-feed";
+import { ProjectTable } from "@/components/dashboard/project-table";
+import { StatCard } from "@/components/dashboard/stat-card";
+import { TaskList } from "@/components/dashboard/task-list";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import type { AuthUser } from "@/features/auth/types/auth.types";
 
 const projects = [
   {
@@ -107,170 +110,18 @@ function initials(name?: string | null, email?: string) {
 function SectionHeading({ title, action }: { title: string; action?: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <h2 className="text-base font-semibold tracking-tight">{title}</h2>
+      <h2 className="font-heading text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        {title}
+      </h2>
       {action && (
         <Link
           href="#"
-          className="text-xs font-medium text-primary hover:underline"
+          className="text-xs font-medium text-zinc-600 hover:underline dark:text-zinc-400"
         >
           {action}
           <ArrowUpRight className="ml-1 inline size-3" />
         </Link>
       )}
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  detail,
-  icon: Icon,
-  tone = "default",
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  icon: typeof Users;
-  tone?: "default" | "warning" | "success";
-}) {
-  return (
-    <Card className="border-border/70 shadow-none">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">{label}</p>
-            <p className="mt-2 font-heading text-3xl font-semibold tracking-tight">
-              {value}
-            </p>
-          </div>
-          <div
-            className={`grid size-9 place-items-center rounded-md ${tone === "warning" ? "bg-accent text-accent-foreground" : tone === "success" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
-          >
-            <Icon className="size-4" />
-          </div>
-        </div>
-        <p className="mt-3 text-xs text-muted-foreground">{detail}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ProjectTable({ compact = false }: { compact?: boolean }) {
-  return (
-    <div className="overflow-x-auto rounded-lg border border-border/70">
-      <table className="w-full min-w-[520px] text-sm">
-        <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
-          <tr>
-            <th className="px-4 py-3 font-medium">Project</th>
-            <th className="px-4 py-3 font-medium">Progress</th>
-            <th className="px-4 py-3 font-medium">Status</th>
-            <th className="px-4 py-3 font-medium">Tasks</th>
-            {!compact && <th className="px-4 py-3" />}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border/70">
-          {projects.map((project) => (
-            <tr key={project.name} className="hover:bg-muted/20">
-              <td className="px-4 py-4">
-                <p className="font-medium">{project.name}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {project.team} team
-                </p>
-              </td>
-              <td className="px-4 py-4">
-                <div className="flex min-w-28 items-center gap-3">
-                  <Progress value={project.progress} className="h-1.5" />
-                  <span className="text-xs tabular-nums text-muted-foreground">
-                    {project.progress}%
-                  </span>
-                </div>
-              </td>
-              <td className="px-4 py-4">
-                <Badge
-                  variant={
-                    project.status === "At risk" ? "outline" : "secondary"
-                  }
-                >
-                  {project.status}
-                </Badge>
-              </td>
-              <td className="px-4 py-4 text-xs text-muted-foreground">
-                {project.tasks}
-              </td>
-              {!compact && (
-                <td className="px-4 py-4 text-right">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    aria-label={`More actions for ${project.name}`}
-                  >
-                    <MoreHorizontal />
-                  </Button>
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function ActivityFeed() {
-  return (
-    <div className="flex flex-col divide-y divide-border/70">
-      {activities.map((activity) => (
-        <div
-          key={`${activity.name}-${activity.time}`}
-          className="flex gap-3 py-4 first:pt-0 last:pb-0"
-        >
-          <div className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
-            {activity.initials}
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm leading-5">
-              <span className="font-medium">{activity.name}</span>{" "}
-              {activity.action}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {activity.time}
-            </p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function TaskList({ title = "My tasks" }: { title?: string }) {
-  return (
-    <div className="flex flex-col divide-y divide-border/70">
-      {tasks.map((task) => (
-        <div
-          key={task.title}
-          className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
-        >
-          <div className="grid size-8 shrink-0 place-items-center rounded-md border border-border/70">
-            <ListTodo className="size-4 text-muted-foreground" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{task.title}</p>
-            <p className="mt-1 truncate text-xs text-muted-foreground">
-              {task.project}
-            </p>
-          </div>
-          <div className="hidden text-right sm:block">
-            <Badge variant={task.priority === "High" ? "outline" : "secondary"}>
-              {task.priority}
-            </Badge>
-            <p className="mt-1 text-[11px] text-muted-foreground">{task.due}</p>
-          </div>
-          <div className="grid size-7 shrink-0 place-items-center rounded-full bg-muted text-[10px] font-semibold">
-            {task.assignee}
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
@@ -357,7 +208,7 @@ export function AdminDashboard({ user }: { user: AuthUser }) {
             />
           </CardHeader>
           <CardContent>
-            <ProjectTable />
+            <ProjectTable projects={projects} />
           </CardContent>
         </Card>
         <Card className="border-border/70 shadow-none">
@@ -394,7 +245,7 @@ export function AdminDashboard({ user }: { user: AuthUser }) {
             <SectionHeading title="Recent activity" action="See all activity" />
           </CardHeader>
           <CardContent>
-            <ActivityFeed />
+            <ActivityFeed activities={activities} />
           </CardContent>
         </Card>
         <Card className="border-border/70 shadow-none">
@@ -478,7 +329,7 @@ export function ManagerDashboard({ user }: { user: AuthUser }) {
             <SectionHeading title="Project progress" action="Open projects" />
           </CardHeader>
           <CardContent>
-            <ProjectTable compact />
+            <ProjectTable projects={projects} compact />
           </CardContent>
         </Card>
         <Card className="border-border/70 shadow-none">
@@ -497,7 +348,11 @@ export function ManagerDashboard({ user }: { user: AuthUser }) {
                 progress: 42,
                 meta: "Ends in 8 days",
               },
-              { name: "Sprint 21 · API", progress: 91, meta: "Ends tomorrow" },
+              {
+                name: "Sprint 21 · API",
+                progress: 91,
+                meta: "Ends tomorrow",
+              },
             ].map((sprint) => (
               <div key={sprint.name}>
                 <div className="flex justify-between gap-3 text-sm">
@@ -624,7 +479,7 @@ export function MemberDashboard({ user }: { user: AuthUser }) {
             <SectionHeading title="My tasks" action="View all tasks" />
           </CardHeader>
           <CardContent>
-            <TaskList />
+            <TaskList tasks={tasks} />
           </CardContent>
         </Card>
         <Card className="border-border/70 shadow-none">
@@ -687,7 +542,7 @@ export function MemberDashboard({ user }: { user: AuthUser }) {
             <SectionHeading title="Recent activity" action="Notifications" />
           </CardHeader>
           <CardContent>
-            <ActivityFeed />
+            <ActivityFeed activities={activities} />
           </CardContent>
         </Card>
       </div>
@@ -702,9 +557,15 @@ export function RoleDashboard({
   role: "ADMIN" | "MANAGER" | "MEMBER";
   user: AuthUser;
 }) {
-  if (role === "ADMIN") return <AdminDashboard user={user} />;
-  if (role === "MANAGER") return <ManagerDashboard user={user} />;
-  return <MemberDashboard user={user} />;
+  return (
+    <div className="min-h-screen">
+      <main>
+        {role === "ADMIN" && <AdminDashboard user={user} />}
+        {role === "MANAGER" && <ManagerDashboard user={user} />}
+        {role === "MEMBER" && <MemberDashboard user={user} />}
+      </main>
+    </div>
+  );
 }
 
 export function DashboardPlaceholder({

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
+import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { getCurrentUser } from "../../actions/auth.action";
-import { DashboardShell } from "../../components/dashboard-shell";
 
 export default async function DashboardLayout({
   children,

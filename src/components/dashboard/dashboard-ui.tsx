@@ -20,14 +20,16 @@ export function DashboardPageHeader({
     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
         {eyebrow ? (
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
             {eyebrow}
           </p>
         ) : null}
         <h1 className="mt-2 font-heading text-3xl font-semibold tracking-[-0.04em]">
           {title}
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+          {description}
+        </p>
       </div>
       {action}
     </div>
@@ -46,11 +48,13 @@ export function MetricCard({
   tone?: "default" | "warning" | "success";
 }) {
   return (
-    <Card className="border-border/70 shadow-none">
+    <Card className="rounded-2xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-medium text-muted-foreground">{label}</p>
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              {label}
+            </p>
             <p className="mt-2 font-heading text-3xl font-semibold tracking-tight">
               {value}
             </p>
@@ -62,13 +66,15 @@ export function MetricCard({
                 ? "bg-accent text-accent-foreground"
                 : tone === "success"
                   ? "bg-primary/10 text-primary"
-                  : "bg-muted text-muted-foreground",
+                  : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
             ].join(" ")}
           >
             <span className="text-xs font-semibold">{value[0] ?? "•"}</span>
           </div>
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">{detail}</p>
+        <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+          {detail}
+        </p>
       </CardContent>
     </Card>
   );
@@ -86,7 +92,12 @@ export function SectionCard({
   className?: string;
 }) {
   return (
-    <Card className={className ?? "border-border/70 shadow-none"}>
+    <Card
+      className={
+        className ??
+        "rounded-2xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+      }
+    >
       <CardHeader className="flex-row items-center justify-between gap-4">
         <CardTitle>{title}</CardTitle>
         {action}
@@ -127,7 +138,7 @@ export function PriorityBadge({ value }: { value: string }) {
 export function ProgressBar({ value }: { value: number }) {
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
+      <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
         <span>Progress</span>
         <span>{value}%</span>
       </div>
@@ -148,12 +159,12 @@ export function EmptyState({
   href?: string;
 }) {
   const content = (
-    <div className="flex min-h-64 flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 p-10 text-center">
-      <div className="grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
+    <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/60 p-10 text-center dark:border-zinc-800 dark:bg-zinc-900/40">
+      <div className="grid size-12 place-items-center rounded-full bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
         <Plus className="size-4" />
       </div>
       <h3 className="mt-4 text-base font-semibold">{title}</h3>
-      <p className="mt-2 max-w-md text-sm text-muted-foreground">
+      <p className="mt-2 max-w-md text-sm text-zinc-600 dark:text-zinc-400">
         {description}
       </p>
       {actionLabel ? (
