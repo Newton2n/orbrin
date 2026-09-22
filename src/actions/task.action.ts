@@ -11,8 +11,9 @@ import {
 } from "../lib/server/backend-api";
 import type { PaginatedResponse } from "./project.action";
 
-export type TaskStatus = "TODO" | "IN_PROGRESS" | "DONE";
+export type TaskStatus = "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
 export type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+
 export type Task = {
   id: string;
   title: string;
@@ -20,30 +21,66 @@ export type Task = {
   status: TaskStatus;
   priority: TaskPriority;
   dueDate?: string | null;
+  assigneeId?: string | null;
+  projectId: string;
+  sprintId?: string | null;
+  parentTaskId?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+  assignee?: {
+    id?: string;
+    name?: string;
+    email?: string;
+    role?: string;
+  } | null;
+  project?: { id?: string; name?: string } | null;
   [key: string]: unknown;
 };
+
+export type TaskListParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: "title" | "createdAt" | "updatedAt" | string;
+  sortOrder?: "asc" | "desc";
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  assigneeId?: string;
+  sprintId?: string;
+};
+
+export type TaskInput = Partial<{
+  title: string;
+  description: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate: string;
+  assigneeId: string;
+  sprintId: string;
+  parentTaskId: string;
+}>;
+
 export type Comment = {
   id: string;
   content: string;
   createdAt?: string;
   user?: { fullName?: string };
 };
-export type TaskListParams = {
-  page?: number;
-  limit?: number;
-  search?: string;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-  status?: TaskStatus;
-  priority?: TaskPriority;
+
+type TaskResult<T> = {
+  ok: boolean;
+  success: boolean;
+  data: T;
+  message?: string;
 };
-export type TaskInput = {
-  title?: string;
-  description?: string;
-  status?: TaskStatus;
-  priority?: TaskPriority;
-  dueDate?: string;
-};
+
+function success<T>(data: T, message?: string): TaskResult<T> {
+  return { ...actionSuccess(data, message), ok: true };
+}
+
+function failure<T>(message: string, data: T): TaskResult<T> {
+  return { ...actionFailure(message, data), ok: false };
+}
 
 function normalize<T>(
   payload: unknown,
@@ -61,11 +98,13 @@ function normalize<T>(
     ? nested.items
     : Array.isArray(nested.tasks)
       ? nested.tasks
-      : Array.isArray(payload)
-        ? payload
-        : [];
+      : Array.isArray(nested.data)
+        ? nested.data
+        : Array.isArray(payload)
+          ? payload
+          : [];
   const total = Number(nested.total ?? nested.totalCount ?? items.length);
-  const limit = Number(nested.limit ?? params.limit ?? 20);
+  const limit = Number(nested.limit ?? params.limit ?? 10);
   return {
     items: items as T[],
     total,
@@ -77,57 +116,111 @@ function normalize<T>(
   };
 }
 
-function toQuery(params: TaskListParams) {
+function revalidateTaskPaths(projectId?: string) {
+  for (const path of [
+    "/dashboard/tasks",
+    "/dashboard/admin/tasks",
+    "/dashboard/manager/tasks",
+    "/dashboard/member/tasks",
+    "/dashboard/admin/projects",
+    "/dashboard/manager/projects",
+    "/dashboard/member/projects",
+  ])
+    revalidatePath(path);
+  if (projectId) revalidatePath(`/dashboard/projects/${projectId}`);
+}
+
+function queryString(params: TaskListParams) {
   const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params))
-    if (value !== undefined) query.set(key, String(value));
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== "") query.set(key, String(value));
+  }
   return query.size ? `?${query}` : "";
 }
 
-export async function getTasks(projectId: string, params: TaskListParams = {}) {
-  const result = await backendRequest<unknown>(
-    `/tasks/projects/${projectId}${toQuery(params)}`,
-  );
-  if (!result.ok)
-    return actionFailure(
-      backendMessage(result.payload, "Unable to fetch tasks."),
-      {
-        items: [],
-        total: 0,
-        page: 1,
-        limit: params.limit ?? 20,
-        totalPages: 0,
-      },
-    );
-  return actionSuccess(normalize<Task>(unwrapPayload(result.payload), params));
-}
-
-export async function createTask(projectId: string, input: TaskInput) {
-  return mutate(
-    `/tasks/projects/${projectId}`,
-    "POST",
-    input,
-    "Unable to create task.",
-  );
-}
-export async function updateTask(id: string, input: TaskInput) {
-  return mutate(`/tasks/${id}`, "PATCH", input, "Unable to update task.");
-}
-export async function deleteTask(id: string) {
-  return mutate(`/tasks/${id}`, "DELETE", undefined, "Unable to delete task.");
-}
-
-async function mutate(
-  endpoint: string,
-  method: string,
-  body: unknown,
-  fallback: string,
+export async function getProjectTasks(
+  projectId: string,
+  params: TaskListParams = {},
 ) {
-  const result = await backendRequest<Task>(endpoint, { method, body });
+  const result = await backendRequest<unknown>(
+    `/tasks/projects/${projectId}${queryString(params)}`,
+  );
   if (!result.ok)
-    return actionFailure(backendMessage(result.payload, fallback), null);
-  revalidatePath("/dashboard/tasks");
-  return actionSuccess(unwrapPayload<Task>(result.payload));
+    return failure(backendMessage(result.payload, "Unable to fetch tasks."), {
+      items: [],
+      total: 0,
+      page: params.page ?? 1,
+      limit: params.limit ?? 10,
+      totalPages: 0,
+    });
+  return success(normalize<Task>(unwrapPayload(result.payload), params));
+}
+
+// Kept as an alias for the existing standalone tasks page.
+export const getTasks = getProjectTasks;
+
+export async function getTaskById(taskId: string) {
+  const result = await backendRequest<Task>(`/tasks/${taskId}`);
+  if (!result.ok)
+    return failure(
+      backendMessage(result.payload, "Unable to fetch task."),
+      null,
+    );
+  return success(unwrapPayload<Task>(result.payload));
+}
+
+export async function createTask(
+  projectId: string,
+  input: {
+    title: string;
+    description?: string;
+    status?: TaskStatus;
+    priority?: TaskPriority;
+    dueDate?: string;
+    assigneeId?: string;
+    sprintId?: string;
+    parentTaskId?: string;
+  },
+) {
+  const result = await backendRequest<Task>(`/tasks/projects/${projectId}`, {
+    method: "POST",
+    body: input,
+  });
+  if (!result.ok)
+    return failure(
+      backendMessage(result.payload, "Unable to create task."),
+      null,
+    );
+  revalidateTaskPaths(projectId);
+  return success(unwrapPayload<Task>(result.payload), "Task created.");
+}
+
+export async function updateTask(taskId: string, input: TaskInput) {
+  const result = await backendRequest<Task>(`/tasks/${taskId}`, {
+    method: "PATCH",
+    body: input,
+  });
+  if (!result.ok)
+    return failure(
+      backendMessage(result.payload, "Unable to update task."),
+      null,
+    );
+  const task = unwrapPayload<Task>(result.payload);
+  revalidateTaskPaths(task.projectId);
+  return success(task, "Task updated.");
+}
+
+export async function deleteTask(taskId: string) {
+  const result = await backendRequest<null>(`/tasks/${taskId}`, {
+    method: "DELETE",
+  });
+  if (!result.ok)
+    return failure(
+      backendMessage(result.payload, "Unable to delete task."),
+      null,
+    );
+  revalidateTaskPaths();
+  return success(null, "Task deleted.");
 }
 
 export async function getTaskComments(taskId: string) {
@@ -135,7 +228,7 @@ export async function getTaskComments(taskId: string) {
     `/comments/tasks/${taskId}?page=1&limit=50&sortBy=createdAt&sortOrder=desc`,
   );
   if (!result.ok)
-    return actionFailure(
+    return failure(
       backendMessage(result.payload, "Unable to fetch comments."),
       [] as Comment[],
     );
@@ -151,24 +244,21 @@ export async function getTaskComments(taskId: string) {
       : Array.isArray(payload)
         ? payload
         : [];
-  return actionSuccess(items as Comment[]);
+  return success(items as Comment[]);
 }
 
 export async function addComment(taskId: string, content: string) {
   const parsed = z.string().trim().min(1).safeParse(content);
-  if (!parsed.success) return actionFailure("Comment cannot be empty.", null);
+  if (!parsed.success) return failure("Comment cannot be empty.", null);
   const result = await backendRequest<Comment>(`/comments/tasks/${taskId}`, {
     method: "POST",
     body: { content: parsed.data },
   });
   if (!result.ok)
-    return actionFailure(
+    return failure(
       backendMessage(result.payload, "Unable to add comment."),
       null,
     );
-  revalidatePath("/dashboard/tasks");
-  return actionSuccess(
-    unwrapPayload<Comment>(result.payload),
-    "Comment added.",
-  );
+  revalidateTaskPaths();
+  return success(unwrapPayload<Comment>(result.payload), "Comment added.");
 }
