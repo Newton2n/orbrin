@@ -24,6 +24,7 @@ import {
   backendRequest,
   unwrapPayload,
 } from "../lib/server/backend-api";
+import { jwtUtils } from "../utils/jwt";
 
 function sessionCookieOptions() {
   return {
@@ -40,6 +41,15 @@ async function saveSession(payload: LoginResponse) {
   cookieStore.set("accessToken", payload.accessToken, options);
   if (payload.refreshToken)
     cookieStore.set("refreshToken", payload.refreshToken, options);
+}
+
+export async function hasValidAccessToken() {
+  const accessToken = (await cookies()).get("accessToken")?.value;
+  const secret = process.env.JWT_ACCESS_SECRET;
+
+  if (!accessToken || !secret) return false;
+
+  return jwtUtils.verifyToken(accessToken, secret).success;
 }
 
 // Login function
@@ -131,6 +141,9 @@ export async function googleLogin(input: unknown) {
 
 // Get current user function
 export async function getCurrentUser() {
+  if (!(await hasValidAccessToken()))
+    return actionFailure("You are not authenticated.", null);
+
   const result = await backendRequest<AuthUser>("/auth/me");
   if (!result.ok || !result.payload)
     return actionFailure(

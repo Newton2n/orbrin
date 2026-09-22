@@ -1,15 +1,15 @@
-import { 
-  FolderKanban, 
-  CheckCircle, 
-  Users, 
-  Zap, 
-  Kanban, 
-  MessageSquare, 
-  ShieldCheck, 
-  ArrowRight 
+import {
+  FolderKanban,
+  CheckCircle,
+  Users,
+  Zap,
+  Kanban,
+  MessageSquare,
+  ShieldCheck,
+  ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
-import { cookies } from "next/headers";
+import { hasValidAccessToken } from "../../actions/auth.action";
 import {
   FeatureGrid,
   PublicLayout,
@@ -19,13 +19,11 @@ import {
 import { Button } from "../../components/ui/button";
 
 export default async function FeaturesPage() {
-  const cookieStore = await cookies();
-  const isAuthenticated = cookieStore.has("accessToken");
+  const isAuthenticated = await hasValidAccessToken();
 
   return (
     <PublicLayout isAuthenticated={isAuthenticated}>
       <main className="mx-auto max-w-7xl px-5 py-20 lg:px-8 lg:py-28">
-        
         {/* --- HEADER INTRO --- */}
         <div className="mx-auto max-w-3xl text-center">
           <p className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-3.5 py-1 text-xs font-medium text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
@@ -35,7 +33,8 @@ export default async function FeaturesPage() {
             Everything your team needs to keep work moving.
           </h1>
           <p className="mt-4 text-base leading-7 text-zinc-500 dark:text-zinc-400 sm:text-lg">
-            ORBRIN connects team organization, dynamic project lifecycles, and agile execution without adding heavy process.
+            ORBRIN connects team organization, dynamic project lifecycles, and
+            agile execution without adding heavy process.
           </p>
         </div>
 
@@ -53,7 +52,6 @@ export default async function FeaturesPage() {
 
         {/* --- DETAILED WORKFLOW BREAKDOWN (Teams, Projects, Tasks, Sprints, Kanban) --- */}
         <div className="mt-32 space-y-24">
-          
           {/* 1. Teams & Projects Integration */}
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
             <div>
@@ -64,7 +62,9 @@ export default async function FeaturesPage() {
                 Create teams and orchestrate projects effortlessly.
               </h2>
               <p className="mt-4 text-sm leading-6 text-zinc-500 dark:text-zinc-400 sm:text-base">
-                Group members into specialized squads, assign multi-layered projects directly to teams, and maintain crystal-clear boundaries of ownership across your entire organization.
+                Group members into specialized squads, assign multi-layered
+                projects directly to teams, and maintain crystal-clear
+                boundaries of ownership across your entire organization.
               </p>
               <ul className="mt-6 flex flex-col gap-3 text-sm text-zinc-600 dark:text-zinc-300">
                 <li className="flex items-center gap-3">
@@ -77,7 +77,7 @@ export default async function FeaturesPage() {
                 </li>
               </ul>
             </div>
-            
+
             {/* Visual Mockup Card */}
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50/50 p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
               <div className="flex items-center justify-between border-b border-zinc-200 pb-4 dark:border-zinc-800">
@@ -86,20 +86,34 @@ export default async function FeaturesPage() {
                     EN
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Engineering Squad</p>
-                    <p className="text-xs text-zinc-400">4 active projects assigned</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                      Engineering Squad
+                    </p>
+                    <p className="text-xs text-zinc-400">
+                      4 active projects assigned
+                    </p>
                   </div>
                 </div>
-                <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">Active</span>
+                <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  Active
+                </span>
               </div>
               <div className="mt-4 space-y-3">
                 <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
-                  <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">Core Architecture Migration</p>
-                  <p className="mt-1 text-[11px] text-zinc-400">Assigned to Lead Platform Team • Due Q3</p>
+                  <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                    Core Architecture Migration
+                  </p>
+                  <p className="mt-1 text-[11px] text-zinc-400">
+                    Assigned to Lead Platform Team • Due Q3
+                  </p>
                 </div>
                 <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
-                  <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">Design System Tokens</p>
-                  <p className="mt-1 text-[11px] text-zinc-400">Assigned to UI/UX Product Guild • In progress</p>
+                  <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                    Design System Tokens
+                  </p>
+                  <p className="mt-1 text-[11px] text-zinc-400">
+                    Assigned to UI/UX Product Guild • In progress
+                  </p>
                 </div>
               </div>
             </div>
@@ -111,16 +125,23 @@ export default async function FeaturesPage() {
             <div className="order-2 lg:order-1 rounded-2xl border border-zinc-200 bg-zinc-50/50 p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="rounded bg-zinc-200/80 px-2 py-0.5 text-[11px] font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">TASK-849</span>
-                  <span className="text-xs text-emerald-500 font-medium">In Review</span>
+                  <span className="rounded bg-zinc-200/80 px-2 py-0.5 text-[11px] font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                    TASK-849
+                  </span>
+                  <span className="text-xs text-emerald-500 font-medium">
+                    In Review
+                  </span>
                 </div>
-                <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Implement secure OAuth token rotation</h4>
+                <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  Implement secure OAuth token rotation
+                </h4>
                 <div className="flex items-center gap-2 pt-2 border-t border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500">
                   <MessageSquare className="size-3.5 text-zinc-400" />
                   <span>3 comments on task thread</span>
                 </div>
                 <div className="rounded-lg bg-white p-3 border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 text-xs text-zinc-600 dark:text-zinc-400">
-                  &quot;Updated the refresh token logic. Ready for final security review.&quot; — Newton Bepari
+                  &quot;Updated the refresh token logic. Ready for final
+                  security review.&quot; — Newton Bepari
                 </div>
               </div>
             </div>
@@ -133,7 +154,9 @@ export default async function FeaturesPage() {
                 Precision task assignments and contextual collaboration.
               </h2>
               <p className="mt-4 text-sm leading-6 text-zinc-500 dark:text-zinc-400 sm:text-base">
-                Break projects into manageable tasks, delegate ownership instantly to team members, and keep all relevant engineering or design comments right inside the task stream.
+                Break projects into manageable tasks, delegate ownership
+                instantly to team members, and keep all relevant engineering or
+                design comments right inside the task stream.
               </p>
               <ul className="mt-6 flex flex-col gap-3 text-sm text-zinc-600 dark:text-zinc-300">
                 <li className="flex items-center gap-3">
@@ -142,7 +165,9 @@ export default async function FeaturesPage() {
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle className="size-4 text-emerald-500 shrink-0" />
-                  <span>Rich inline discussions and contextual thread comments</span>
+                  <span>
+                    Rich inline discussions and contextual thread comments
+                  </span>
                 </li>
               </ul>
             </div>
@@ -158,12 +183,17 @@ export default async function FeaturesPage() {
                 Sprints and Kanban boards built for continuous momentum.
               </h2>
               <p className="mt-4 text-sm leading-6 text-zinc-500 dark:text-zinc-400 sm:text-base">
-                Create structured sprints for your projects, track progress visually across custom Kanban board statuses (Backlog, In Progress, In Review, Completed), and never lose sight of a delivery milestone.
+                Create structured sprints for your projects, track progress
+                visually across custom Kanban board statuses (Backlog, In
+                Progress, In Review, Completed), and never lose sight of a
+                delivery milestone.
               </p>
               <ul className="mt-6 flex flex-col gap-3 text-sm text-zinc-600 dark:text-zinc-300">
                 <li className="flex items-center gap-3">
                   <CheckCircle className="size-4 text-emerald-500 shrink-0" />
-                  <span>Time-boxed sprint creation tied directly to project goals</span>
+                  <span>
+                    Time-boxed sprint creation tied directly to project goals
+                  </span>
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle className="size-4 text-emerald-500 shrink-0" />
@@ -175,26 +205,35 @@ export default async function FeaturesPage() {
             {/* Kanban Preview Box */}
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50/50 p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
-                <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">To Do (Sprint 12)</p>
+                <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
+                  To Do (Sprint 12)
+                </p>
                 <div className="mt-3 space-y-2">
                   <div className="rounded border border-zinc-200 bg-zinc-50 p-2 dark:border-zinc-800 dark:bg-zinc-950 text-xs">
-                    <p className="font-medium text-zinc-800 dark:text-zinc-200">API rate limiting</p>
-                    <span className="text-[10px] text-zinc-400">High Priority</span>
+                    <p className="font-medium text-zinc-800 dark:text-zinc-200">
+                      API rate limiting
+                    </p>
+                    <span className="text-[10px] text-zinc-400">
+                      High Priority
+                    </span>
                   </div>
                 </div>
               </div>
               <div className="rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
-                <p className="text-[11px] font-semibold text-emerald-500 uppercase tracking-wider">Completed</p>
+                <p className="text-[11px] font-semibold text-emerald-500 uppercase tracking-wider">
+                  Completed
+                </p>
                 <div className="mt-3 space-y-2">
                   <div className="rounded border border-emerald-500/20 bg-emerald-500/5 p-2 text-xs">
-                    <p className="font-medium text-zinc-800 dark:text-zinc-200">Database indexing</p>
+                    <p className="font-medium text-zinc-800 dark:text-zinc-200">
+                      Database indexing
+                    </p>
                     <span className="text-[10px] text-emerald-500">Done</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-
         </div>
 
         {/* --- WORKFLOW RHYTHM SECTION --- */}
@@ -215,17 +254,21 @@ export default async function FeaturesPage() {
             Ready to bring absolute clarity to your team?
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-sm text-zinc-400 sm:text-base">
-            Set up your organization, invite team members, and launch your first sprint in under two minutes.
+            Set up your organization, invite team members, and launch your first
+            sprint in under two minutes.
           </p>
           <div className="mt-8 flex justify-center gap-4">
-            <Button asChild className="h-11 px-6 bg-white text-zinc-900 hover:bg-zinc-100 dark:bg-zinc-100 dark:text-zinc-900">
+            <Button
+              asChild
+              className="h-11 px-6 bg-white text-zinc-900 hover:bg-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+            >
               <Link href={isAuthenticated ? "/dashboard" : "/register-owner"}>
-                {isAuthenticated ? "Go to Dashboard" : "Get started now"} <ArrowRight className="ml-2 size-4" />
+                {isAuthenticated ? "Go to Dashboard" : "Get started now"}{" "}
+                <ArrowRight className="ml-2 size-4" />
               </Link>
             </Button>
           </div>
         </div>
-
       </main>
     </PublicLayout>
   );

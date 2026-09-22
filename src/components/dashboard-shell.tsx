@@ -16,7 +16,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
 import { logout } from "../actions/auth.action";
 import type { AuthUser } from "../features/auth/types/auth.types";
-import { cn } from "../lib/utils";
+import { cn } from "../utils/utils";
 import { ThemeToggle } from "./theme-toggle";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Button } from "./ui/button";

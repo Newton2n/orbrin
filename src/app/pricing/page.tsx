@@ -1,6 +1,6 @@
 import { Check, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { cookies } from "next/headers";
+import { hasValidAccessToken } from "../../actions/auth.action";
 import { PublicLayout, SectionIntro } from "../../components/public-site";
 import { Button } from "../../components/ui/button";
 import {
@@ -11,8 +11,7 @@ import {
 } from "../../components/ui/card";
 
 export default async function PricingPage() {
-  const cookieStore = await cookies();
-  const isAuthenticated = cookieStore.has("accessToken");
+  const isAuthenticated = await hasValidAccessToken();
 
   return (
     <PublicLayout isAuthenticated={isAuthenticated}>
@@ -28,7 +27,8 @@ export default async function PricingPage() {
             One plan. Everything you need.
           </h1>
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400 sm:text-base">
-            No complicated tiers or hidden limits. Full access to our complete workspace toolkit.
+            No complicated tiers or hidden limits. Full access to our complete
+            workspace toolkit.
           </p>
         </div>
 
@@ -72,7 +72,10 @@ export default async function PricingPage() {
                   "Role-based permission controls",
                   "Priority 24/7 feature support",
                 ].map((item) => (
-                  <li key={item} className="flex items-center gap-2.5 text-xs text-zinc-700 dark:text-zinc-300">
+                  <li
+                    key={item}
+                    className="flex items-center gap-2.5 text-xs text-zinc-700 dark:text-zinc-300"
+                  >
                     <div className="grid size-4 shrink-0 place-items-center rounded-full bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100">
                       <Check className="size-3" />
                     </div>

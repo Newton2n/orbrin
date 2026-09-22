@@ -118,7 +118,7 @@ export function PublicHeader({ isAuthenticated = false }: PublicHeaderProps) {
 
         {/* Mobile Navigation Sheet */}
         <Sheet>
-          <SheetTrigger asChild>
+          <SheetTrigger >
             <Button
               variant="ghost"
               size="icon"
