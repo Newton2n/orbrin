@@ -1,6 +1,11 @@
 import { cookies } from "next/headers";
 
-const backendUrl = process.env.BACKEND_API ?? "http://localhost:5000/api/v1";
+const backendUrl = process.env.BACKEND_API;
+
+if (!backendUrl) {
+  throw new Error("BACKEND_API environment variable is not defined.");
+}
+console.log("backendUrl:", backendUrl); // Log the backendUrl for debugging
 
 type BackendRequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
@@ -31,8 +36,7 @@ export async function backendRequest<T>(
     .map(({ name, value }) => `${name}=${value}`)
     .join("; ");
 
-    console.log("cookieHeader:", cookieHeader); // Log the cookie header for debugging
-
+  console.log("cookieHeader:", cookieHeader); // Log the cookie header for debugging
 
   const { body, headers: customHeaders, ...requestInit } = options;
   const headers = new Headers(customHeaders);

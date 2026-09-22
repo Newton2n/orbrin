@@ -43,13 +43,63 @@ async function saveSession(payload: LoginResponse) {
     cookieStore.set("refreshToken", payload.refreshToken, options);
 }
 
-export async function hasValidAccessToken() {
-  const accessToken = (await cookies()).get("accessToken")?.value;
+export async function getNewAccessToken() {
+  const cookieStore = await cookies();
+  const refreshToken = cookieStore.get("refreshToken")?.value || null;
+
+  if (!refreshToken) {
+    return {
+      success: false,
+      message: "Refresh token not found!",
+    };
+  }
+
+  try {
+    const res = await fetch(
+      `${process.env.BACKEND_API}/auth/refresh-token`,
+      {
+        method: "POST",
+        headers: {
+          Cookie: `refreshToken=${refreshToken}`,
+          "Content-Type": "application/json",
+        },
+        cache: "no-cache",
+      },
+    );
+
+    const result = await res.json();
+
+    // If backend returns a new access token, save it automatically
+    if (res.ok && result?.data?.accessToken) {
+      const options = sessionCookieOptions();
+      cookieStore.set("accessToken", result.data.accessToken, options);
+    }
+
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: "Failed to refresh token network error.",
+    };
+  }
+}
+
+export async function hasValidAccessToken(): Promise<boolean> {
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get("accessToken")?.value;
   const secret = process.env.JWT_ACCESS_SECRET;
 
-  if (!accessToken || !secret) return false;
+  if (
+    accessToken &&
+    secret &&
+    jwtUtils.verifyToken(accessToken, secret).success
+  ) {
+    return true;
+  }
 
-  return jwtUtils.verifyToken(accessToken, secret).success;
+  // Access token is missing or expired, try refreshing via refreshToken
+  const refreshResult = await getNewAccessToken();
+  return refreshResult.success === true;
 }
 
 // Login function
@@ -61,7 +111,7 @@ export async function login(input: unknown) {
     body: parsed.data,
   });
 
-  console.log("login result:", result); // Log the result for debugging
+  console.log("login result:", result);
 
   if (!result.ok || !result.payload) {
     return actionFailure(
