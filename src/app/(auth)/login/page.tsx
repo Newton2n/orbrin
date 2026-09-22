@@ -1,7 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Loader2, ShieldCheck, UserCheck, Users2 } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Loader2,
+  ShieldCheck,
+  UserCheck,
+  Users2,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -122,7 +129,11 @@ export default function LoginPage() {
             onClick={() => fillDemoAccount("admin")}
             className="text-xs h-9 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >
-            {loadingRole === "admin" ? <Loader2 className="size-3 animate-spin mr-1" /> : <ShieldCheck className="size-3 mr-1 text-emerald-500" />}
+            {loadingRole === "admin" ? (
+              <Loader2 className="size-3 animate-spin mr-1" />
+            ) : (
+              <ShieldCheck className="size-3 mr-1 text-emerald-500" />
+            )}
             Admin
           </Button>
           <Button
@@ -133,7 +144,11 @@ export default function LoginPage() {
             onClick={() => fillDemoAccount("manager")}
             className="text-xs h-9 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >
-            {loadingRole === "manager" ? <Loader2 className="size-3 animate-spin mr-1" /> : <UserCheck className="size-3 mr-1 text-blue-500" />}
+            {loadingRole === "manager" ? (
+              <Loader2 className="size-3 animate-spin mr-1" />
+            ) : (
+              <UserCheck className="size-3 mr-1 text-blue-500" />
+            )}
             Manager
           </Button>
           <Button
@@ -144,7 +159,11 @@ export default function LoginPage() {
             onClick={() => fillDemoAccount("member")}
             className="text-xs h-9 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >
-            {loadingRole === "member" ? <Loader2 className="size-3 animate-spin mr-1" /> : <Users2 className="size-3 mr-1 text-purple-500" />}
+            {loadingRole === "member" ? (
+              <Loader2 className="size-3 animate-spin mr-1" />
+            ) : (
+              <Users2 className="size-3 mr-1 text-purple-500" />
+            )}
             Member
           </Button>
         </div>
@@ -162,7 +181,9 @@ export default function LoginPage() {
         <CardContent className="px-5 pb-5 sm:px-6 sm:pb-6">
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit((vals) => handleLoginSubmission(vals))}
+              onSubmit={form.handleSubmit((vals) =>
+                handleLoginSubmission(vals),
+              )}
               className="space-y-4"
             >
               <FormField
@@ -237,7 +258,9 @@ export default function LoginPage() {
                 className="mt-1 h-11 w-full rounded-md bg-zinc-900 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
                 type="submit"
                 disabled={
-                  form.formState.isSubmitting || !form.formState.isValid || loadingRole !== null
+                  form.formState.isSubmitting ||
+                  !form.formState.isValid ||
+                  loadingRole !== null
                 }
               >
                 {form.formState.isSubmitting && !loadingRole && (

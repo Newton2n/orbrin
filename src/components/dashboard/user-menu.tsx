@@ -2,21 +2,23 @@
 
 import { ChevronDown, LogOut, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
+
 import { logout } from "@/actions/auth.action";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
 import type { AuthUser, Role } from "@/features/auth/types/auth.types";
 import { UserInitials, UserRoleLabel } from "./shared/dashboard-content";
 
 export function UserMenu({ user, role }: { user: AuthUser; role: Role }) {
   const router = useRouter();
+
   const label = user.fullName || user.email || "Account";
 
   return (
@@ -30,23 +32,31 @@ export function UserMenu({ user, role }: { user: AuthUser; role: Role }) {
             <UserInitials user={user} />
           </AvatarFallback>
         </Avatar>
+
         <span className="hidden max-w-32 truncate sm:inline">{label}</span>
+
         <ChevronDown
           className="size-3.5 text-zinc-500 dark:text-zinc-400"
           aria-hidden="true"
         />
       </DropdownMenuTrigger>
+
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="font-normal">
+        {/* User information */}
+        <div className="px-2 py-1.5">
           <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
             {label}
           </p>
+
           <UserRoleLabel role={role} />
+
           <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
             {user.email}
           </p>
-        </DropdownMenuLabel>
+        </div>
+
         <DropdownMenuSeparator />
+
         <DropdownMenuItem
           onClick={() =>
             router.push(`/dashboard/${role.toLowerCase()}/settings`)
@@ -55,6 +65,7 @@ export function UserMenu({ user, role }: { user: AuthUser; role: Role }) {
           <Settings />
           Profile & settings
         </DropdownMenuItem>
+
         <DropdownMenuItem
           onClick={() => {
             void logout();
