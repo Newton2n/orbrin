@@ -7,7 +7,6 @@ if (!backendUrl) {
     "NEXT_PUBLIC_BACKEND_API environment variable is not defined.",
   );
 }
-console.log("backendUrl:", backendUrl); // Log the backendUrl for debugging
 
 type BackendRequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
@@ -37,8 +36,6 @@ export async function backendRequest<T>(
     .getAll()
     .map(({ name, value }) => `${name}=${value}`)
     .join("; ");
-
-  console.log("cookieHeader:", cookieHeader); // Log the cookie header for debugging
 
   const { body, headers: customHeaders, ...requestInit } = options;
   const headers = new Headers(customHeaders);
@@ -77,7 +74,6 @@ export function actionFailure<T>(message: string, data: T) {
 }
 
 export function actionSuccess<T>(data: T, message = "Request completed") {
-  console.log("Action success:", { success: true as const, message, data });
   return { success: true as const, message, data };
 }
 

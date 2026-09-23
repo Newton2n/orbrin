@@ -1,7 +1,7 @@
 import { getCurrentUser } from "@/actions/auth.action";
 import { OrganizationMembersTable } from "@/components/organization/organization-members-table";
 
-export default async function AdminMembersPage() {
+export default async function ManagerMembersPage() {
   const result = await getCurrentUser();
   if (!result.success || !result.data) return null;
   return (
@@ -14,13 +14,13 @@ export default async function AdminMembersPage() {
           Organization members
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Manage roles, access, and membership status across the organization.
+          Review members and manage roles or access where permitted.
         </p>
       </div>
       <OrganizationMembersTable
-        currentUserRole="ADMIN"
+        currentUserRole="MANAGER"
         canManageMembers
-        canRemoveMembers
+        canRemoveMembers={false}
       />
     </div>
   );

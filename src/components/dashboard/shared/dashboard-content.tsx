@@ -7,6 +7,7 @@ import {
   FolderKanban,
   ListTodo,
   MoveUpRight,
+  PersonStandingIcon,
   Plus,
   Sparkles,
   Target,
@@ -624,6 +625,12 @@ export const dashboardNavigation = {
       icon: Target,
     },
     { href: "/dashboard/admin/settings", label: "Settings", icon: Target },
+    { href: "/dashboard/admin/organization", label: "Organization", icon: Target },
+    {
+      href: "/dashboard/profile",
+      label: "User Profile",
+      icon: PersonStandingIcon,
+    },
   ],
   MANAGER: [
     { href: "/dashboard/manager", label: "Overview", icon: Sparkles },
@@ -633,9 +640,15 @@ export const dashboardNavigation = {
       icon: FolderKanban,
     },
     { href: "/dashboard/manager/teams", label: "Teams", icon: Users },
+    { href: "/dashboard/manager/members", label: "Members", icon: Users },
     { href: "/dashboard/manager/tasks", label: "Tasks", icon: ListTodo },
     { href: "/dashboard/manager/sprints", label: "Sprints", icon: Target },
     { href: "/dashboard/manager/activity", label: "Activity", icon: Clock3 },
+    {
+      href: "/dashboard/profile",
+      label: "User Profile",
+      icon: PersonStandingIcon,
+    },
   ],
   MEMBER: [
     { href: "/dashboard/member", label: "Overview", icon: Sparkles },
@@ -650,6 +663,11 @@ export const dashboardNavigation = {
       href: "/dashboard/member/notifications",
       label: "Notifications",
       icon: Clock3,
+    },
+    {
+      href: "/dashboard/profile",
+      label: "User Profile",
+      icon: PersonStandingIcon,
     },
   ],
 } as const;
