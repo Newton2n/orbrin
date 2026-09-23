@@ -134,15 +134,14 @@ export function PublicHeader({ isAuthenticated = false }: PublicHeaderProps) {
         <Sheet>
           <SheetTrigger
             render={
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-zinc-700 dark:text-zinc-300 md:hidden"
+              <button
+                type="button"
+                className="inline-flex size-9 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:focus-visible:ring-zinc-600 md:hidden"
                 aria-label="Open navigation"
               />
             }
           >
-            <Menu className="size-5" />
+            <Menu aria-hidden="true" />
           </SheetTrigger>
           <SheetContent className="flex flex-col justify-between">
             <div>
