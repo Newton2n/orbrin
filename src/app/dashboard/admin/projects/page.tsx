@@ -7,11 +7,14 @@ export default function AdminProjectsPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
           Admin
         </p>
-        <h1 className="mt-2 font-heading text-3xl font-semibold">
-          Projects (Admin)
+
+        <h1 className="mt-2 font-heading text-3xl font-semibold tracking-[-0.04em]">
+          Projects
         </h1>
+
         <p className="mt-2 text-sm text-muted-foreground">
-          Full control: create, edit, delete, upload documents.
+          Create, manage, assign teams, and track
+          organization projects.
         </p>
       </div>
 

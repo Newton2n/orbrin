@@ -1,14 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import {
   createSprint,
+  updateSprint,
   type Sprint,
   type SprintStatus,
-  updateSprint,
 } from "@/actions/sprint.action";
+
 import { Button } from "@/components/ui/button";
+
 import {
   Dialog,
   DialogContent,
@@ -17,8 +22,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
 import { Input } from "@/components/ui/input";
+
 import { Label } from "@/components/ui/label";
+
+import { Textarea } from "@/components/ui/textarea";
+
 import {
   Select,
   SelectContent,
@@ -26,144 +36,400 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 
-type Props = {
+import { Loader2 } from "lucide-react";
+
+import { toast } from "sonner";
+
+type SprintFormDialogProps = {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: (
+    open: boolean,
+  ) => void;
+
   projectId: string;
-  onSuccess?: () => void;
-} & ({ mode: "create" } | { mode: "edit"; sprint: Sprint });
-const statuses: SprintStatus[] = ["PLANNING", "ACTIVE", "COMPLETED"];
-export function SprintFormDialog(props: Props) {
-  const { open, onOpenChange, projectId, mode, onSuccess } = props;
-  const sprint = mode === "edit" ? props.sprint : null;
-  const [name, setName] = useState("");
-  const [goal, setGoal] = useState("");
-  const [status, setStatus] = useState<SprintStatus>("PLANNING");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [saving, setSaving] = useState(false);
+
+  sprint?: Sprint | null;
+
+  onSuccess?: (
+    sprint: Sprint,
+  ) => void;
+};
+
+export function SprintFormDialog({
+  open,
+  onOpenChange,
+  projectId,
+  sprint,
+  onSuccess,
+}: SprintFormDialogProps) {
+  const editing = Boolean(sprint);
+
+  const [name, setName] =
+    useState("");
+
+  const [goal, setGoal] =
+    useState("");
+
+  const [status, setStatus] =
+    useState<SprintStatus>("PLANNING");
+
+  const [startDate, setStartDate] =
+    useState("");
+
+  const [endDate, setEndDate] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
+
   useEffect(() => {
-    if (!open) return;
-    setName(sprint?.name ?? "");
-    setGoal(sprint?.goal ?? "");
-    setStatus(sprint?.status ?? "PLANNING");
-    setStartDate(sprint?.startDate?.slice(0, 10) ?? "");
-    setEndDate(sprint?.endDate?.slice(0, 10) ?? "");
-  }, [open, sprint]);
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!name.trim()) return toast.error("Sprint name is required.");
-    if (startDate && endDate && endDate < startDate) {
-      return toast.error("End date cannot be earlier than start date.");
+    if (!open) {
+      return;
     }
-    setSaving(true);
-    const input = {
-      name: name.trim(),
-      goal,
-      status,
-      ...(startDate ? { startDate } : {}),
-      ...(endDate ? { endDate } : {}),
-    };
-    const result =
-      mode === "create"
-        ? await createSprint(projectId, input)
-        : sprint
-          ? await updateSprint(sprint.id, input)
-          : null;
-    setSaving(false);
-    if (!result) return;
-    if (!result.success)
-      return toast.error(result.message ?? "Unable to save sprint.");
-    toast.success(result.message ?? "Sprint saved.");
-    onOpenChange(false);
-    onSuccess?.();
+
+    if (sprint) {
+      setName(sprint.name);
+      setGoal(sprint.goal ?? "");
+      setStatus(sprint.status);
+      setStartDate(
+        toDateInputValue(
+          sprint.startDate,
+        ),
+      );
+      setEndDate(
+        toDateInputValue(
+          sprint.endDate,
+        ),
+      );
+      return;
+    }
+
+    setName("");
+    setGoal("");
+    setStatus("PLANNING");
+    setStartDate("");
+    setEndDate("");
+  }, [open, sprint]);
+
+  async function handleSubmit(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (!name.trim()) {
+      toast.error(
+        "Sprint name is required.",
+      );
+      return;
+    }
+
+    if (
+      startDate &&
+      endDate &&
+      startDate > endDate
+    ) {
+      toast.error(
+        "End date cannot be before start date.",
+      );
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      if (sprint) {
+        const result =
+          await updateSprint({
+            sprintId: sprint.id,
+            name: name.trim(),
+            goal: goal.trim(),
+            status,
+            startDate: startDate
+              ? new Date(
+                  `${startDate}T00:00:00`,
+                ).toISOString()
+              : undefined,
+            endDate: endDate
+              ? new Date(
+                  `${endDate}T23:59:59`,
+                ).toISOString()
+              : undefined,
+          });
+
+        if (!result.ok) {
+          toast.error(
+            result.message ??
+              "Unable to update sprint.",
+          );
+          return;
+        }
+
+        toast.success(
+          result.message ??
+            "Sprint updated successfully.",
+        );
+
+        if (result.data) {
+          onSuccess?.(
+            result.data,
+          );
+        }
+
+        onOpenChange(false);
+        return;
+      }
+
+      const result =
+        await createSprint({
+          projectId,
+          name: name.trim(),
+          goal: goal.trim(),
+          status,
+          startDate: startDate
+            ? new Date(
+                `${startDate}T00:00:00`,
+              ).toISOString()
+            : undefined,
+          endDate: endDate
+            ? new Date(
+                `${endDate}T23:59:59`,
+              ).toISOString()
+            : undefined,
+        });
+
+      if (!result.ok) {
+        toast.error(
+          result.message ??
+            "Unable to create sprint.",
+        );
+        return;
+      }
+
+      toast.success(
+        result.message ??
+          "Sprint created successfully.",
+      );
+
+      if (result.data) {
+        onSuccess?.(
+          result.data,
+        );
+      }
+
+      onOpenChange(false);
+    } catch (error) {
+      console.error(
+        "Sprint form error:",
+        error,
+      );
+
+      toast.error(
+        editing
+          ? "Unable to update sprint."
+          : "Unable to create sprint.",
+      );
+    } finally {
+      setLoading(false);
+    }
   }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        if (!loading) {
+          onOpenChange(value);
+        }
+      }}
+    >
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {mode === "create" ? "Create sprint" : "Edit sprint"}
+            {editing
+              ? "Edit sprint"
+              : "Create sprint"}
           </DialogTitle>
+
           <DialogDescription>
-            Set the sprint goal, schedule, and delivery status.
+            {editing
+              ? "Update the sprint details and timeline."
+              : "Create a new sprint for this project."}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
+
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-5"
+        >
           <div className="space-y-2">
-            <Label htmlFor="sprint-name">Name</Label>
+            <Label htmlFor="sprint-name">
+              Name
+            </Label>
+
             <Input
               id="sprint-name"
               value={name}
-              onChange={(event) => setName(event.target.value)}
-              required
+              onChange={(event) =>
+                setName(
+                  event.target.value,
+                )
+              }
+              placeholder="Sprint 1"
+              disabled={loading}
             />
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="sprint-goal">Goal</Label>
+            <Label htmlFor="sprint-goal">
+              Goal
+            </Label>
+
             <Textarea
               id="sprint-goal"
               value={goal}
-              onChange={(event) => setGoal(event.target.value)}
-              rows={3}
+              onChange={(event) =>
+                setGoal(
+                  event.target.value,
+                )
+              }
+              placeholder="What should this sprint accomplish?"
+              rows={4}
+              disabled={loading}
             />
           </div>
+
           <div className="space-y-2">
-            <Label>Status</Label>
+            <Label>
+              Status
+            </Label>
+
             <Select
               value={status}
               onValueChange={(value) =>
-                value && setStatus(value as SprintStatus)
+                setStatus(
+                  value as SprintStatus,
+                )
               }
+              disabled={loading}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
+
               <SelectContent>
-                {statuses.map((item) => (
-                  <SelectItem key={item} value={item}>
-                    {item}
-                  </SelectItem>
-                ))}
+                <SelectItem value="PLANNING">
+                  Planning
+                </SelectItem>
+
+                <SelectItem value="ACTIVE">
+                  Active
+                </SelectItem>
+
+                <SelectItem value="COMPLETED">
+                  Completed
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="sprint-start">Start date</Label>
+              <Label htmlFor="sprint-start">
+                Start date
+              </Label>
+
               <Input
                 id="sprint-start"
                 type="date"
                 value={startDate}
-                onChange={(event) => setStartDate(event.target.value)}
+                onChange={(event) =>
+                  setStartDate(
+                    event.target.value,
+                  )
+                }
+                disabled={loading}
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="sprint-end">End date</Label>
+              <Label htmlFor="sprint-end">
+                End date
+              </Label>
+
               <Input
                 id="sprint-end"
                 type="date"
                 value={endDate}
-                onChange={(event) => setEndDate(event.target.value)}
+                onChange={(event) =>
+                  setEndDate(
+                    event.target.value,
+                  )
+                }
+                disabled={loading}
               />
             </div>
           </div>
+
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              disabled={loading}
+              onClick={() =>
+                onOpenChange(false)
+              }
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? "Saving..." : "Save sprint"}
+
+            <Button
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  {editing
+                    ? "Updating..."
+                    : "Creating..."}
+                </>
+              ) : editing ? (
+                "Update sprint"
+              ) : (
+                "Create sprint"
+              )}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
+}
+
+function toDateInputValue(
+  value: string | null,
+) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const year =
+    date.getFullYear();
+
+  const month = String(
+    date.getMonth() + 1,
+  ).padStart(2, "0");
+
+  const day = String(
+    date.getDate(),
+  ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }

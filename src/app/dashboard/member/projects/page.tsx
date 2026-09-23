@@ -7,20 +7,18 @@ export default function MemberProjectsPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
           Member
         </p>
-        <h1 className="mt-2 font-heading text-3xl font-semibold">
-          Projects (Member)
+
+        <h1 className="mt-2 font-heading text-3xl font-semibold tracking-[-0.04em]">
+          Projects
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">View-only access.</p>
+
+        <p className="mt-2 text-sm text-muted-foreground">
+          View projects and their current progress.
+        </p>
       </div>
 
       <ProjectList
         role="MEMBER"
-        canCreate={false}
-        canEdit={false}
-        canDelete={false}
-        canUploadDocument={false}
-        canDeleteDocument={false}
-        canManageTeams={false}
         canViewDetails
       />
     </div>

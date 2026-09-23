@@ -1,21 +1,34 @@
 "use client";
 
-import { Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+
 import {
   deleteSprint,
+  getSprintById,
   getSprintsByProject,
   type Sprint,
-  type SprintListParams,
+  type SprintPagination,
   type SprintStatus,
 } from "@/actions/sprint.action";
-import { StatusBadge } from "@/components/badge-status";
-import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
-import { ErrorState } from "@/components/shared/error-state";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
 import { Input } from "@/components/ui/input";
+
+import { Badge } from "@/components/ui/badge";
+
 import {
   Select,
   SelectContent,
@@ -23,65 +36,54 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { SprintDetailsDialog } from "./sprint-details-dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Loader2,
+  Pencil,
+  Plus,
+  Search,
+  Target,
+  Trash2,
+} from "lucide-react";
+
+import { toast } from "sonner";
+
 import { SprintFormDialog } from "./sprint-form-dialog";
+import { SprintDetailsDialog } from "./sprint-details-dialog";
 
-export type DashboardRole = "ADMIN" | "MANAGER" | "MEMBER";
-type SortValue =
-  | "name-asc"
-  | "name-desc"
-  | "createdAt-desc"
-  | "createdAt-asc"
-  | "updatedAt-desc";
-
-type Props = {
+type SprintListProps = {
   projectId: string;
-  role: DashboardRole;
+  role: "ADMIN" | "MANAGER" | "MEMBER";
   canCreate?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
   canViewDetails?: boolean;
-  title?: string;
-  description?: string;
-  compact?: boolean;
 };
 
-function dateLabel(value?: string | null) {
-  return value ? new Date(value).toLocaleDateString() : null;
-}
-
-function timelineState(sprint: Sprint) {
-  if (sprint.status === "COMPLETED") return "completed";
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const start = sprint.startDate ? new Date(sprint.startDate) : null;
-  const end = sprint.endDate ? new Date(sprint.endDate) : null;
-  if (end && end < today) return "overdue";
-  if (
-    sprint.status === "ACTIVE" ||
-    (start && start <= today && (!end || today <= end))
-  )
-    return "current";
-  if (start && start > today) return "upcoming";
-  return "unscheduled";
-}
-
-function timelineLabel(sprint: Sprint) {
-  const start = dateLabel(sprint.startDate);
-  const end = dateLabel(sprint.endDate);
-  if (!start && !end) return "Not scheduled";
-  if (!start) return `Ends ${end}`;
-  if (!end) return `Starts ${start}`;
-  return `${start} - ${end}`;
-}
+const PAGE_LIMIT = 10;
 
 export function SprintList({
   projectId,
@@ -89,311 +91,936 @@ export function SprintList({
   canCreate = false,
   canEdit = false,
   canDelete = false,
-  canViewDetails = false,
-  title = "Sprints",
-  description,
-  compact = false,
-}: Props) {
-  const [items, setItems] = useState<Sprint[]>([]);
-  const [params, setParams] = useState<SprintListParams>({
-    page: 1,
-    limit: compact ? 5 : 10,
-    sortBy: "createdAt",
-    sortOrder: "desc",
-  });
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("ALL");
-  const [sort, setSort] = useState<SortValue>("createdAt-desc");
-  const [totalPages, setTotalPages] = useState(0);
+  canViewDetails = true,
+}: SprintListProps) {
+  const [sprints, setSprints] = useState<Sprint[]>([]);
+
+  const [pagination, setPagination] =
+    useState<SprintPagination | null>(null);
+
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState<"create" | Sprint | null>(null);
-  const [detailsId, setDetailsId] = useState<string | null>(null);
-  const [target, setTarget] = useState<Sprint | null>(null);
-  const [saving, setSaving] = useState(false);
 
-  async function load() {
-    setLoading(true);
-    const result = await getSprintsByProject(projectId, params);
-    setLoading(false);
-    if (!result.success) {
-      setError(result.message);
-      return;
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+
+  const [status, setStatus] =
+    useState<"ALL" | SprintStatus>("ALL");
+
+  const [sortBy, setSortBy] = useState<
+    "name" | "createdAt" | "updatedAt"
+  >("createdAt");
+
+  const [sortOrder, setSortOrder] =
+    useState<"asc" | "desc">("desc");
+
+  const [page, setPage] = useState(1);
+
+  const [formOpen, setFormOpen] = useState(false);
+
+  const [editingSprint, setEditingSprint] =
+    useState<Sprint | null>(null);
+
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const [selectedSprint, setSelectedSprint] =
+    useState<Sprint | null>(null);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const [deletingSprint, setDeletingSprint] =
+    useState<Sprint | null>(null);
+
+  const [deleteLoading, setDeleteLoading] =
+    useState(false);
+
+  const loadSprints = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const result = await getSprintsByProject(
+        projectId,
+        {
+          page,
+          limit: PAGE_LIMIT,
+          search: search || undefined,
+          sortBy,
+          sortOrder,
+          status:
+            status === "ALL"
+              ? undefined
+              : status,
+        },
+      );
+
+      console.log(
+        "SprintList action result:",
+        result,
+      );
+
+      if (!result.ok) {
+        toast.error(
+          result.message ??
+            "Unable to load sprints.",
+        );
+
+        setSprints([]);
+        setPagination(null);
+
+        return;
+      }
+
+      setSprints(result.data.sprints ?? []);
+
+      setPagination(
+        result.data.pagination ?? null,
+      );
+    } catch (error) {
+      console.error(
+        "Failed to load sprints:",
+        error,
+      );
+
+      toast.error(
+        "Unable to load sprints.",
+      );
+
+      setSprints([]);
+      setPagination(null);
+    } finally {
+      setLoading(false);
     }
-    setError(null);
-    setItems(result.data.items);
-    setTotalPages(result.data.totalPages);
-  }
+  }, [
+    projectId,
+    page,
+    search,
+    sortBy,
+    sortOrder,
+    status,
+  ]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reload when project or committed query changes
   useEffect(() => {
-    void load();
-  }, [projectId, params]);
+    void loadSprints();
+  }, [loadSprints]);
 
-  function applyFilters() {
-    const [sortBy, sortOrder] = sort.split("-") as [
-      "name" | "createdAt" | "updatedAt",
-      "asc" | "desc",
-    ];
-    setParams({
-      page: 1,
-      limit: compact ? 5 : 10,
-      search: search.trim() || undefined,
-      status: status === "ALL" ? undefined : (status as SprintStatus),
-      sortBy,
-      sortOrder,
-    });
+  function handleSearchSubmit() {
+    setPage(1);
+    setSearch(searchInput.trim());
   }
 
-  async function remove() {
-    if (!target) return;
-    setSaving(true);
-    const result = await deleteSprint(target.id, projectId);
-    setSaving(false);
-    if (!result.success) {
-      toast.error(result.message);
+  function handleStatusChange(
+    value:
+      | "PLANNING"
+      | "ACTIVE"
+      | "COMPLETED"
+      | "ALL"
+      | null,
+  ) {
+    if (value === null) {
       return;
     }
-    toast.success(result.message);
-    setTarget(null);
-    void load();
+
+    setPage(1);
+    setStatus(value);
   }
 
-  const canMutate = role !== "MEMBER";
+  function handleSortChange(
+    value:
+      | "createdAt"
+      | "updatedAt"
+      | "name"
+      | null,
+  ) {
+    if (value === null) {
+      return;
+    }
+
+    setPage(1);
+    setSortBy(value);
+  }
+
+  function handleSortOrderChange(
+    value: "asc" | "desc" | null,
+  ) {
+    if (value === null) {
+      return;
+    }
+
+    setPage(1);
+    setSortOrder(value);
+  }
+
+  function handleCreate() {
+    setEditingSprint(null);
+    setFormOpen(true);
+  }
+
+  function handleEdit(sprint: Sprint) {
+    setEditingSprint(sprint);
+    setFormOpen(true);
+  }
+
+  async function handleView(sprint: Sprint) {
+    try {
+      setSelectedSprint(sprint);
+      setDetailsOpen(true);
+
+      const result = await getSprintById(
+        sprint.id,
+      );
+
+      if (!result.ok) {
+        toast.error(
+          result.message ??
+            "Unable to load sprint details.",
+        );
+
+        return;
+      }
+
+      if (result.data) {
+        setSelectedSprint(result.data);
+      }
+    } catch (error) {
+      console.error(
+        "Failed to load sprint details:",
+        error,
+      );
+
+      toast.error(
+        "Unable to load sprint details.",
+      );
+    }
+  }
+
+  function handleDeleteClick(
+    sprint: Sprint,
+  ) {
+    setDeletingSprint(sprint);
+    setDeleteOpen(true);
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deletingSprint) {
+      return;
+    }
+
+    try {
+      setDeleteLoading(true);
+
+      const result = await deleteSprint(
+        deletingSprint.id,
+      );
+
+      if (!result.ok) {
+        toast.error(
+          result.message ??
+            "Unable to delete sprint.",
+        );
+
+        return;
+      }
+
+      toast.success(
+        result.message ??
+          "Sprint deleted successfully.",
+      );
+
+      setDeleteOpen(false);
+      setDeletingSprint(null);
+
+      await loadSprints();
+    } catch (error) {
+      console.error(
+        "Failed to delete sprint:",
+        error,
+      );
+
+      toast.error(
+        "Unable to delete sprint.",
+      );
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
+
+  function handleFormSuccess() {
+    setFormOpen(false);
+    setEditingSprint(null);
+
+    void loadSprints();
+  }
+
+  const totalPages =
+    pagination?.totalPages ?? 1;
+
+  const currentPage =
+    pagination?.page ?? page;
+
+  const hasPreviousPage =
+    pagination?.hasPreviousPage ??
+    currentPage > 1;
+
+  const hasNextPage =
+    pagination?.hasNextPage ??
+    currentPage < totalPages;
+
   return (
-    <Card className={compact ? "border-border/70 shadow-none" : undefined}>
-      <CardHeader className="gap-4">
-        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-          <div>
-            <CardTitle>{title}</CardTitle>
-            {description && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                {description}
-              </p>
-            )}
-          </div>
-          {canCreate && canMutate && (
-            <Button onClick={() => setForm("create")}>
-              <Plus data-icon="inline-start" /> New sprint
-            </Button>
-          )}
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold">
+            Sprints
+          </h2>
+
+          <p className="text-sm text-muted-foreground">
+            {pagination?.total ?? 0}{" "}
+            {pagination?.total === 1
+              ? "sprint"
+              : "sprints"}{" "}
+            in this project
+          </p>
         </div>
-        {!compact && (
+
+        {canCreate ? (
+          <Button
+            onClick={handleCreate}
+            className="w-full sm:w-auto"
+          >
+            <Plus className="mr-2 size-4" />
+            Create sprint
+          </Button>
+        ) : null}
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-3 sm:p-4">
           <div className="flex flex-col gap-3 lg:flex-row">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="pl-9"
-                placeholder="Search sprints"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") applyFilters();
-                }}
-              />
+            {/* Search */}
+            <div className="flex min-w-0 flex-1 gap-2">
+              <div className="relative min-w-0 flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+
+                <Input
+                  value={searchInput}
+                  onChange={(event) =>
+                    setSearchInput(
+                      event.target.value,
+                    )
+                  }
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      handleSearchSubmit();
+                    }
+                  }}
+                  placeholder="Search sprints..."
+                  className="pl-9"
+                />
+              </div>
+
+              <Button
+                variant="secondary"
+                onClick={handleSearchSubmit}
+              >
+                Search
+              </Button>
             </div>
+
+            {/* Status */}
             <Select
               value={status}
-              onValueChange={(value) => setStatus(value ?? "ALL")}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All statuses</SelectItem>
-                <SelectItem value="PLANNING">Planning</SelectItem>
-                <SelectItem value="ACTIVE">Active</SelectItem>
-                <SelectItem value="COMPLETED">Completed</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={sort}
-              onValueChange={(value) =>
-                setSort((value ?? "createdAt-desc") as SortValue)
+              onValueChange={
+                handleStatusChange
               }
             >
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger className="w-full lg:w-40">
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
+
               <SelectContent>
-                <SelectItem value="name-asc">Name A-Z</SelectItem>
-                <SelectItem value="name-desc">Name Z-A</SelectItem>
-                <SelectItem value="createdAt-desc">Newest created</SelectItem>
-                <SelectItem value="createdAt-asc">Oldest created</SelectItem>
-                <SelectItem value="updatedAt-desc">Recently updated</SelectItem>
+                <SelectItem value="ALL">
+                  All statuses
+                </SelectItem>
+
+                <SelectItem value="PLANNING">
+                  Planning
+                </SelectItem>
+
+                <SelectItem value="ACTIVE">
+                  Active
+                </SelectItem>
+
+                <SelectItem value="COMPLETED">
+                  Completed
+                </SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={applyFilters}>
-              Apply
-            </Button>
+
+            {/* Sort */}
+            <Select
+              value={sortBy}
+              onValueChange={
+                handleSortChange
+              }
+            >
+              <SelectTrigger className="w-full lg:w-40">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="createdAt">
+                  Created
+                </SelectItem>
+
+                <SelectItem value="updatedAt">
+                  Updated
+                </SelectItem>
+
+                <SelectItem value="name">
+                  Name
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Sort order */}
+            <Select
+              value={sortOrder}
+              onValueChange={
+                handleSortOrderChange
+              }
+            >
+              <SelectTrigger className="w-full lg:w-32">
+                <SelectValue />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="desc">
+                  Newest
+                </SelectItem>
+
+                <SelectItem value="asc">
+                  Oldest
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        )}
-      </CardHeader>
-      <CardContent className="p-0">
-        {loading ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
+        </CardContent>
+      </Card>
+
+      {/* Loading */}
+      {loading ? (
+        <div className="flex min-h-48 items-center justify-center rounded-xl border">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
             Loading sprints...
+          </div>
+        </div>
+      ) : null}
+
+      {/* Empty */}
+      {!loading && sprints.length === 0 ? (
+        <div className="rounded-xl border border-dashed px-6 py-12 text-center">
+          <Target className="mx-auto size-8 text-muted-foreground" />
+
+          <h3 className="mt-4 font-semibold">
+            No sprints found
+          </h3>
+
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+            {search || status !== "ALL"
+              ? "Try changing your search or filters."
+              : "Create a sprint to start planning work for this project."}
           </p>
-        ) : error ? (
-          <ErrorState compact description={error} onRetry={() => void load()} />
-        ) : items.length === 0 ? (
-          <p className="m-4 rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-            No sprints match this project and filter.
-          </p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Sprint</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Goal</TableHead>
-                <TableHead>Timeline</TableHead>
-                <TableHead>Tasks</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((sprint) => {
-                const timeline = timelineState(sprint);
-                const taskCount = Array.isArray(sprint.tasks)
-                  ? sprint.tasks.length
-                  : sprint.taskCount;
-                return (
-                  <TableRow key={sprint.id}>
-                    <TableCell className="font-medium">{sprint.name}</TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <StatusBadge value={sprint.status} />
-                        <p className="text-[10px] capitalize text-muted-foreground">
-                          {timeline}
+
+          {canCreate &&
+          !search &&
+          status === "ALL" ? (
+            <Button
+              className="mt-5"
+              onClick={handleCreate}
+            >
+              <Plus className="mr-2 size-4" />
+              Create sprint
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* Desktop table */}
+      {!loading && sprints.length > 0 ? (
+        <div className="hidden overflow-hidden rounded-xl border md:block">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b bg-muted/40">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium">
+                    Sprint
+                  </th>
+
+                  <th className="px-4 py-3 text-left font-medium">
+                    Status
+                  </th>
+
+                  <th className="px-4 py-3 text-left font-medium">
+                    Timeline
+                  </th>
+
+                  <th className="px-4 py-3 text-left font-medium">
+                    Goal
+                  </th>
+
+                  <th className="px-4 py-3 text-right font-medium">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y">
+                {sprints.map((sprint) => (
+                  <tr
+                    key={sprint.id}
+                    className="transition-colors hover:bg-muted/30"
+                  >
+                    <td className="px-4 py-4">
+                      <div className="min-w-0">
+                        <p className="font-medium">
+                          {sprint.name}
+                        </p>
+
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {sprint.tasks?.length ??
+                            0}{" "}
+                          tasks
                         </p>
                       </div>
-                    </TableCell>
-                    <TableCell className="max-w-56 truncate text-muted-foreground">
-                      {sprint.goal || "No goal defined"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {timelineLabel(sprint)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {typeof taskCount === "number" ? taskCount : "-"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {dateLabel(sprint.createdAt) ?? "-"}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-1">
-                        {canViewDetails && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="View sprint"
-                            title="View sprint"
-                            onClick={() => setDetailsId(sprint.id)}
-                          >
-                            <Eye />
-                            <span className="sr-only">View sprint</span>
-                          </Button>
-                        )}
-                        {canEdit && canMutate && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Edit sprint"
-                            title="Edit sprint"
-                            onClick={() => setForm(sprint)}
-                          >
-                            <Pencil />
-                            <span className="sr-only">Edit sprint</span>
-                          </Button>
-                        )}
-                        {canDelete && canMutate && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Delete sprint"
-                            title="Delete sprint"
-                            onClick={() => setTarget(sprint)}
-                          >
-                            <Trash2 />
-                            <span className="sr-only">Delete sprint</span>
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
-        <div className="flex items-center justify-between border-t px-4 py-3 text-xs text-muted-foreground">
-          <span>
-            Page {params.page ?? 1} of {Math.max(totalPages, 1)}
-          </span>
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <SprintStatusBadge
+                        status={sprint.status}
+                      />
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <SprintTimeline
+                        sprint={sprint}
+                      />
+                    </td>
+
+                    <td className="max-w-xs px-4 py-4">
+                      <p className="truncate text-muted-foreground">
+                        {sprint.goal ||
+                          "No goal specified"}
+                      </p>
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <SprintActions
+                        sprint={sprint}
+                        canEdit={canEdit}
+                        canDelete={canDelete}
+                        canViewDetails={
+                          canViewDetails
+                        }
+                        onView={handleView}
+                        onEdit={handleEdit}
+                        onDelete={
+                          handleDeleteClick
+                        }
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Mobile cards */}
+      {!loading && sprints.length > 0 ? (
+        <div className="grid gap-3 md:hidden">
+          {sprints.map((sprint) => (
+            <Card key={sprint.id}>
+              <CardHeader className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <CardTitle className="truncate text-base">
+                      {sprint.name}
+                    </CardTitle>
+
+                    <CardDescription className="mt-1">
+                      {sprint.tasks?.length ??
+                        0}{" "}
+                      tasks
+                    </CardDescription>
+                  </div>
+
+                  <SprintStatusBadge
+                    status={sprint.status}
+                  />
+                </div>
+              </CardHeader>
+
+              <CardContent className="space-y-4 p-4 pt-0">
+                <SprintTimeline
+                  sprint={sprint}
+                />
+
+                <div>
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">
+                    Goal
+                  </p>
+
+                  <p className="text-sm">
+                    {sprint.goal ||
+                      "No goal specified"}
+                  </p>
+                </div>
+
+                <SprintActions
+                  sprint={sprint}
+                  canEdit={canEdit}
+                  canDelete={canDelete}
+                  canViewDetails={
+                    canViewDetails
+                  }
+                  onView={handleView}
+                  onEdit={handleEdit}
+                  onDelete={handleDeleteClick}
+                  mobile
+                />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Pagination */}
+      {!loading &&
+      pagination &&
+      pagination.totalPages > 1 ? (
+        <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">
+            Page {currentPage} of{" "}
+            {totalPages}
+          </p>
+
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
-              disabled={loading || (params.page ?? 1) <= 1}
+              disabled={!hasPreviousPage}
               onClick={() =>
-                setParams((current) => ({
-                  ...current,
-                  page: (current.page ?? 1) - 1,
-                }))
+                setPage((value) =>
+                  Math.max(
+                    1,
+                    value - 1,
+                  ),
+                )
               }
             >
+              <ChevronLeft className="mr-1 size-4" />
               Previous
             </Button>
+
             <Button
               variant="outline"
               size="sm"
-              disabled={loading || (params.page ?? 1) >= totalPages}
+              disabled={!hasNextPage}
               onClick={() =>
-                setParams((current) => ({
-                  ...current,
-                  page: (current.page ?? 1) + 1,
-                }))
+                setPage((value) => value + 1)
               }
             >
               Next
+              <ChevronRight className="ml-1 size-4" />
             </Button>
           </div>
         </div>
-      </CardContent>
-      {form && (
-        <SprintFormDialog
-          open
-          onOpenChange={(open) => !open && setForm(null)}
-          projectId={projectId}
-          {...(form === "create"
-            ? { mode: "create" }
-            : { mode: "edit", sprint: form })}
-          onSuccess={() => {
-            setForm(null);
-            void load();
-          }}
-        />
-      )}
+      ) : null}
+
+      {/* Create / Edit */}
+      <SprintFormDialog
+        open={formOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open);
+
+          if (!open) {
+            setEditingSprint(null);
+          }
+        }}
+        projectId={projectId}
+        sprint={editingSprint}
+        onSuccess={handleFormSuccess}
+      />
+
+      {/* Details */}
       <SprintDetailsDialog
-        open={Boolean(detailsId)}
-        onOpenChange={(open) => !open && setDetailsId(null)}
-        sprintId={detailsId}
-        role={role}
-        canEdit={canEdit}
-        canDelete={canDelete}
-        onChanged={() => void load()}
+        open={detailsOpen}
+        onOpenChange={(open) => {
+          setDetailsOpen(open);
+
+          if (!open) {
+            setSelectedSprint(null);
+          }
+        }}
+        sprint={selectedSprint}
       />
-      <DeleteConfirmDialog
-        open={Boolean(target)}
-        onOpenChange={(open) => !open && setTarget(null)}
-        onCancel={() => setTarget(null)}
-        onConfirm={() => void remove()}
-        title="Delete sprint"
-        description={`Delete ${target?.name ?? "this sprint"}? This cannot be undone.`}
-      />
-      {saving && <span className="sr-only">Deleting sprint...</span>}
-    </Card>
+
+      {/* Delete confirmation */}
+      <AlertDialog
+        open={deleteOpen}
+        onOpenChange={(open) => {
+          if (!deleteLoading) {
+            setDeleteOpen(open);
+
+            if (!open) {
+              setDeletingSprint(null);
+            }
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete sprint?
+            </AlertDialogTitle>
+
+            <AlertDialogDescription>
+              This will delete{" "}
+              <strong>
+                {deletingSprint?.name}
+              </strong>
+              . This action cannot be undone from
+              the sprint interface.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={deleteLoading}
+            >
+              Cancel
+            </AlertDialogCancel>
+
+            <AlertDialogAction
+              disabled={deleteLoading}
+              onClick={(event) => {
+                event.preventDefault();
+                void handleDeleteConfirm();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteLoading ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete sprint"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
+}
+
+// ============================================================
+// Status Badge
+// ============================================================
+
+function SprintStatusBadge({
+  status,
+}: {
+  status: SprintStatus;
+}) {
+  if (status === "ACTIVE") {
+    return (
+      <Badge variant="default">
+        Active
+      </Badge>
+    );
+  }
+
+  if (status === "COMPLETED") {
+    return (
+      <Badge variant="secondary">
+        Completed
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge variant="outline">
+      Planning
+    </Badge>
+  );
+}
+
+// ============================================================
+// Timeline
+// ============================================================
+
+function SprintTimeline({
+  sprint,
+}: {
+  sprint: Sprint;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <CalendarDays className="size-3.5 shrink-0" />
+
+      <span>
+        {formatDate(sprint.startDate)}
+      </span>
+
+      <span>→</span>
+
+      <span>
+        {formatDate(sprint.endDate)}
+      </span>
+    </div>
+  );
+}
+
+// ============================================================
+// Actions
+// ============================================================
+
+function SprintActions({
+  sprint,
+  canEdit,
+  canDelete,
+  canViewDetails,
+  onView,
+  onEdit,
+  onDelete,
+  mobile = false,
+}: {
+  sprint: Sprint;
+  canEdit: boolean;
+  canDelete: boolean;
+  canViewDetails: boolean;
+  onView: (sprint: Sprint) => void;
+  onEdit: (sprint: Sprint) => void;
+  onDelete: (sprint: Sprint) => void;
+  mobile?: boolean;
+}) {
+  if (mobile) {
+    return (
+      <div className="grid grid-cols-3 gap-2">
+        {canViewDetails ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              onView(sprint)
+            }
+          >
+            <Eye className="mr-1.5 size-4" />
+            View
+          </Button>
+        ) : null}
+
+        {canEdit ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              onEdit(sprint)
+            }
+          >
+            <Pencil className="mr-1.5 size-4" />
+            Edit
+          </Button>
+        ) : null}
+
+        {canDelete ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={() =>
+              onDelete(sprint)
+            }
+          >
+            <Trash2 className="mr-1.5 size-4" />
+            Delete
+          </Button>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex justify-end gap-1">
+      {canViewDetails ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          title="View sprint"
+          onClick={() =>
+            onView(sprint)
+          }
+        >
+          <Eye className="size-4" />
+        </Button>
+      ) : null}
+
+      {canEdit ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          title="Edit sprint"
+          onClick={() =>
+            onEdit(sprint)
+          }
+        >
+          <Pencil className="size-4" />
+        </Button>
+      ) : null}
+
+      {canDelete ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          title="Delete sprint"
+          className="text-destructive hover:text-destructive"
+          onClick={() =>
+            onDelete(sprint)
+          }
+        >
+          <Trash2 className="size-4" />
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+// ============================================================
+// Helpers
+// ============================================================
+
+function formatDate(value: string | null) {
+  if (!value) {
+    return "No date";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Invalid date";
+  }
+
+  return new Intl.DateTimeFormat(
+    "en-US",
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    },
+  ).format(date);
 }

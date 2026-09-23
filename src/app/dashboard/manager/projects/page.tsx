@@ -7,19 +7,22 @@ export default function ManagerProjectsPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
           Manager
         </p>
-        <h1 className="mt-2 font-heading text-3xl font-semibold">
-          Projects (Manager)
+
+        <h1 className="mt-2 font-heading text-3xl font-semibold tracking-[-0.04em]">
+          Projects
         </h1>
+
         <p className="mt-2 text-sm text-muted-foreground">
-          Edit and upload documents. No delete.
+          Create, update, organize, and manage your
+          organization projects.
         </p>
       </div>
 
       <ProjectList
         role="MANAGER"
-        canCreate={true}
+        canCreate
         canEdit
-        canDelete={true}
+        canDelete
         canUploadDocument
         canDeleteDocument
         canManageTeams

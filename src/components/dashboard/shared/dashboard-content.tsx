@@ -619,6 +619,7 @@ export const dashboardNavigation = {
     { href: "/dashboard/admin/teams", label: "Teams", icon: Users },
     { href: "/dashboard/admin/members", label: "Members", icon: Users },
     { href: "/dashboard/admin/sprints", label: "Sprints", icon: Target },
+    { href: "/dashboard/admin/tasks", label: "Tasks", icon: ListTodo },
     { href: "/dashboard/admin/activity", label: "Activity", icon: Clock3 },
     {
       href: "/dashboard/admin/subscription",

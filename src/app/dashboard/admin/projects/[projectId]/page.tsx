@@ -1,4 +1,7 @@
+import { notFound } from "next/navigation";
+
 import { getProjectById } from "@/actions/project.action";
+
 import { ProjectDetailControls } from "@/components/projects/project-detail-controls";
 import { SprintList } from "@/components/sprints/sprint-list";
 import { TaskList } from "@/components/tasks/task-list";
@@ -6,44 +9,85 @@ import { TaskList } from "@/components/tasks/task-list";
 export default async function AdminProjectDetailsPage({
   params,
 }: {
-  params: Promise<{ projectId: string }>;
+  params: Promise<{
+    projectId: string;
+  }>;
 }) {
   const { projectId } = await params;
-  const projectResult = await getProjectById(projectId);
-  const project = projectResult.ok ? projectResult.data : null;
+
+  const result = await getProjectById(projectId);
+
+  if (!result.ok || !result.data) {
+    notFound();
+  }
+
+  const project = result.data;
+
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-          Admin project
-        </p>
-        <h1 className="mt-2 font-heading text-3xl font-semibold tracking-[-0.04em]">
-          {project?.name ?? "Project tasks"}
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {project?.description ||
-            "Plan, assign, and track work for this project."}
-        </p>
-      </div>
-      {/* biome-ignore lint/a11y/useValidAriaRole: role is an application permission prop, not a DOM role */}
-      <SprintList
-        projectId={projectId}
-        role="ADMIN"
-        canCreate
-        canEdit
-        canDelete
-        canViewDetails
-      />
-      {project && <ProjectDetailControls project={project} canManageTeams />}
-      {/* biome-ignore lint/a11y/useValidAriaRole: role is an application permission prop, not a DOM role */}
-      <TaskList
-        role="ADMIN"
-        projectId={projectId}
-        canCreate
-        canEdit
-        canDelete
-        canViewDetails
-      />
+    <div className="space-y-8">
+      <section className="space-y-4">
+        <div className="flex min-w-0 flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+              Admin project
+            </p>
+
+            <h1 className="mt-2 break-words font-heading text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">
+              {project.name}
+            </h1>
+
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              {project.description || "No project description provided."}
+            </p>
+          </div>
+
+          <div className="shrink-0">
+            <ProjectDetailControls
+              project={project}
+              role="ADMIN"
+              canManageTeams
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold sm:text-2xl">Sprints</h2>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            Plan, track, and manage project iterations.
+          </p>
+        </div>
+
+        <SprintList
+          projectId={projectId}
+          role="ADMIN"
+          canCreate
+          canEdit
+          canDelete
+          canViewDetails
+        />
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold sm:text-2xl">Tasks</h2>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            Track tasks belonging to this project.
+          </p>
+        </div>
+
+        <TaskList
+          role="ADMIN"
+          projectId={projectId}
+          canCreate
+          canEdit
+          canDelete
+          canViewDetails
+        />
+      </section>
     </div>
   );
 }

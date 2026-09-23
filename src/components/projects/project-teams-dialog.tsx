@@ -1,14 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
 import {
   assignTeamToProject,
-  getProjectTeams,
+  getProjectById,
   removeTeamFromProject,
+  type Project,
   type Team,
 } from "@/actions/project.action";
+
 import { getTeams } from "@/actions/team.action";
+
 import { Button } from "@/components/ui/button";
+
 import {
   Dialog,
   DialogContent,
@@ -17,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
 import {
   Select,
   SelectContent,
@@ -24,155 +30,331 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import { toast } from "sonner";
 
 type ProjectTeamsDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  projectId: string;
+  project: Project;
+  role: "ADMIN" | "MANAGER" | "MEMBER";
   canManageTeams: boolean;
 };
 
-function teamList(value: unknown): Team[] {
-  if (Array.isArray(value)) return value as Team[];
+function normalizeTeams(value: unknown): Team[] {
+  if (Array.isArray(value)) {
+    return value as Team[];
+  }
+
   if (value && typeof value === "object") {
     const source = value as Record<string, unknown>;
-    return teamList(source.data ?? source.teams ?? source.items);
+
+    if (Array.isArray(source.data)) {
+      return source.data as Team[];
+    }
+
+    if (Array.isArray(source.teams)) {
+      return source.teams as Team[];
+    }
+
+    if (Array.isArray(source.items)) {
+      return source.items as Team[];
+    }
   }
+
   return [];
 }
 
 export function ProjectTeamsDialog({
-  projectId,
   open,
   onOpenChange,
+  project,
+  role,
   canManageTeams,
 }: ProjectTeamsDialogProps) {
-  const [assigned, setAssigned] = useState<Team[]>([]);
-  const [available, setAvailable] = useState<Team[]>([]);
+  const [currentProject, setCurrentProject] =
+    useState<Project>(project);
+
+  const [allTeams, setAllTeams] = useState<Team[]>([]);
+
   const [selectedTeam, setSelectedTeam] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  async function loadTeams() {
+  useEffect(() => {
+    setCurrentProject(project);
+  }, [project]);
+
+  const loadTeams = useCallback(async () => {
     setLoading(true);
-    const [assignedResult, allResult] = await Promise.all([
-      getProjectTeams(projectId),
-      getTeams(),
-    ]);
-    if (assignedResult.ok) setAssigned(assignedResult.data);
-    else
-      toast.error(assignedResult.message ?? "Unable to load assigned teams.");
-    if (allResult.success) setAvailable(teamList(allResult.data));
-    else toast.error(allResult.message ?? "Unable to load teams.");
-    setLoading(false);
-  }
+
+    try {
+      const [projectResult, teamsResult] = await Promise.all([
+        getProjectById(project.id),
+        getTeams(),
+      ]);
+
+      if (!projectResult.ok) {
+        toast.error(
+          projectResult.message ??
+            "Unable to load project teams.",
+        );
+        return;
+      }
+
+      if (projectResult.data) {
+        setCurrentProject(projectResult.data);
+      }
+
+      if (!teamsResult.success) {
+        toast.error(
+          teamsResult.message ?? "Unable to load teams.",
+        );
+        return;
+      }
+
+      setAllTeams(normalizeTeams(teamsResult.data));
+    } catch {
+      toast.error("Unable to load teams.");
+    } finally {
+      setLoading(false);
+    }
+  }, [project.id]);
 
   useEffect(() => {
-    if (open) void loadTeams();
-  }, [open, projectId]);
+    if (open) {
+      void loadTeams();
+    }
+  }, [open, loadTeams]);
 
-  const unassigned = available.filter(
-    (team) => !assigned.some((item) => item.id === team.id),
+  const assignedTeamIds = useMemo(
+    () =>
+      new Set(
+        (currentProject.teams ?? []).map(
+          (team) => team.teamId,
+        ),
+      ),
+    [currentProject.teams],
   );
 
-  async function addTeam() {
+  const assignedTeams = allTeams.filter((team) =>
+    assignedTeamIds.has(team.id),
+  );
+
+  const availableTeams = allTeams.filter(
+    (team) => !assignedTeamIds.has(team.id),
+  );
+
+  async function handleAssign() {
     if (!selectedTeam) return;
+
     setSaving(true);
-    const result = await assignTeamToProject(projectId, selectedTeam);
-    setSaving(false);
-    if (!result.ok) {
-      toast.error(result.message ?? "Unable to assign team.");
-      return;
+
+    try {
+      const result = await assignTeamToProject(
+        project.id,
+        selectedTeam,
+      );
+
+      if (!result.ok) {
+        toast.error(
+          result.message ?? "Unable to assign team.",
+        );
+        return;
+      }
+
+      toast.success(
+        result.message ??
+          "Team assigned to project successfully.",
+      );
+
+      setSelectedTeam("");
+
+      await loadTeams();
+    } finally {
+      setSaving(false);
     }
-    toast.success(result.message ?? "Team assigned.");
-    setSelectedTeam("");
-    void loadTeams();
   }
 
-  async function removeTeam(teamId: string) {
+  async function handleRemove(teamId: string) {
+    const team = allTeams.find(
+      (item) => item.id === teamId,
+    );
+
+    const confirmed = window.confirm(
+      `Remove ${
+        team?.name ?? "this team"
+      } from the project?`,
+    );
+
+    if (!confirmed) return;
+
     setSaving(true);
-    const result = await removeTeamFromProject(projectId, teamId);
-    setSaving(false);
-    if (!result.ok) {
-      toast.error(result.message ?? "Unable to remove team.");
-      return;
+
+    try {
+      const result = await removeTeamFromProject(
+        project.id,
+        teamId,
+      );
+
+      if (!result.ok) {
+        toast.error(
+          result.message ??
+            "Unable to remove team.",
+        );
+        return;
+      }
+
+      toast.success(
+        result.message ??
+          "Team removed from project successfully.",
+      );
+
+      await loadTeams();
+    } finally {
+      setSaving(false);
     }
-    toast.success(result.message ?? "Team removed.");
-    void loadTeams();
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Project teams</DialogTitle>
+          <DialogTitle>
+            Project teams
+          </DialogTitle>
+
           <DialogDescription>
-            Teams assigned to this project and their member counts.
+            Manage teams assigned to{" "}
+            <strong>{project.name}</strong>.
           </DialogDescription>
         </DialogHeader>
+
         {loading ? (
-          <p className="text-muted-foreground">Loading teams...</p>
+          <div className="py-8 text-center text-sm text-muted-foreground">
+            Loading teams...
+          </div>
         ) : (
-          <div className="space-y-3">
-            {assigned.length === 0 ? (
-              <p className="rounded-md border p-3 text-muted-foreground">
-                No teams assigned.
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">
+                Assigned teams
               </p>
-            ) : (
-              assigned.map((team) => (
-                <div
-                  key={team.id}
-                  className="flex items-center justify-between rounded-md border p-3"
-                >
-                  <div>
-                    <p className="font-medium">{team.name}</p>
-                    <p className="text-muted-foreground">
-                      {team.memberCount ?? team.members?.length ?? 0} members
-                    </p>
-                  </div>
-                  {canManageTeams && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      disabled={saving}
-                      onClick={() => void removeTeam(team.id)}
-                    >
-                      Remove
-                    </Button>
-                  )}
+
+              {assignedTeams.length === 0 ? (
+                <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                  No teams assigned to this project.
                 </div>
-              ))
-            )}
+              ) : (
+                <div className="space-y-2">
+                  {assignedTeams.map((team) => (
+                    <div
+                      key={team.id}
+                      className="flex items-center justify-between gap-3 rounded-md border p-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium">
+                          {team.name}
+                        </p>
+                      </div>
+
+                      {canManageTeams && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          disabled={saving}
+                          onClick={() =>
+                            void handleRemove(
+                              team.id,
+                            )
+                          }
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {canManageTeams && (
-              <div className="flex gap-2 pt-2">
-                <Select
-                  value={selectedTeam}
-                  onValueChange={(value) => setSelectedTeam(value ?? "")}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select a team" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {unassigned.map((team) => (
-                      <SelectItem key={team.id} value={team.id}>
-                        {team.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  disabled={!selectedTeam || saving}
-                  onClick={() => void addTeam()}
-                >
-                  Add team
-                </Button>
+              <div className="space-y-2 border-t pt-4">
+                <p className="text-sm font-medium">
+                  Assign a team
+                </p>
+
+                <div className="flex gap-2">
+                  <Select
+                    value={selectedTeam}
+                    onValueChange={(value) => {
+                      if (value === null) {
+                        setSelectedTeam("");
+                        return;
+                      }
+
+                      setSelectedTeam(value);
+                    }}
+                    disabled={saving}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select a team" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      {availableTeams.length === 0 ? (
+                        <SelectItem
+                          value="none"
+                          disabled
+                        >
+                          No available teams
+                        </SelectItem>
+                      ) : (
+                        availableTeams.map((team) => (
+                          <SelectItem
+                            key={team.id}
+                            value={team.id}
+                          >
+                            {team.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    disabled={!selectedTeam || saving}
+                    onClick={() =>
+                      void handleAssign()
+                    }
+                  >
+                    Add
+                  </Button>
+                </div>
               </div>
             )}
+
+            {!canManageTeams &&
+              role === "MEMBER" && (
+                <p className="text-xs text-muted-foreground">
+                  Members can view project teams but
+                  cannot change assignments.
+                </p>
+              )}
           </div>
         )}
+
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() =>
+              onOpenChange(false)
+            }
+          >
             Close
           </Button>
         </DialogFooter>
