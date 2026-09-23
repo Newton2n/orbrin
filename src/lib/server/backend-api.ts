@@ -1,7 +1,10 @@
 import { cookies } from "next/headers";
 
 function getBackendUrl() {
-  return process.env.NEXT_PUBLIC_BACKEND_API?.replace(/\/$/, "");
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API
+    ? process.env.NEXT_PUBLIC_BACKEND_API
+    : "https://orbrin-api.vercel.app/api/v1";
+  return backendUrl?.replace(/\/$/, "");
 }
 
 type BackendRequestOptions = Omit<RequestInit, "body"> & {
