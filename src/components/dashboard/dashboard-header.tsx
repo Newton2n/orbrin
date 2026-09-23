@@ -62,7 +62,7 @@ export function DashboardHeader({
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 flex min-h-16 w-full items-center border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
+    <header className="sticky top-0 z-40 flex min-h-16 w-full items-center border-b border-border bg-background/90 backdrop-blur">
       <div className="flex w-full min-w-0 items-center justify-between gap-2 px-3 sm:gap-3 sm:px-6">
         {/* Left section */}
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">

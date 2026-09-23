@@ -111,7 +111,6 @@ export async function login(input: unknown) {
     body: parsed.data,
   });
 
-  console.log("login result:", result);
 
   if (!result.ok || !result.payload) {
     return actionFailure(
@@ -120,10 +119,8 @@ export async function login(input: unknown) {
     );
   }
   const payload = unwrapPayload<LoginResponse>(result.payload);
-  console.log("login payload:", payload);
   await saveSession(payload);
 
-  console.log("Action success:login", actionSuccess(payload, "Welcome back."));
   return actionSuccess<LoginResponse>(payload, "Welcome back.");
 }
 
@@ -178,7 +175,7 @@ export async function googleLogin(input: unknown) {
   const parsed = googleLoginSchema.safeParse(input);
   if (!parsed.success)
     return actionFailure("Invalid Google login details.", null);
-  const result = await backendRequest<LoginResponse>("/auth/google-login", {
+  const result = await backendRequest<LoginResponse>("/auth/google", {
     method: "POST",
     body: parsed.data,
   });

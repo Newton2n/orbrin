@@ -20,7 +20,7 @@ export function DashboardSidebar({
   return (
     <aside
       className={cn(
-        "hidden shrink-0 flex-col border-r border-zinc-200 bg-white text-zinc-900 transition-[width] duration-200 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 md:flex",
+        "hidden shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 md:flex",
         collapsed ? "w-20" : "w-64",
       )}
       aria-label="Workspace navigation"

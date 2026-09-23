@@ -35,8 +35,8 @@ export function NavLinks({
             className={cn(
               "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors",
               active
-                ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
-                : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50",
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
               collapsed && "justify-center px-0",
             )}
           >
