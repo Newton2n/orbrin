@@ -25,7 +25,7 @@ export function DashboardSidebar({
       )}
       aria-label="Workspace navigation"
     >
-      <div className="flex h-16 items-center gap-3 border-b border-zinc-200 px-5 dark:border-zinc-800">
+      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-5">
         <div className="grid size-8 shrink-0 place-items-center rounded-md bg-zinc-900 font-heading font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
           O
         </div>
@@ -35,20 +35,20 @@ export function DashboardSidebar({
           </span>
         )}
       </div>
-      <div className="border-b border-zinc-200 p-3 dark:border-zinc-800">
+      <div className="border-b border-sidebar-border p-3">
         <div
           className={cn(
             "flex items-center gap-2 rounded-md p-2",
             collapsed && "justify-center",
           )}
         >
-          <div className="grid size-7 shrink-0 place-items-center rounded bg-zinc-100 text-xs font-semibold text-zinc-900 dark:bg-zinc-900 dark:text-zinc-50">
+          <div className="grid size-7 shrink-0 place-items-center rounded bg-sidebar-accent text-xs font-semibold text-sidebar-accent-foreground">
             {organization.slice(0, 1).toUpperCase()}
           </div>
           {!collapsed && (
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{organization}</p>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              <p className="text-[11px] text-sidebar-foreground/60">
                 {role.toLowerCase()} workspace
               </p>
             </div>
@@ -56,7 +56,7 @@ export function DashboardSidebar({
         </div>
       </div>
       <NavLinks role={role} collapsed={collapsed} />
-      <div className="border-t border-zinc-200 p-3 dark:border-zinc-800">
+      <div className="border-t border-sidebar-border p-3">
         <Button
           variant="ghost"
           size="sm"
