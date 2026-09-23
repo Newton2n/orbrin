@@ -23,7 +23,8 @@ export default async function MemberProjectDetailsPage({
           {project?.description || "Review project work and current ownership."}
         </p>
       </div>
-      <SprintList projectId={projectId} canViewDetails />
+      {/* biome-ignore lint/a11y/useValidAriaRole: role is an application permission prop, not a DOM role */}
+      <SprintList projectId={projectId} role="MEMBER" canViewDetails />
       {/* biome-ignore lint/a11y/useValidAriaRole: role is an application permission prop, not a DOM role */}
       <TaskList role="MEMBER" projectId={projectId} canViewDetails />
     </div>

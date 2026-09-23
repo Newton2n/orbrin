@@ -1,6 +1,6 @@
 import { SprintProjectDirectory } from "@/components/sprints/sprint-project-directory";
 
-export default function MemberSprintsPage() {
+export default function ManagerSprintsPage() {
   return (
     <div className="space-y-6">
       <div>
@@ -11,11 +11,11 @@ export default function MemberSprintsPage() {
           Sprints
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          View project iterations, timelines, and delivery progress.
+          Manage project iterations, timelines, and delivery goals.
         </p>
       </div>
       {/* biome-ignore lint/a11y/useValidAriaRole: role is an application permission prop, not a DOM role */}
-      <SprintProjectDirectory role="MEMBER" />
+      <SprintProjectDirectory role="MANAGER" />
     </div>
   );
 }

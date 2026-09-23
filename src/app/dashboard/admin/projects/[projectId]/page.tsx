@@ -25,8 +25,10 @@ export default async function AdminProjectDetailsPage({
             "Plan, assign, and track work for this project."}
         </p>
       </div>
+      {/* biome-ignore lint/a11y/useValidAriaRole: role is an application permission prop, not a DOM role */}
       <SprintList
         projectId={projectId}
+        role="ADMIN"
         canCreate
         canEdit
         canDelete

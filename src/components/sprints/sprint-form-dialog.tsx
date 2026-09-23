@@ -32,10 +32,11 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: string;
+  onSuccess?: () => void;
 } & ({ mode: "create" } | { mode: "edit"; sprint: Sprint });
 const statuses: SprintStatus[] = ["PLANNING", "ACTIVE", "COMPLETED"];
 export function SprintFormDialog(props: Props) {
-  const { open, onOpenChange, projectId, mode } = props;
+  const { open, onOpenChange, projectId, mode, onSuccess } = props;
   const sprint = mode === "edit" ? props.sprint : null;
   const [name, setName] = useState("");
   const [goal, setGoal] = useState("");
@@ -54,6 +55,9 @@ export function SprintFormDialog(props: Props) {
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!name.trim()) return toast.error("Sprint name is required.");
+    if (startDate && endDate && endDate < startDate) {
+      return toast.error("End date cannot be earlier than start date.");
+    }
     setSaving(true);
     const input = {
       name: name.trim(),
@@ -74,6 +78,7 @@ export function SprintFormDialog(props: Props) {
       return toast.error(result.message ?? "Unable to save sprint.");
     toast.success(result.message ?? "Sprint saved.");
     onOpenChange(false);
+    onSuccess?.();
   }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

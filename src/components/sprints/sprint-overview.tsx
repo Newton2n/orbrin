@@ -6,7 +6,7 @@ import { getSprints, type Sprint } from "../../actions/sprint.action";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
-function formatDate(value?: string) {
+function formatDate(value?: string | null) {
   return value
     ? new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(
         new Date(value),
