@@ -24,11 +24,11 @@ export function UserMenu({ user, role }: { user: AuthUser; role: Role }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="flex h-9 items-center gap-2 rounded-md px-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100 dark:text-zinc-50 dark:hover:bg-zinc-900"
+        className="flex h-10 items-center gap-2 rounded-md px-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground"
         aria-label="Open account menu"
       >
         <Avatar className="size-8">
-          <AvatarFallback className="bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50">
+          <AvatarFallback className="bg-muted text-foreground">
             <UserInitials user={user} />
           </AvatarFallback>
         </Avatar>

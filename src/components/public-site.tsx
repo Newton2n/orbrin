@@ -132,15 +132,16 @@ export function PublicHeader({ isAuthenticated = false }: PublicHeaderProps) {
 
         {/* Mobile Navigation Sheet */}
         <Sheet>
-          <SheetTrigger>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden text-zinc-700 dark:text-zinc-300"
-              aria-label="Open navigation"
-            >
-              <Menu className="size-5" />
-            </Button>
+          <SheetTrigger
+            render={
+              <button
+                type="button"
+                className="inline-flex size-9 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:focus-visible:ring-zinc-600 md:hidden"
+                aria-label="Open navigation"
+              />
+            }
+          >
+            <Menu aria-hidden="true" />
           </SheetTrigger>
           <SheetContent className="flex flex-col justify-between">
             <div>

@@ -3,8 +3,12 @@ import { Providers } from "../components/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Orbrin",
-  description: "Workspace & Project Management Platform",
+  title: {
+    default: "Orbrin | Focused team delivery",
+    template: "%s | Orbrin",
+  },
+  description:
+    "Orbrin gives project teams one clear workspace for planning, delivery, and collaboration.",
 };
 
 export default function RootLayout({

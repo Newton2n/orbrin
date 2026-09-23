@@ -62,14 +62,14 @@ export function DashboardHeader({
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 flex min-h-16 w-full items-center border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
+    <header className="sticky top-0 z-40 flex min-h-16 w-full items-center border-b border-border bg-background/90 backdrop-blur">
       <div className="flex w-full min-w-0 items-center justify-between gap-2 px-3 sm:gap-3 sm:px-6">
         {/* Left section */}
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
           {/* Mobile menu */}
           <Sheet>
             <SheetTrigger
-              className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900 md:hidden"
+              className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground md:hidden"
               aria-label="Open navigation"
             >
               <Menu className="size-5" />
@@ -77,12 +77,12 @@ export function DashboardHeader({
 
             <SheetContent
               side="left"
-              className="flex w-[280px] flex-col bg-white p-0 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50"
+              className="flex w-[280px] flex-col bg-background p-0 text-foreground"
             >
               <SheetTitle className="sr-only">Workspace navigation</SheetTitle>
 
-              <div className="flex h-16 shrink-0 items-center gap-3 border-b border-zinc-200 px-5 dark:border-zinc-800">
-                <div className="grid size-8 shrink-0 place-items-center rounded-md bg-zinc-900 font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
+              <div className="flex h-16 shrink-0 items-center gap-3 border-b border-border px-5">
+                <div className="grid size-8 shrink-0 place-items-center rounded-md bg-sidebar-primary font-bold text-sidebar-primary-foreground">
                   O
                 </div>
 
@@ -101,7 +101,7 @@ export function DashboardHeader({
           <Button
             variant="ghost"
             size="sm"
-            className="hidden shrink-0 items-center gap-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900 md:inline-flex"
+            className="hidden shrink-0 items-center gap-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground md:inline-flex"
             asChild
           >
             <Link href="/">
@@ -112,19 +112,19 @@ export function DashboardHeader({
 
           {/* Breadcrumb */}
           <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 sm:gap-2">
+            <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground sm:gap-2">
               <span className="hidden max-w-[180px] truncate sm:inline">
                 {organization}
               </span>
 
               <span className="hidden sm:inline">/</span>
 
-              <span className="min-w-0 truncate font-medium text-zinc-900 dark:text-zinc-50">
+              <span className="min-w-0 truncate font-medium text-foreground">
                 {current.label}
               </span>
             </div>
 
-            <p className="hidden truncate text-xs text-zinc-500 dark:text-zinc-400 sm:block sm:text-sm">
+            <p className="hidden truncate text-xs text-muted-foreground sm:block sm:text-sm">
               {role.toLowerCase()} workspace
             </p>
           </div>
@@ -136,7 +136,7 @@ export function DashboardHeader({
           <Button
             variant="outline"
             size="sm"
-            className="hidden h-9 gap-2 border-zinc-200 px-3 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 md:flex"
+            className="hidden h-9 gap-2 px-3 text-muted-foreground md:flex"
             onClick={() => setCommandOpen(true)}
           >
             <Search className="size-4" />
@@ -150,7 +150,7 @@ export function DashboardHeader({
           <Button
             variant="ghost"
             size="icon"
-            className="size-9 text-zinc-600 dark:text-zinc-400 md:hidden"
+            className="size-9 text-muted-foreground md:hidden"
             onClick={() => setCommandOpen(true)}
             aria-label="Search workspace"
           >
@@ -161,7 +161,7 @@ export function DashboardHeader({
           <Button
             variant="ghost"
             size="icon"
-            className="size-9 shrink-0 text-zinc-600 dark:text-zinc-400"
+            className="size-9 shrink-0 text-muted-foreground"
             aria-label="Notifications"
             asChild
           >

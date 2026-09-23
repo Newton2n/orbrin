@@ -1,4 +1,4 @@
-import { JwtPayload } from "jsonwebtoken";
+import type { JwtPayload } from "jsonwebtoken";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -36,8 +36,6 @@ export async function proxy(request: NextRequest) {
   if (!decodedAccessToken?.success && decodedRefreshToken?.success) {
     //access token has expired but refresh token is valid, get new access token from backend
     const result = await getNewAccessToken();
-    console.log("getNewAccessToken result:", result); // Log the result for debugging
-
     if (result.success) {
       const newAccessToken = result.data.accessToken;
 
@@ -49,7 +47,7 @@ export async function proxy(request: NextRequest) {
 
       accessToken = newAccessToken;
       decodedAccessToken = jwtUtils.verifyToken(
-        accessToken!,
+        newAccessToken,
         process.env.JWT_ACCESS_SECRET as string,
       );
     }
@@ -80,11 +78,11 @@ export async function proxy(request: NextRequest) {
   }
 
   const isPublicRoute = PUBLIC_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(route + "/"),
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
 
   const isAuthRoute = AUTH_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(route + "/"),
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
 
   // Authenticated Pages Protection : Authorization is not handled yet

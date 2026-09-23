@@ -23,7 +23,7 @@ export function DashboardShell({
     user.memberships[0]?.organization?.name || "Orbrin workspace";
 
   return (
-    <div className="flex min-h-svh bg-zinc-50/50 dark:bg-zinc-950">
+    <div className="flex min-h-svh bg-background">
       <DashboardSidebar
         role={role}
         organization={organization}
