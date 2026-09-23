@@ -82,7 +82,7 @@ export function DashboardHeader({
               <SheetTitle className="sr-only">Workspace navigation</SheetTitle>
 
               <div className="flex h-16 shrink-0 items-center gap-3 border-b border-border px-5">
-                <div className="grid size-8 shrink-0 place-items-center rounded-md bg-zinc-900 font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
+                <div className="grid size-8 shrink-0 place-items-center rounded-md bg-sidebar-primary font-bold text-sidebar-primary-foreground">
                   O
                 </div>
 
