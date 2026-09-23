@@ -12,6 +12,7 @@ import {
 } from "@/actions/sprint.action";
 import { StatusBadge } from "@/components/badge-status";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
+import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -105,6 +106,7 @@ export function SprintList({
   const [sort, setSort] = useState<SortValue>("createdAt-desc");
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<"create" | Sprint | null>(null);
   const [detailsId, setDetailsId] = useState<string | null>(null);
   const [target, setTarget] = useState<Sprint | null>(null);
@@ -115,9 +117,10 @@ export function SprintList({
     const result = await getSprintsByProject(projectId, params);
     setLoading(false);
     if (!result.success) {
-      toast.error(result.message);
+      setError(result.message);
       return;
     }
+    setError(null);
     setItems(result.data.items);
     setTotalPages(result.data.totalPages);
   }
@@ -231,6 +234,8 @@ export function SprintList({
           <p className="py-8 text-center text-sm text-muted-foreground">
             Loading sprints...
           </p>
+        ) : error ? (
+          <ErrorState compact description={error} onRetry={() => void load()} />
         ) : items.length === 0 ? (
           <p className="m-4 rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
             No sprints match this project and filter.

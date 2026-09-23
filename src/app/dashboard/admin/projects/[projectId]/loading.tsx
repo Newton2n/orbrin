@@ -1,2 +1,4 @@
 import { DetailPageSkeleton } from "@/components/shared/skeletons";
-export default function Loading() { return <DetailPageSkeleton />; }
+export default function Loading() {
+  return <DetailPageSkeleton />;
+}

@@ -11,6 +11,7 @@ import {
   type TaskPriority,
   type TaskStatus,
 } from "@/actions/task.action";
+import { ErrorState } from "@/components/shared/error-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -209,9 +210,11 @@ export function TaskList({
             </p>
           )}
           {error && (
-            <p className="rounded-md border border-destructive/30 p-4 text-destructive">
-              {error}
-            </p>
+            <ErrorState
+              compact
+              description={error}
+              onRetry={() => void loadTasks()}
+            />
           )}
           {!loading && !error && !result?.items.length && (
             <p className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">

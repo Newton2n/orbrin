@@ -9,6 +9,7 @@ import {
 } from "@/actions/sprint.action";
 import { StatusBadge } from "@/components/badge-status";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
+import { DialogErrorState } from "@/components/shared/dialog-error-state";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -47,6 +48,7 @@ export function SprintDetailsDialog({
 }: Props) {
   const [sprint, setSprint] = useState<Sprint | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -58,10 +60,11 @@ export function SprintDetailsDialog({
     const result = await getSprintById(sprintId);
     setLoading(false);
     if (!result.success) {
-      toast.error(result.message);
+      setError(result.message);
       setSprint(null);
       return;
     }
+    setError(null);
     setSprint(result.data);
   }
 
@@ -102,6 +105,12 @@ export function SprintDetailsDialog({
             <p className="py-8 text-center text-muted-foreground">
               Loading sprint...
             </p>
+          ) : error ? (
+            <DialogErrorState
+              message={error}
+              onRetry={() => void load()}
+              onClose={() => onOpenChange(false)}
+            />
           ) : !sprint ? (
             <p className="py-8 text-center text-muted-foreground">
               Sprint not found.

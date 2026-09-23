@@ -111,7 +111,6 @@ export async function login(input: unknown) {
     body: parsed.data,
   });
 
-
   if (!result.ok || !result.payload) {
     return actionFailure(
       backendMessage(result.payload, "Unable to sign in."),

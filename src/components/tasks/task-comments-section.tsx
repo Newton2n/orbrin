@@ -10,6 +10,7 @@ import {
   getCommentsByTask,
   updateComment,
 } from "@/actions/comment.action";
+import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -24,10 +25,13 @@ export function TaskCommentsSection({
   const [content, setContent] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   async function load() {
     const result = await getCommentsByTask(taskId);
-    if (result.success) setItems(result.data);
-    else toast.error(result.message ?? "Unable to load comments.");
+    if (result.success) {
+      setItems(result.data);
+      setLoadError(null);
+    } else setLoadError(result.message ?? "Unable to load comments.");
   }
   // biome-ignore lint/correctness/useExhaustiveDependencies: reload when the selected task changes
   useEffect(() => {
@@ -66,7 +70,13 @@ export function TaskCommentsSection({
         </p>
       </div>
       <div className="space-y-2">
-        {items.length === 0 ? (
+        {loadError ? (
+          <ErrorState
+            compact
+            description={loadError}
+            onRetry={() => void load()}
+          />
+        ) : items.length === 0 ? (
           <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
             No comments yet.
           </p>

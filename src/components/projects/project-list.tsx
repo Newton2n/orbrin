@@ -1,6 +1,16 @@
 "use client";
 
+import {
+  Eye,
+  FileText,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+  Users,
+} from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
   deleteProject,
   deleteProjectDocument,
@@ -9,6 +19,7 @@ import {
   type Project,
   type ProjectListParams,
 } from "@/actions/project.action";
+import { ErrorState } from "@/components/shared/error-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,16 +39,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Eye,
-  FileText,
-  Pencil,
-  Plus,
-  Trash2,
-  Upload,
-  Users,
-} from "lucide-react";
-import { toast } from "sonner";
 import { DeleteConfirmDialog } from "./delete-confirm-dialog";
 import { ProjectDetailsDialog } from "./project-details-dialog";
 import { ProjectFormDialog } from "./project-form-dialog";
@@ -102,6 +103,7 @@ export function ProjectList({
     setLoading(false);
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reload when list filters change
   useEffect(() => {
     void loadProjects();
   }, [page, search, status, sortBy]);
@@ -197,9 +199,11 @@ export function ProjectList({
             </p>
           )}
           {error && (
-            <p className="rounded-md border border-destructive/30 p-4 text-destructive">
-              {error}
-            </p>
+            <ErrorState
+              compact
+              description={error}
+              onRetry={() => void loadProjects()}
+            />
           )}
           {!loading && !error && !result?.items.length && (
             <p className="rounded-md border p-8 text-center text-muted-foreground">

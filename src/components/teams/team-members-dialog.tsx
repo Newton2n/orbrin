@@ -9,6 +9,7 @@ import {
   removeTeamMember,
   type TeamMember,
 } from "@/actions/team.action";
+import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -68,6 +69,7 @@ export function TeamMembersDialog({
   const [removeUser, setRemoveUser] = useState<TeamMember | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   async function loadMembers() {
     setLoading(true);
@@ -76,12 +78,13 @@ export function TeamMembersDialog({
       getOrganizationMembers(),
     ]);
     if (membersResult.ok) setMembers(membersResult.data);
-    else toast.error(membersResult.message ?? "Unable to load team members.");
+    else setLoadError(membersResult.message ?? "Unable to load team members.");
     if (usersResult.success) setAvailable(memberList(usersResult.data));
     else
-      toast.error(
+      setLoadError(
         usersResult.message ?? "Unable to load organization members.",
       );
+    if (membersResult.ok && usersResult.success) setLoadError(null);
     setLoading(false);
   }
 
@@ -136,6 +139,12 @@ export function TeamMembersDialog({
             <p className="py-6 text-center text-muted-foreground">
               Loading members...
             </p>
+          ) : loadError ? (
+            <ErrorState
+              compact
+              description={loadError}
+              onRetry={() => void loadMembers()}
+            />
           ) : (
             <div className="space-y-3">
               {members.length === 0 ? (

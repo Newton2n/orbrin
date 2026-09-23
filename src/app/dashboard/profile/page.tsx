@@ -3,14 +3,16 @@ import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { DeleteAccountDialog } from "@/components/profile/delete-account-dialog";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { ProfileImageUploader } from "@/components/profile/profile-image-uploader";
+import { ErrorState } from "@/components/shared/error-state";
 
 export default async function ProfilePage() {
   const result = await getMyProfile();
   if (!result.success || !result.data) {
     return (
-      <div className="rounded-lg border border-destructive/30 p-6 text-sm text-destructive">
-        Unable to load your profile.
-      </div>
+      <ErrorState
+        title="Profile unavailable"
+        description={result.message ?? "We couldn’t load your profile."}
+      />
     );
   }
   return (

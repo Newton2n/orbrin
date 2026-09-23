@@ -3,6 +3,7 @@ import { DeleteOrganizationSection } from "@/components/organization/delete-orga
 import { OrganizationLogoUploader } from "@/components/organization/organization-logo-uploader";
 import { OrganizationMembersTable } from "@/components/organization/organization-members-table";
 import { OrganizationSettingsCard } from "@/components/organization/organization-settings-card";
+import { ErrorState } from "@/components/shared/error-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function AdminSettingsPage() {
@@ -11,6 +12,13 @@ export default function AdminSettingsPage() {
 
 async function AdminOrganizationSettings() {
   const result = await getMyOrganization();
+  if (!result.success)
+    return (
+      <ErrorState
+        title="Organization settings unavailable"
+        description={result.message}
+      />
+    );
   const organization = result.success ? result.data : null;
   return (
     <div className="space-y-6">

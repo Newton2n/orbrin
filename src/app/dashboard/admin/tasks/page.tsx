@@ -9,6 +9,7 @@ import {
   type TaskPriority,
   type TaskStatus,
 } from "@/actions/task.action";
+import { ErrorState } from "@/components/shared/error-state";
 import { SprintOverview } from "@/components/sprints/sprint-overview";
 import { TaskDetailSheet } from "@/components/tasks/task-detail-sheet";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +51,7 @@ export default function TasksPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [rows, setRows] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     if (!projectId) return;
     let active = true;
@@ -63,7 +65,10 @@ export default function TasksPage() {
       sortBy: "createdAt",
       sortOrder: "desc",
     }).then((result) => {
-      if (active && result.success) setRows(result.data.items);
+      if (active && result.success) {
+        setRows(result.data.items);
+        setError(null);
+      } else if (active) setError(result.message ?? "Unable to load tasks.");
       if (active) setLoading(false);
     });
     return () => {
@@ -127,6 +132,13 @@ export default function TasksPage() {
       )}
       {projectId && (
         <>
+          {error && (
+            <ErrorState
+              compact
+              description={error}
+              onRetry={() => window.location.reload()}
+            />
+          )}
           <Card>
             <CardContent className="p-4">
               <div className="flex flex-col gap-3 lg:flex-row">

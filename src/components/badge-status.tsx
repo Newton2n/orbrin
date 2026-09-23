@@ -1,6 +1,33 @@
 import { Badge } from "@/components/ui/badge";
 
 const styles: Record<string, string> = {
-  ACTIVE: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300", INACTIVE: "bg-muted text-muted-foreground", SUSPENDED: "border-destructive/30 bg-destructive/10 text-destructive", PLANNING: "bg-muted text-muted-foreground", COMPLETED: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300", TODO: "bg-muted text-muted-foreground", IN_PROGRESS: "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300", REVIEW: "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300", DONE: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300", PENDING: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300", CANCELED: "bg-muted text-muted-foreground", PAST_DUE: "border-destructive/30 bg-destructive/10 text-destructive", TRIALING: "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300", FAILED: "border-destructive/30 bg-destructive/10 text-destructive", REFUNDED: "bg-muted text-muted-foreground",
+  ACTIVE:
+    "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  INACTIVE: "bg-muted text-muted-foreground",
+  SUSPENDED: "border-destructive/30 bg-destructive/10 text-destructive",
+  PLANNING: "bg-muted text-muted-foreground",
+  COMPLETED:
+    "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  TODO: "bg-muted text-muted-foreground",
+  IN_PROGRESS:
+    "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300",
+  REVIEW:
+    "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300",
+  DONE: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  PENDING:
+    "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  CANCELED: "bg-muted text-muted-foreground",
+  PAST_DUE: "border-destructive/30 bg-destructive/10 text-destructive",
+  TRIALING:
+    "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300",
+  FAILED: "border-destructive/30 bg-destructive/10 text-destructive",
+  REFUNDED: "bg-muted text-muted-foreground",
 };
-export function StatusBadge({ value }: { value?: string | null }) { const key = value?.toUpperCase() ?? ""; return <Badge className={styles[key] ?? "bg-muted text-muted-foreground"}>{key ? key.replaceAll("_", " ") : "Unknown"}</Badge>; }
+export function StatusBadge({ value }: { value?: string | null }) {
+  const key = value?.toUpperCase() ?? "";
+  return (
+    <Badge className={styles[key] ?? "bg-muted text-muted-foreground"}>
+      {key ? key.replaceAll("_", " ") : "Unknown"}
+    </Badge>
+  );
+}

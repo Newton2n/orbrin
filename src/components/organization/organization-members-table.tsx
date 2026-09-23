@@ -2,7 +2,6 @@
 
 import { Eye, MoreHorizontal, Pencil, Search, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import {
   getOrganizationMembers,
   type OrganizationMember,
@@ -11,6 +10,7 @@ import {
   type OrganizationRole,
 } from "@/actions/organization.action";
 import { AvatarWithFallback } from "@/components/avatar-with-fallback";
+import { ErrorState } from "@/components/shared/error-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -64,6 +64,7 @@ export function OrganizationMembersTable({
   const [sort, setSort] = useState<SortValue>("createdAt-desc");
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [detailsId, setDetailsId] = useState<string | null>(null);
   const [roleMember, setRoleMember] = useState<OrganizationMember | null>(null);
   const [statusMember, setStatusMember] = useState<OrganizationMember | null>(
@@ -77,9 +78,10 @@ export function OrganizationMembersTable({
     const result = await getOrganizationMembers(params);
     setLoading(false);
     if (!result.success) {
-      toast.error(result.message);
+      setError(result.message);
       return;
     }
+    setError(null);
     setMembers(result.data.items);
     setTotalPages(result.data.totalPages);
   }
@@ -201,6 +203,16 @@ export function OrganizationMembersTable({
                     className="h-24 text-center text-muted-foreground"
                   >
                     Loading members...
+                  </TableCell>
+                </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="p-4">
+                    <ErrorState
+                      compact
+                      description={error}
+                      onRetry={() => void load()}
+                    />
                   </TableCell>
                 </TableRow>
               ) : members.length === 0 ? (

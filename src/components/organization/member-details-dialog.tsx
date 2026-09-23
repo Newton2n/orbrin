@@ -8,6 +8,7 @@ import {
   type OrganizationRole,
 } from "@/actions/organization.action";
 import { AvatarWithFallback } from "@/components/avatar-with-fallback";
+import { DialogErrorState } from "@/components/shared/dialog-error-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +42,7 @@ export function MemberDetailsDialog({
 }) {
   const [member, setMember] = useState<OrganizationMember | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [roleOpen, setRoleOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
@@ -50,10 +52,11 @@ export function MemberDetailsDialog({
     const result = await getOrganizationMemberById(memberId);
     setLoading(false);
     if (!result.success) {
-      toast.error(result.message);
+      setError(result.message);
       setMember(null);
       return;
     }
+    setError(null);
     setMember(result.data);
   }
   // Reload when the selected member dialog opens.
@@ -85,6 +88,12 @@ export function MemberDetailsDialog({
             <p className="py-8 text-center text-muted-foreground">
               Loading member...
             </p>
+          ) : error ? (
+            <DialogErrorState
+              message={error}
+              onRetry={() => void load()}
+              onClose={() => onOpenChange(false)}
+            />
           ) : !member ? (
             <p className="py-8 text-center text-muted-foreground">
               Member not found.
