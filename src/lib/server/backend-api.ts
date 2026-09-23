@@ -1,11 +1,7 @@
 import { cookies } from "next/headers";
 
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API;
-
-if (!backendUrl) {
-  throw new Error(
-    "NEXT_PUBLIC_BACKEND_API environment variable is not defined.",
-  );
+function getBackendUrl() {
+  return process.env.NEXT_PUBLIC_BACKEND_API?.replace(/\/$/, "");
 }
 
 type BackendRequestOptions = Omit<RequestInit, "body"> & {
@@ -47,6 +43,11 @@ export async function backendRequest<T>(
   }
   headers.set("Accept", "application/json");
   if (cookieHeader) headers.set("Cookie", cookieHeader);
+
+  const backendUrl = getBackendUrl();
+  if (!backendUrl) {
+    return { ok: false, status: 503, payload: null };
+  }
 
   try {
     const response = await fetch(`${backendUrl}${endpoint}`, {
