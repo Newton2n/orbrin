@@ -15,7 +15,7 @@ export default function ManagerTeamsPage() {
         </p>
       </div>
       {/* biome-ignore lint/a11y/useValidAriaRole: role is an application permission prop, not a DOM role */}
-      <TeamList role="MANAGER" canEdit canManageMembers canViewDetails />
+      <TeamList role="MANAGER" canManageMembers canViewDetails />
     </div>
   );
 }

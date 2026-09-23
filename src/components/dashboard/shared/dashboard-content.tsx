@@ -663,6 +663,7 @@ export const dashboardNavigation = {
       label: "Projects",
       icon: FolderKanban,
     },
+    { href: "/dashboard/member/teams", label: "Teams", icon: Users },
     { href: "/dashboard/member/sprints", label: "Sprints", icon: Target },
     {
       href: "/dashboard/member/notifications",
