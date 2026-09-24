@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CalendarDays,
   Check,
@@ -11,10 +10,14 @@ import {
   FolderKanban,
   Loader2,
   Pencil,
+  Target,
   Trash2,
   UserRound,
-  Target,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 
 import {
   deleteTask,
@@ -29,12 +32,20 @@ import {
   type OrganizationMember,
 } from "@/actions/organization.action";
 
-import { getSprintsByProject, type Sprint } from "@/actions/sprint.action";
+import {
+  getSprintsByProject,
+  type Sprint,
+} from "@/actions/sprint.action";
 
 import { CommentList } from "@/components/comments/comment-list";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Alert,
+  AlertDescription,
+} from "@/components/ui/alert";
+
 import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
 
 import {
@@ -65,6 +76,7 @@ import {
 } from "@/components/ui/sheet";
 
 import { Separator } from "@/components/ui/separator";
+
 import { Textarea } from "@/components/ui/textarea";
 
 type TaskRole = "ADMIN" | "MANAGER" | "MEMBER";
@@ -86,6 +98,52 @@ type AssigneeOption = {
   fullName: string;
   email: string;
 };
+
+const taskStatusSchema = z.enum([
+  "TODO",
+  "IN_PROGRESS",
+  "DONE",
+]);
+
+const taskPrioritySchema = z.enum([
+  "LOW",
+  "MEDIUM",
+  "HIGH",
+  "URGENT",
+]);
+
+const taskEditSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, "Task title is required.")
+    .max(
+      200,
+      "Task title must be less than 200 characters.",
+    ),
+
+  description: z
+    .string()
+    .trim()
+    .max(
+      5000,
+      "Description must be less than 5000 characters.",
+    ),
+
+  status: taskStatusSchema,
+
+  priority: taskPrioritySchema,
+
+  dueDate: z.string(),
+
+  assigneeId: z.string(),
+
+  sprintId: z.string(),
+});
+
+type TaskEditFormValues = z.infer<
+  typeof taskEditSchema
+>;
 
 function statusLabel(status: Task["status"]) {
   switch (status) {
@@ -137,7 +195,9 @@ function getPriorityVariant(
   return "default";
 }
 
-function getDateInputValue(value?: string | null) {
+function getDateInputValue(
+  value?: string | null,
+) {
   if (!value) {
     return "";
   }
@@ -164,59 +224,70 @@ export function TaskDetailSheet({
 }: TaskDetailSheetProps) {
   const [editMode, setEditMode] = useState(false);
 
-  const [title, setTitle] = useState("");
+  const [assignees, setAssignees] = useState<
+    AssigneeOption[]
+  >([]);
 
-  const [description, setDescription] = useState("");
+  const [sprints, setSprints] = useState<Sprint[]>(
+    [],
+  );
 
-  const [status, setStatus] =
-    useState<Extract<TaskStatus, "TODO" | "IN_PROGRESS" | "DONE">>("TODO");
+  const [loadingAssignees, setLoadingAssignees] =
+    useState(false);
 
-  const [priority, setPriority] = useState<TaskPriority>("MEDIUM");
-
-  const [dueDate, setDueDate] = useState("");
-
-  const [assigneeId, setAssigneeId] = useState("");
-
-  const [sprintId, setSprintId] = useState("");
-
-  const [assignees, setAssignees] = useState<AssigneeOption[]>([]);
-
-  const [sprints, setSprints] = useState<Sprint[]>([]);
-
-  const [loadingAssignees, setLoadingAssignees] = useState(false);
-
-  const [loadingSprints, setLoadingSprints] = useState(false);
-
-  const [updating, setUpdating] = useState(false);
+  const [loadingSprints, setLoadingSprints] =
+    useState(false);
 
   const [deleting, setDeleting] = useState(false);
 
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] =
+    useState(false);
 
   const [error, setError] = useState("");
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    formState: {
+      errors,
+      isSubmitting,
+    },
+  } = useForm<TaskEditFormValues>({
+    resolver: zodResolver(taskEditSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      status: "TODO",
+      priority: "MEDIUM",
+      dueDate: "",
+      assigneeId: "",
+      sprintId: "",
+    },
+  });
 
   useEffect(() => {
     if (!task) {
       return;
     }
 
-    setTitle(task.title);
-
-    setDescription(task.description ?? "");
-
-    setStatus(task.status === "REVIEW" ? "IN_PROGRESS" : task.status);
-
-    setPriority(task.priority);
-
-    setDueDate(getDateInputValue(task.dueDate));
-
-    setAssigneeId(task.assigneeId ?? "");
-
-    setSprintId(task.sprintId ?? "");
+    reset({
+      title: task.title,
+      description: task.description ?? "",
+      status:
+        task.status === "REVIEW"
+          ? "IN_PROGRESS"
+          : task.status,
+      priority: task.priority,
+      dueDate: getDateInputValue(task.dueDate),
+      assigneeId: task.assigneeId ?? "",
+      sprintId: task.sprintId ?? "",
+    });
 
     setEditMode(false);
     setError("");
-  }, [task]);
+  }, [task, reset]);
 
   useEffect(() => {
     if (!open || !editMode || !task) {
@@ -228,7 +299,10 @@ export function TaskDetailSheet({
       setLoadingSprints(true);
 
       try {
-        const [memberResult, sprintResult] = await Promise.all([
+        const [
+          memberResult,
+          sprintResult,
+        ] = await Promise.all([
           getOrganizationMembers({
             page: 1,
             limit: 100,
@@ -244,16 +318,24 @@ export function TaskDetailSheet({
         ]);
 
         if (memberResult.success) {
-          const options = memberResult.data.items
-            .filter(
-              (member: OrganizationMember) =>
-                member.status === "ACTIVE" && member.user?.status === "ACTIVE",
-            )
-            .map((member: OrganizationMember) => ({
-              id: member.user!.id,
-              fullName: member.user!.fullName,
-              email: member.user!.email,
-            }));
+          const options =
+            memberResult.data.items
+              .filter(
+                (member: OrganizationMember) =>
+                  member.status === "ACTIVE" &&
+                  member.user?.status === "ACTIVE",
+              )
+              .map(
+                (
+                  member: OrganizationMember,
+                ) => ({
+                  id: member.user!.id,
+                  fullName:
+                    member.user!.fullName,
+                  email:
+                    member.user!.email,
+                }),
+              );
 
           setAssignees(options);
         } else {
@@ -261,12 +343,17 @@ export function TaskDetailSheet({
         }
 
         if (sprintResult.ok) {
-          setSprints(sprintResult.data.sprints ?? []);
+          setSprints(
+            sprintResult.data.sprints ?? [],
+          );
         } else {
           setSprints([]);
         }
       } catch (error) {
-        console.error("Failed to load task edit data:", error);
+        console.error(
+          "Failed to load task edit data:",
+          error,
+        );
 
         setAssignees([]);
         setSprints([]);
@@ -284,81 +371,107 @@ export function TaskDetailSheet({
   }
 
   const canComment =
-    role === "ADMIN" || role === "MANAGER" || role === "MEMBER";
+    role === "ADMIN" ||
+    role === "MANAGER" ||
+    role === "MEMBER";
 
-  const canEditAnyComment = role === "ADMIN" || role === "MANAGER";
+  const canEditAnyComment =
+    role === "ADMIN" ||
+    role === "MANAGER";
 
-  const canDeleteAnyComment = role === "ADMIN" || role === "MANAGER";
+  const canDeleteAnyComment =
+    role === "ADMIN" ||
+    role === "MANAGER";
 
-  const selectedAssignee = assignees.find(
-    (assignee) => assignee.id === assigneeId,
-  );
+  const selectedAssignee =
+    assignees.find(
+      (assignee) =>
+        assignee.id ===
+        task.assigneeId,
+    );
 
-  const selectedSprint = sprints.find((sprint) => sprint.id === sprintId);
+  const selectedSprint =
+    sprints.find(
+      (sprint) =>
+        sprint.id === task.sprintId,
+    );
 
   const handleEditStart = () => {
-    setTitle(task.title);
-
-    setDescription(task.description ?? "");
-
-    setStatus(task.status === "REVIEW" ? "IN_PROGRESS" : task.status);
-
-    setPriority(task.priority);
-
-    setDueDate(getDateInputValue(task.dueDate));
-
-    setAssigneeId(task.assigneeId ?? "");
-
-    setSprintId(task.sprintId ?? "");
+    reset({
+      title: task.title,
+      description:
+        task.description ?? "",
+      status:
+        task.status === "REVIEW"
+          ? "IN_PROGRESS"
+          : task.status,
+      priority: task.priority,
+      dueDate: getDateInputValue(
+        task.dueDate,
+      ),
+      assigneeId:
+        task.assigneeId ?? "",
+      sprintId:
+        task.sprintId ?? "",
+    });
 
     setError("");
     setEditMode(true);
   };
 
   const handleCancelEdit = () => {
-    setTitle(task.title);
-
-    setDescription(task.description ?? "");
-
-    setStatus(task.status === "REVIEW" ? "IN_PROGRESS" : task.status);
-
-    setPriority(task.priority);
-
-    setDueDate(getDateInputValue(task.dueDate));
-
-    setAssigneeId(task.assigneeId ?? "");
-
-    setSprintId(task.sprintId ?? "");
+    reset({
+      title: task.title,
+      description:
+        task.description ?? "",
+      status:
+        task.status === "REVIEW"
+          ? "IN_PROGRESS"
+          : task.status,
+      priority: task.priority,
+      dueDate: getDateInputValue(
+        task.dueDate,
+      ),
+      assigneeId:
+        task.assigneeId ?? "",
+      sprintId:
+        task.sprintId ?? "",
+    });
 
     setError("");
     setEditMode(false);
   };
 
-  const handleUpdate = async () => {
-    const trimmedTitle = title.trim();
-
-    if (!trimmedTitle) {
-      setError("Task title cannot be empty.");
-      return;
-    }
-
-    setUpdating(true);
+  async function onSubmit(
+    values: TaskEditFormValues,
+  ) {
     setError("");
 
     try {
       const result = await updateTask({
-        taskId: task.id,
-        title: trimmedTitle,
-        description: description.trim(),
-        status,
-        priority,
-        dueDate: dueDate || undefined,
-        assigneeId: assigneeId || undefined,
-        sprintId: sprintId || undefined,
+        taskId: task?.id as string,
+        title: values.title.trim(),
+        description:
+          values.description.trim(),
+        status: values.status as Extract<
+          TaskStatus,
+          "TODO" | "IN_PROGRESS" | "DONE"
+        >,
+        priority:
+          values.priority as TaskPriority,
+        dueDate:
+          values.dueDate || undefined,
+        assigneeId:
+          values.assigneeId || undefined,
+        sprintId:
+          values.sprintId || undefined,
       });
 
       if (!result.ok) {
-        setError(result.message ?? "Unable to update task.");
+        setError(
+          result.message ??
+            "Unable to update task.",
+        );
         return;
       }
 
@@ -371,23 +484,30 @@ export function TaskDetailSheet({
 
       setEditMode(false);
     } catch (error) {
-      console.error("Failed to update task:", error);
+      console.error(
+        "Failed to update task:",
+        error,
+      );
 
-      setError("Something went wrong while updating the task.");
-    } finally {
-      setUpdating(false);
+      setError(
+        "Something went wrong while updating the task.",
+      );
     }
-  };
+  }
 
   const handleDelete = async () => {
     setDeleting(true);
     setError("");
 
     try {
-      const result = await deleteTask(task.id);
+      const result =
+        await deleteTask(task.id);
 
       if (!result.ok) {
-        setError(result.message ?? "Unable to delete task.");
+        setError(
+          result.message ??
+            "Unable to delete task.",
+        );
         return;
       }
 
@@ -397,9 +517,14 @@ export function TaskDetailSheet({
 
       onOpenChange(false);
     } catch (error) {
-      console.error("Failed to delete task:", error);
+      console.error(
+        "Failed to delete task:",
+        error,
+      );
 
-      setError("Something went wrong while deleting the task.");
+      setError(
+        "Something went wrong while deleting the task.",
+      );
     } finally {
       setDeleting(false);
     }
@@ -410,7 +535,11 @@ export function TaskDetailSheet({
       <Sheet
         open={open}
         onOpenChange={(value) => {
-          if (!value && editMode && !updating) {
+          if (
+            !value &&
+            editMode &&
+            !isSubmitting
+          ) {
             setEditMode(false);
           }
 
@@ -421,18 +550,29 @@ export function TaskDetailSheet({
           <SheetHeader className="pr-8">
             {editMode ? (
               <>
-                <SheetTitle>Edit task</SheetTitle>
+                <SheetTitle>
+                  Edit task
+                </SheetTitle>
 
                 <SheetDescription>
-                  Update the task details and save your changes.
+                  Update the task details and
+                  save your changes.
                 </SheetDescription>
               </>
             ) : (
               <>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary">{statusLabel(task.status)}</Badge>
+                  <Badge variant="secondary">
+                    {statusLabel(
+                      task.status,
+                    )}
+                  </Badge>
 
-                  <Badge variant={getPriorityVariant(task.priority)}>
+                  <Badge
+                    variant={getPriorityVariant(
+                      task.priority,
+                    )}
+                  >
                     {task.priority}
                   </Badge>
                 </div>
@@ -442,7 +582,8 @@ export function TaskDetailSheet({
                 </SheetTitle>
 
                 <SheetDescription>
-                  Task details and team discussion.
+                  Task details and team
+                  discussion.
                 </SheetDescription>
               </>
             )}
@@ -451,25 +592,46 @@ export function TaskDetailSheet({
           <div className="space-y-6 px-4 pb-8">
             {error && (
               <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>
+                  {error}
+                </AlertDescription>
               </Alert>
             )}
 
             {editMode ? (
-              <>
+              <form
+                onSubmit={handleSubmit(
+                  onSubmit,
+                )}
+                className="space-y-5"
+              >
                 {/* Title */}
                 <div className="space-y-2">
-                  <label htmlFor="task-title" className="text-sm font-medium">
+                  <label
+                    htmlFor="task-title"
+                    className="text-sm font-medium"
+                  >
                     Title
                   </label>
 
                   <Input
                     id="task-title"
-                    value={title}
-                    onChange={(event) => setTitle(event.target.value)}
+                    {...register("title")}
                     placeholder="Enter task title"
-                    disabled={updating}
+                    disabled={isSubmitting}
+                    aria-invalid={Boolean(
+                      errors.title,
+                    )}
                   />
+
+                  {errors.title && (
+                    <p className="text-sm text-destructive">
+                      {
+                        errors.title
+                          .message
+                      }
+                    </p>
+                  )}
                 </div>
 
                 {/* Description */}
@@ -483,152 +645,339 @@ export function TaskDetailSheet({
 
                   <Textarea
                     id="task-description"
-                    value={description}
-                    onChange={(event) => setDescription(event.target.value)}
+                    {...register(
+                      "description",
+                    )}
                     placeholder="Describe the task..."
                     rows={6}
-                    disabled={updating}
+                    disabled={isSubmitting}
+                    aria-invalid={Boolean(
+                      errors.description,
+                    )}
                   />
+
+                  {errors.description && (
+                    <p className="text-sm text-destructive">
+                      {
+                        errors
+                          .description
+                          .message
+                      }
+                    </p>
+                  )}
                 </div>
 
                 {/* Sprint */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Sprint</label>
+                  <label className="text-sm font-medium">
+                    Sprint
+                  </label>
 
-                  <Select
-                    value={sprintId || "NO_SPRINT"}
-                    onValueChange={(value) =>
-                      setSprintId(
-                        value === "NO_SPRINT" ? "" : (value as string),
-                      )
-                    }
-                    disabled={updating || loadingSprints}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue
-                        placeholder={
-                          loadingSprints
-                            ? "Loading sprints..."
-                            : "Select sprint"
+                  <Controller
+                    name="sprintId"
+                    control={control}
+                    render={({
+                      field,
+                    }) => (
+                      <Select
+                        value={
+                          field.value ||
+                          "NO_SPRINT"
                         }
-                      />
-                    </SelectTrigger>
+                        onValueChange={(
+                          value,
+                        ) => {
+                          field.onChange(
+                            value ===
+                              "NO_SPRINT"
+                              ? ""
+                              : value,
+                          );
+                        }}
+                        disabled={
+                          isSubmitting ||
+                          loadingSprints
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue
+                            placeholder={
+                              loadingSprints
+                                ? "Loading sprints..."
+                                : "Select sprint"
+                            }
+                          />
+                        </SelectTrigger>
 
-                    <SelectContent>
-                      <SelectItem value="NO_SPRINT">No sprint</SelectItem>
+                        <SelectContent>
+                          <SelectItem value="NO_SPRINT">
+                            No sprint
+                          </SelectItem>
 
-                      {sprints.map((sprint) => (
-                        <SelectItem key={sprint.id} value={sprint.id}>
-                          {sprint.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                          {sprints.map(
+                            (sprint) => (
+                              <SelectItem
+                                key={
+                                  sprint.id
+                                }
+                                value={
+                                  sprint.id
+                                }
+                              >
+                                {
+                                  sprint.name
+                                }
+                              </SelectItem>
+                            ),
+                          )}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
 
-                  {selectedSprint ? (
-                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Target className="size-3.5" />
-                      {selectedSprint.name}
+                  {errors.sprintId && (
+                    <p className="text-sm text-destructive">
+                      {
+                        errors
+                          .sprintId
+                          .message
+                      }
                     </p>
-                  ) : null}
+                  )}
                 </div>
 
                 {/* Assignee */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Assignee</label>
+                  <label className="text-sm font-medium">
+                    Assignee
+                  </label>
 
-                  <Select
-                    value={assigneeId || "UNASSIGNED"}
-                    onValueChange={(value) =>
-                      setAssigneeId(
-                        value === "UNASSIGNED" ? "" : (value as string),
-                      )
-                    }
-                    disabled={updating || loadingAssignees}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue
-                        placeholder={
-                          loadingAssignees
-                            ? "Loading members..."
-                            : "Select assignee"
-                        }
-                      />
-                    </SelectTrigger>
+                  <Controller
+                    name="assigneeId"
+                    control={control}
+                    render={({
+                      field,
+                    }) => {
+                      const selected =
+                        assignees.find(
+                          (
+                            assignee,
+                          ) =>
+                            assignee.id ===
+                            field.value,
+                        );
 
-                    <SelectContent>
-                      <SelectItem value="UNASSIGNED">Unassigned</SelectItem>
+                      return (
+                        <>
+                          <Select
+                            value={
+                              field.value ||
+                              "UNASSIGNED"
+                            }
+                            onValueChange={(
+                              value,
+                            ) => {
+                              field.onChange(
+                                value ===
+                                  "UNASSIGNED"
+                                  ? ""
+                                  : value,
+                              );
+                            }}
+                            disabled={
+                              isSubmitting ||
+                              loadingAssignees
+                            }
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue
+                                placeholder={
+                                  loadingAssignees
+                                    ? "Loading members..."
+                                    : "Select assignee"
+                                }
+                              />
+                            </SelectTrigger>
 
-                      {assignees.map((assignee) => (
-                        <SelectItem key={assignee.id} value={assignee.id}>
-                          {assignee.fullName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                            <SelectContent>
+                              <SelectItem value="UNASSIGNED">
+                                Unassigned
+                              </SelectItem>
 
-                  {selectedAssignee && (
-                    <p className="text-xs text-muted-foreground">
-                      {selectedAssignee.email}
+                              {assignees.map(
+                                (
+                                  assignee,
+                                ) => (
+                                  <SelectItem
+                                    key={
+                                      assignee.id
+                                    }
+                                    value={
+                                      assignee.id
+                                    }
+                                  >
+                                    {
+                                      assignee.fullName
+                                    }
+                                  </SelectItem>
+                                ),
+                              )}
+                            </SelectContent>
+                          </Select>
+
+                          {selected && (
+                            <p className="text-xs text-muted-foreground">
+                              {
+                                selected.email
+                              }
+                            </p>
+                          )}
+                        </>
+                      );
+                    }}
+                  />
+
+                  {errors.assigneeId && (
+                    <p className="text-sm text-destructive">
+                      {
+                        errors
+                          .assigneeId
+                          .message
+                      }
                     </p>
                   )}
                 </div>
 
                 {/* Status */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Status</label>
+                  <label className="text-sm font-medium">
+                    Status
+                  </label>
 
-                  <Select
-                    value={status}
-                    onValueChange={(value) =>
-                      setStatus(
-                        value as Extract<
-                          TaskStatus,
-                          "TODO" | "IN_PROGRESS" | "DONE"
-                        >,
-                      )
-                    }
-                    disabled={updating}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
+                  <Controller
+                    name="status"
+                    control={control}
+                    render={({
+                      field,
+                    }) => (
+                      <Select
+                        value={
+                          field.value
+                        }
+                        onValueChange={(
+                          value,
+                        ) => {
+                          if (
+                            value !==
+                            null
+                          ) {
+                            field.onChange(
+                              value,
+                            );
+                          }
+                        }}
+                        disabled={
+                          isSubmitting
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
 
-                    <SelectContent>
-                      <SelectItem value="TODO">To do</SelectItem>
+                        <SelectContent>
+                          <SelectItem value="TODO">
+                            To do
+                          </SelectItem>
 
-                      <SelectItem value="IN_PROGRESS">In progress</SelectItem>
+                          <SelectItem value="IN_PROGRESS">
+                            In progress
+                          </SelectItem>
 
-                      <SelectItem value="DONE">Done</SelectItem>
-                    </SelectContent>
-                  </Select>
+                          <SelectItem value="DONE">
+                            Done
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+
+                  {errors.status && (
+                    <p className="text-sm text-destructive">
+                      {
+                        errors
+                          .status
+                          .message
+                      }
+                    </p>
+                  )}
                 </div>
 
                 {/* Priority */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Priority</label>
+                  <label className="text-sm font-medium">
+                    Priority
+                  </label>
 
-                  <Select
-                    value={priority}
-                    onValueChange={(value) =>
-                      setPriority(value as TaskPriority)
-                    }
-                    disabled={updating}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select priority" />
-                    </SelectTrigger>
+                  <Controller
+                    name="priority"
+                    control={control}
+                    render={({
+                      field,
+                    }) => (
+                      <Select
+                        value={
+                          field.value
+                        }
+                        onValueChange={(
+                          value,
+                        ) => {
+                          if (
+                            value !==
+                            null
+                          ) {
+                            field.onChange(
+                              value,
+                            );
+                          }
+                        }}
+                        disabled={
+                          isSubmitting
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
 
-                    <SelectContent>
-                      <SelectItem value="LOW">Low</SelectItem>
+                        <SelectContent>
+                          <SelectItem value="LOW">
+                            Low
+                          </SelectItem>
 
-                      <SelectItem value="MEDIUM">Medium</SelectItem>
+                          <SelectItem value="MEDIUM">
+                            Medium
+                          </SelectItem>
 
-                      <SelectItem value="HIGH">High</SelectItem>
+                          <SelectItem value="HIGH">
+                            High
+                          </SelectItem>
 
-                      <SelectItem value="URGENT">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
+                          <SelectItem value="URGENT">
+                            Urgent
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+
+                  {errors.priority && (
+                    <p className="text-sm text-destructive">
+                      {
+                        errors
+                          .priority
+                          .message
+                      }
+                    </p>
+                  )}
                 </div>
 
                 {/* Due date */}
@@ -643,10 +992,24 @@ export function TaskDetailSheet({
                   <Input
                     id="task-due-date"
                     type="date"
-                    value={dueDate}
-                    onChange={(event) => setDueDate(event.target.value)}
-                    disabled={updating}
+                    {...register(
+                      "dueDate",
+                    )}
+                    disabled={isSubmitting}
+                    aria-invalid={Boolean(
+                      errors.dueDate,
+                    )}
                   />
+
+                  {errors.dueDate && (
+                    <p className="text-sm text-destructive">
+                      {
+                        errors
+                          .dueDate
+                          .message
+                      }
+                    </p>
+                  )}
                 </div>
 
                 {/* Edit actions */}
@@ -654,18 +1017,23 @@ export function TaskDetailSheet({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={handleCancelEdit}
-                    disabled={updating}
+                    onClick={
+                      handleCancelEdit
+                    }
+                    disabled={
+                      isSubmitting
+                    }
                   >
                     Cancel
                   </Button>
 
                   <Button
-                    type="button"
-                    onClick={() => void handleUpdate()}
-                    disabled={updating || !title.trim()}
+                    type="submit"
+                    disabled={
+                      isSubmitting
+                    }
                   >
-                    {updating ? (
+                    {isSubmitting ? (
                       <>
                         <Loader2 className="mr-2 size-4 animate-spin" />
                         Saving...
@@ -678,13 +1046,14 @@ export function TaskDetailSheet({
                     )}
                   </Button>
                 </div>
-              </>
+              </form>
             ) : (
               <>
                 {/* Description */}
                 <div className="rounded-xl border bg-muted/20 p-4">
                   <p className="whitespace-pre-wrap text-sm leading-6">
-                    {task.description || "No description provided."}
+                    {task.description ||
+                      "No description provided."}
                   </p>
                 </div>
 
@@ -696,7 +1065,9 @@ export function TaskDetailSheet({
                       Priority
                     </div>
 
-                    <p className="mt-1 text-sm font-medium">{task.priority}</p>
+                    <p className="mt-1 text-sm font-medium">
+                      {task.priority}
+                    </p>
                   </div>
 
                   <div className="rounded-xl border p-3">
@@ -706,7 +1077,9 @@ export function TaskDetailSheet({
                     </div>
 
                     <p className="mt-1 text-sm font-medium">
-                      {statusLabel(task.status)}
+                      {statusLabel(
+                        task.status,
+                      )}
                     </p>
                   </div>
 
@@ -717,7 +1090,9 @@ export function TaskDetailSheet({
                     </div>
 
                     <p className="mt-1 text-sm font-medium">
-                      {formatDate(task.dueDate)}
+                      {formatDate(
+                        task.dueDate,
+                      )}
                     </p>
                   </div>
 
@@ -728,13 +1103,20 @@ export function TaskDetailSheet({
                     </div>
 
                     <p className="mt-1 text-sm font-medium">
-                      {task.assignee?.fullName ??
-                        (task.assigneeId ? "Assigned" : "Unassigned")}
+                      {task.assignee
+                        ?.fullName ??
+                        (task.assigneeId
+                          ? "Assigned"
+                          : "Unassigned")}
                     </p>
 
-                    {task.assignee?.email && (
+                    {task.assignee
+                      ?.email && (
                       <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                        {task.assignee.email}
+                        {
+                          task.assignee
+                            .email
+                        }
                       </p>
                     )}
                   </div>
@@ -747,7 +1129,9 @@ export function TaskDetailSheet({
 
                     <p className="mt-1 text-sm font-medium">
                       {selectedSprint?.name ??
-                        (task.sprintId ? "Assigned to sprint" : "No sprint")}
+                        (task.sprintId
+                          ? "Assigned to sprint"
+                          : "No sprint")}
                     </p>
                   </div>
                 </div>
@@ -760,17 +1144,23 @@ export function TaskDetailSheet({
                     </div>
 
                     <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground">Project</p>
+                      <p className="text-xs text-muted-foreground">
+                        Project
+                      </p>
 
                       <p className="truncate text-sm font-medium">
-                        {task.project.name}
+                        {
+                          task.project
+                            .name
+                        }
                       </p>
                     </div>
                   </div>
                 )}
 
                 {/* Actions */}
-                {(canUpdate || canDelete) && (
+                {(canUpdate ||
+                  canDelete) && (
                   <>
                     <Separator />
 
@@ -780,7 +1170,9 @@ export function TaskDetailSheet({
                           type="button"
                           variant="outline"
                           className="flex-1"
-                          onClick={handleEditStart}
+                          onClick={
+                            handleEditStart
+                          }
                         >
                           <Pencil className="mr-2 size-4" />
                           Edit task
@@ -792,8 +1184,14 @@ export function TaskDetailSheet({
                           type="button"
                           variant="destructive"
                           className="flex-1"
-                          onClick={() => setDeleteDialogOpen(true)}
-                          disabled={deleting}
+                          onClick={() =>
+                            setDeleteDialogOpen(
+                              true,
+                            )
+                          }
+                          disabled={
+                            deleting
+                          }
                         >
                           <Trash2 className="mr-2 size-4" />
                           Delete task
@@ -808,18 +1206,33 @@ export function TaskDetailSheet({
                 {/* Comments */}
                 <CommentList
                   taskId={task.id}
-                  currentUserId={currentUserId}
+                  currentUserId={
+                    currentUserId
+                  }
                   canComment={canComment}
-                  canEditAny={canEditAnyComment}
-                  canDeleteAny={canDeleteAnyComment}
+                  canEditAny={
+                    canEditAnyComment
+                  }
+                  canDeleteAny={
+                    canDeleteAnyComment
+                  }
                 />
 
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <CheckCircle2 className="size-3.5" />
+
                   Created{" "}
-                  {new Intl.DateTimeFormat("en", {
-                    dateStyle: "medium",
-                  }).format(new Date(task.createdAt))}
+                  {new Intl.DateTimeFormat(
+                    "en",
+                    {
+                      dateStyle:
+                        "medium",
+                    },
+                  ).format(
+                    new Date(
+                      task.createdAt,
+                    ),
+                  )}
                 </div>
               </>
             )}
@@ -832,20 +1245,26 @@ export function TaskDetailSheet({
         open={deleteDialogOpen}
         onOpenChange={(value) => {
           if (!deleting) {
-            setDeleteDialogOpen(value);
+            setDeleteDialogOpen(
+              value,
+            );
           }
         }}
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete task?</DialogTitle>
+            <DialogTitle>
+              Delete task?
+            </DialogTitle>
 
             <DialogDescription>
-              Are you sure you want to delete{" "}
+              Are you sure you want to
+              delete{" "}
               <span className="font-medium text-foreground">
                 "{task.title}"
               </span>
-              ? This action cannot be undone.
+              ? This action cannot be
+              undone.
             </DialogDescription>
           </DialogHeader>
 
@@ -853,7 +1272,11 @@ export function TaskDetailSheet({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
+              onClick={() =>
+                setDeleteDialogOpen(
+                  false,
+                )
+              }
               disabled={deleting}
             >
               Cancel
@@ -862,7 +1285,9 @@ export function TaskDetailSheet({
             <Button
               type="button"
               variant="destructive"
-              onClick={() => void handleDelete()}
+              onClick={() =>
+                void handleDelete()
+              }
               disabled={deleting}
             >
               {deleting ? (

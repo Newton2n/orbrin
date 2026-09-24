@@ -1,8 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { createTeam, type Team, updateTeam } from "@/actions/team.action";
+import { z } from "zod";
+
+import {
+  createTeam,
+  type Team,
+  updateTeam,
+} from "@/actions/team.action";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,87 +30,168 @@ type TeamFormDialogProps = {
   onOpenChange: (open: boolean) => void;
 } & ({ mode: "create" } | { mode: "edit"; team: Team });
 
+const teamSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Team name is required.")
+    .max(100, "Team name must be less than 100 characters."),
+
+  description: z
+    .string()
+    .trim()
+    .max(500, "Description must be less than 500 characters."),
+});
+
+type TeamFormValues = z.infer<typeof teamSchema>;
+
 export function TeamFormDialog(props: TeamFormDialogProps) {
   const { open, onOpenChange, mode } = props;
+
   const team = mode === "edit" ? props.team : null;
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [saving, setSaving] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: {
+      errors,
+      isSubmitting,
+    },
+  } = useForm<TeamFormValues>({
+    resolver: zodResolver(teamSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+    },
+  });
 
   useEffect(() => {
-    if (!open) return;
-    setName(team?.name ?? "");
-    setDescription(team?.description ?? "");
-  }, [open, team]);
+    if (!open) {
+      return;
+    }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!name.trim()) {
-      toast.error("Team name is required.");
-      return;
+    reset({
+      name: team?.name ?? "",
+      description: team?.description ?? "",
+    });
+  }, [open, team, reset]);
+
+  async function onSubmit(values: TeamFormValues) {
+    try {
+      const name = values.name.trim();
+      const description = values.description.trim();
+
+      const result =
+        mode === "create"
+          ? await createTeam({
+              name,
+              description: description || undefined,
+            })
+          : await updateTeam(team?.id as string, {
+              name,
+              description,
+            });
+
+      if (!result.ok) {
+        toast.error(result.message ?? "Unable to save team.");
+        return;
+      }
+
+      toast.success(result.message ?? "Team saved.");
+
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Team form error:", error);
+
+      toast.error(
+        mode === "create"
+          ? "Unable to create team."
+          : "Unable to update team.",
+      );
     }
-    setSaving(true);
-    const result =
-      mode === "create"
-        ? await createTeam({
-            name: name.trim(),
-            description: description || undefined,
-          })
-        : team
-          ? await updateTeam(team.id, { name: name.trim(), description })
-          : null;
-    setSaving(false);
-    if (!result) return;
-    if (!result.ok) {
-      toast.error(result.message ?? "Unable to save team.");
-      return;
-    }
-    toast.success(result.message ?? "Team saved.");
-    onOpenChange(false);
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        if (!isSubmitting) {
+          onOpenChange(value);
+        }
+      }}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
             {mode === "create" ? "Create team" : "Edit team"}
           </DialogTitle>
+
           <DialogDescription>
             {mode === "create"
               ? "Create a team for your organization."
               : "Update the team details below."}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-4"
+        >
           <div className="space-y-2">
             <Label htmlFor="team-name">Name</Label>
+
             <Input
               id="team-name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              required
+              {...register("name")}
+              placeholder="Engineering"
+              disabled={isSubmitting}
+              aria-invalid={Boolean(errors.name)}
             />
+
+            {errors.name && (
+              <p className="text-sm text-destructive">
+                {errors.name.message}
+              </p>
+            )}
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="team-description">Description</Label>
+            <Label htmlFor="team-description">
+              Description
+            </Label>
+
             <Textarea
               id="team-description"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
+              {...register("description")}
+              placeholder="Describe what this team is responsible for..."
               rows={4}
+              disabled={isSubmitting}
+              aria-invalid={Boolean(errors.description)}
             />
+
+            {errors.description && (
+              <p className="text-sm text-destructive">
+                {errors.description.message}
+              </p>
+            )}
           </div>
+
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={saving}>
-              {saving
+
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting
                 ? "Saving..."
                 : mode === "create"
                   ? "Create team"

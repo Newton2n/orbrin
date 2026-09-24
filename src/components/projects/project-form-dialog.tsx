@@ -1,6 +1,10 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 
 import {
   createProject,
@@ -28,8 +32,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-
-import { toast } from "sonner";
 
 type ProjectFormDialogProps = {
   open: boolean;
@@ -65,143 +67,297 @@ const PROJECT_STATUSES = [
     value: "ARCHIVED",
     label: "Archived",
   },
-];
+] as const;
 
-export function ProjectFormDialog(props: ProjectFormDialogProps) {
-  const { open, onOpenChange, mode } = props;
+const projectStatusSchema = z.enum([
+  "ACTIVE",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "ARCHIVED",
+]);
 
-  const project = mode === "create" ? null : props.project;
+const projectFieldsSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Project name is required.")
+    .max(
+      100,
+      "Project name must be less than 100 characters.",
+    ),
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("ACTIVE");
-  const [file, setFile] = useState<File | null>(null);
-  const [saving, setSaving] = useState(false);
+  description: z
+    .string()
+    .trim()
+    .max(
+      1000,
+      "Description must be less than 1000 characters.",
+    ),
 
-  const documentMode = mode === "upload";
+  status: projectStatusSchema,
+});
+
+const pdfFileSchema = z
+  .instanceof(File, {
+    message: "Please choose a PDF document.",
+  })
+  .refine(
+    (file) =>
+      file.type === "application/pdf" ||
+      file.name.toLowerCase().endsWith(".pdf"),
+    {
+      message: "Only PDF documents are supported.",
+    },
+  );
+
+type ProjectFormValues = z.infer<
+  typeof projectFieldsSchema
+>;
+
+export function ProjectFormDialog(
+  props: ProjectFormDialogProps,
+) {
+  const {
+    open,
+    onOpenChange,
+    mode,
+  } = props;
+
+  const project =
+    mode === "create" ? null : props.project;
+
+  const [file, setFile] =
+    useState<File | null>(null);
+
+  const {
+    register,
+    handleSubmit: submitForm,
+    reset,
+    setValue,
+    watch,
+    formState: {
+      errors,
+      isSubmitting,
+    },
+  } = useForm<ProjectFormValues>({
+    resolver: zodResolver(
+      projectFieldsSchema,
+    ),
+    defaultValues: {
+      name: "",
+      description: "",
+      status: "ACTIVE",
+    },
+  });
+
+  const status = watch("status");
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
 
-    setName(project?.name ?? "");
-    setDescription(project?.description ?? "");
+    // Reset the form whenever the dialog opens
+    // or a different project is selected.
+    const currentStatus =
+      project?.status;
 
-    const currentStatus = project?.status ?? "ACTIVE";
+    const validStatus: ProjectFormValues["status"] =
+      PROJECT_STATUSES.some(
+        (item) => item.value === currentStatus,
+      )
+        ? (currentStatus as ProjectFormValues["status"])
+        : "ACTIVE";
 
-    setStatus(
-      PROJECT_STATUSES.some((item) => item.value === currentStatus)
-        ? currentStatus
-        : "ACTIVE",
-    );
+    reset({
+      name: project?.name ?? "",
+      description:
+        project?.description ?? "",
+      status: validStatus,
+    });
 
     setFile(null);
-  }, [open, project]);
+  }, [open, project, reset]);
 
-  function validatePdf(selectedFile: File | null) {
-    if (!selectedFile) {
-      toast.error("Please choose a PDF document.");
-      return false;
-    }
+  function handleFileChange(
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const selectedFile =
+      event.target.files?.[0] ?? null;
 
-    const isPdf =
-      selectedFile.type === "application/pdf" ||
-      selectedFile.name.toLowerCase().endsWith(".pdf");
-
-    if (!isPdf) {
-      toast.error("Only PDF documents are supported.");
-      return false;
-    }
-
-    return true;
+    setFile(selectedFile);
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (saving) return;
-
-    setSaving(true);
-
-    try {
-      if (mode === "create") {
-        const formData = new FormData();
-
-        formData.append("name", name.trim());
-
-        if (description.trim()) {
-          formData.append("description", description.trim());
-        }
-
-        if (file) {
-          if (!validatePdf(file)) {
-            return;
-          }
-
-          formData.append("document", file);
-        }
-
-        const result = await createProject(formData);
-
-        if (!result.ok) {
-          toast.error(result.message ?? "Unable to create project.");
-          return;
-        }
-
-        toast.success(result.message ?? "Project created successfully.");
-
-        onOpenChange(false);
+  async function handleSubmit(
+    values: ProjectFormValues,
+  ) {
+    // Upload mode only needs the selected PDF.
+    if (mode === "upload") {
+      if (!project) {
         return;
       }
 
-      if (mode === "edit") {
-        if (!project) return;
-
-        const result = await updateProject({
-          projectId: project.id,
-          name: name.trim(),
-          description: description.trim(),
-          status,
-        });
-
-        if (!result.ok) {
-          toast.error(result.message ?? "Unable to update project.");
-          return;
-        }
-
-        toast.success(result.message ?? "Project updated successfully.");
-
-        onOpenChange(false);
+      if (!file) {
+        toast.error(
+          "Please choose a PDF document.",
+        );
         return;
       }
 
-      if (mode === "upload") {
-        if (!project) return;
+      const validation =
+        pdfFileSchema.safeParse(file);
 
-        // Narrow File | null to File before calling the action.
-        if (!file) {
-          toast.error("Please choose a PDF document.");
-          return;
-        }
+      if (!validation.success) {
+        toast.error(
+          validation.error.issues[0]
+            ?.message ??
+            "Invalid PDF document.",
+        );
+        return;
+      }
 
-        if (!validatePdf(file)) {
-          return;
-        }
-
-        const result = await uploadProjectDocument(project.id, file);
+      try {
+        const result =
+          await uploadProjectDocument(
+            project.id,
+            file,
+          );
 
         if (!result.ok) {
-          toast.error(result.message ?? "Unable to upload document.");
+          toast.error(
+            result.message ??
+              "Unable to upload document.",
+          );
           return;
         }
 
         toast.success(
-          result.message ?? "Project document uploaded successfully.",
+          result.message ??
+            "Project document uploaded successfully.",
         );
 
         onOpenChange(false);
+      } catch (error) {
+        console.error(
+          "Upload project document error:",
+          error,
+        );
+
+        toast.error(
+          "Something went wrong.",
+        );
       }
-    } finally {
-      setSaving(false);
+
+      return;
+    }
+
+    // Create a new project.
+    if (mode === "create") {
+      const formData = new FormData();
+
+      formData.append(
+        "name",
+        values.name.trim(),
+      );
+
+      if (values.description.trim()) {
+        formData.append(
+          "description",
+          values.description.trim(),
+        );
+      }
+
+      if (file) {
+        const validation =
+          pdfFileSchema.safeParse(file);
+
+        if (!validation.success) {
+          toast.error(
+            validation.error.issues[0]
+              ?.message ??
+              "Invalid PDF document.",
+          );
+          return;
+        }
+
+        formData.append(
+          "document",
+          file,
+        );
+      }
+
+      try {
+        const result =
+          await createProject(formData);
+
+        if (!result.ok) {
+          toast.error(
+            result.message ??
+              "Unable to create project.",
+          );
+          return;
+        }
+
+        toast.success(
+          result.message ??
+            "Project created successfully.",
+        );
+
+        onOpenChange(false);
+      } catch (error) {
+        console.error(
+          "Create project error:",
+          error,
+        );
+
+        toast.error(
+          "Something went wrong.",
+        );
+      }
+
+      return;
+    }
+
+    // Update the existing project.
+    if (mode === "edit") {
+      if (!project) {
+        return;
+      }
+
+      try {
+        const result =
+          await updateProject({
+            projectId: project.id,
+            name: values.name.trim(),
+            description:
+              values.description.trim(),
+            status: values.status,
+          });
+
+        if (!result.ok) {
+          toast.error(
+            result.message ??
+              "Unable to update project.",
+          );
+          return;
+        }
+
+        toast.success(
+          result.message ??
+            "Project updated successfully.",
+        );
+
+        onOpenChange(false);
+      } catch (error) {
+        console.error(
+          "Update project error:",
+          error,
+        );
+
+        toast.error(
+          "Something went wrong.",
+        );
+      }
     }
   }
 
@@ -212,11 +368,24 @@ export function ProjectFormDialog(props: ProjectFormDialogProps) {
         ? "Edit project"
         : "Upload project document";
 
+  const documentMode =
+    mode === "upload";
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        // Don't allow the dialog to close while saving.
+        if (!isSubmitting) {
+          onOpenChange(value);
+        }
+      }}
+    >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>
+            {title}
+          </DialogTitle>
 
           <DialogDescription>
             {mode === "create"
@@ -227,68 +396,122 @@ export function ProjectFormDialog(props: ProjectFormDialogProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form
+          onSubmit={submitForm(handleSubmit)}
+          className="space-y-5"
+        >
           {!documentMode && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="project-name">Project name</Label>
+                <Label htmlFor="project-name">
+                  Project name
+                </Label>
 
                 <Input
                   id="project-name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
+                  {...register("name")}
                   placeholder="Website Revamp"
-                  required
+                  disabled={isSubmitting}
+                  aria-invalid={Boolean(
+                    errors.name,
+                  )}
                 />
+
+                {errors.name && (
+                  <p className="text-sm text-destructive">
+                    {errors.name.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="project-description">Description</Label>
+                <Label htmlFor="project-description">
+                  Description
+                </Label>
 
                 <Textarea
                   id="project-description"
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
+                  {...register(
+                    "description",
+                  )}
                   placeholder="Describe the project..."
                   rows={4}
+                  disabled={isSubmitting}
+                  aria-invalid={Boolean(
+                    errors.description,
+                  )}
                 />
+
+                {errors.description && (
+                  <p className="text-sm text-destructive">
+                    {
+                      errors.description
+                        .message
+                    }
+                  </p>
+                )}
               </div>
             </>
           )}
 
           {mode === "edit" && (
             <div className="space-y-2">
-              <Label htmlFor="project-status">Status</Label>
+              <Label htmlFor="project-status">
+                Status
+              </Label>
 
               <Select
                 value={status}
                 onValueChange={(value) => {
                   if (value !== null) {
-                    setStatus(value);
+                    setValue(
+                      "status",
+                      value as ProjectFormValues["status"],
+                      {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      },
+                    );
                   }
                 }}
+                disabled={isSubmitting}
               >
                 <SelectTrigger id="project-status">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
 
                 <SelectContent>
-                  {PROJECT_STATUSES.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
+                  {PROJECT_STATUSES.map(
+                    (item) => (
+                      <SelectItem
+                        key={item.value}
+                        value={item.value}
+                      >
+                        {item.label}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
+
+              {errors.status && (
+                <p className="text-sm text-destructive">
+                  {errors.status.message}
+                </p>
+              )}
             </div>
           )}
 
-          {(mode === "create" || documentMode) && (
+          {(mode === "create" ||
+            documentMode) && (
             <div className="space-y-2">
               <Label htmlFor="project-document">
                 PDF document
+
                 {mode === "create" && (
-                  <span className="ml-1 text-muted-foreground">(optional)</span>
+                  <span className="ml-1 text-muted-foreground">
+                    (optional)
+                  </span>
                 )}
               </Label>
 
@@ -296,12 +519,19 @@ export function ProjectFormDialog(props: ProjectFormDialogProps) {
                 id="project-document"
                 type="file"
                 accept="application/pdf,.pdf"
-                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                onChange={handleFileChange}
+                disabled={isSubmitting}
               />
 
               {file && (
                 <p className="text-xs text-muted-foreground">
                   Selected: {file.name}
+                </p>
+              )}
+
+              {mode === "upload" && (
+                <p className="text-xs text-muted-foreground">
+                  PDF documents only.
                 </p>
               )}
             </div>
@@ -311,14 +541,19 @@ export function ProjectFormDialog(props: ProjectFormDialogProps) {
             <Button
               type="button"
               variant="outline"
-              disabled={saving}
-              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+              onClick={() =>
+                onOpenChange(false)
+              }
             >
               Cancel
             </Button>
 
-            <Button type="submit" disabled={saving}>
-              {saving
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting
                 ? "Saving..."
                 : mode === "create"
                   ? "Create project"

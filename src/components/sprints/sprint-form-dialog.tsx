@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 
 import {
   createSprint,
@@ -21,10 +26,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { Input } from "@/components/ui/input";
-
 import { Label } from "@/components/ui/label";
-
-import { Textarea } from "@/components/ui/textarea";
 
 import {
   Select,
@@ -34,20 +36,62 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { Loader2 } from "lucide-react";
-
-import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
 
 type SprintFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-
   projectId: string;
-
   sprint?: Sprint | null;
-
   onSuccess?: (sprint: Sprint) => void;
 };
+
+const sprintStatusSchema = z.enum([
+  "PLANNING",
+  "ACTIVE",
+  "COMPLETED",
+]);
+
+const sprintSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(1, "Sprint name is required.")
+      .max(
+        100,
+        "Sprint name must be less than 100 characters.",
+      ),
+
+    goal: z
+      .string()
+      .trim()
+      .max(
+        1000,
+        "Sprint goal must be less than 1000 characters.",
+      ),
+
+    status: sprintStatusSchema,
+
+    startDate: z.string(),
+
+    endDate: z.string(),
+  })
+  .refine(
+    (data) => {
+      if (!data.startDate || !data.endDate) {
+        return true;
+      }
+
+      return data.startDate <= data.endDate;
+    },
+    {
+      message: "End date cannot be before start date.",
+      path: ["endDate"],
+    },
+  );
+
+type SprintFormValues = z.infer<typeof sprintSchema>;
 
 export function SprintFormDialog({
   open,
@@ -58,17 +102,28 @@ export function SprintFormDialog({
 }: SprintFormDialogProps) {
   const editing = Boolean(sprint);
 
-  const [name, setName] = useState("");
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: {
+      errors,
+      isSubmitting,
+    },
+  } = useForm<SprintFormValues>({
+    resolver: zodResolver(sprintSchema),
+    defaultValues: {
+      name: "",
+      goal: "",
+      status: "PLANNING",
+      startDate: "",
+      endDate: "",
+    },
+  });
 
-  const [goal, setGoal] = useState("");
-
-  const [status, setStatus] = useState<SprintStatus>("PLANNING");
-
-  const [startDate, setStartDate] = useState("");
-
-  const [endDate, setEndDate] = useState("");
-
-  const [loading, setLoading] = useState(false);
+  const status = watch("status");
 
   useEffect(() => {
     if (!open) {
@@ -76,57 +131,62 @@ export function SprintFormDialog({
     }
 
     if (sprint) {
-      setName(sprint.name);
-      setGoal(sprint.goal ?? "");
-      setStatus(sprint.status);
-      setStartDate(toDateInputValue(sprint.startDate));
-      setEndDate(toDateInputValue(sprint.endDate));
+      reset({
+        name: sprint.name,
+        goal: sprint.goal ?? "",
+        status: sprint.status as SprintFormValues["status"],
+        startDate: toDateInputValue(
+          sprint.startDate,
+        ),
+        endDate: toDateInputValue(
+          sprint.endDate,
+        ),
+      });
+
       return;
     }
 
-    setName("");
-    setGoal("");
-    setStatus("PLANNING");
-    setStartDate("");
-    setEndDate("");
-  }, [open, sprint]);
+    reset({
+      name: "",
+      goal: "",
+      status: "PLANNING",
+      startDate: "",
+      endDate: "",
+    });
+  }, [open, sprint, reset]);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!name.trim()) {
-      toast.error("Sprint name is required.");
-      return;
-    }
-
-    if (startDate && endDate && startDate > endDate) {
-      toast.error("End date cannot be before start date.");
-      return;
-    }
-
+  async function onSubmit(values: SprintFormValues) {
     try {
-      setLoading(true);
-
       if (sprint) {
         const result = await updateSprint({
           sprintId: sprint.id,
-          name: name.trim(),
-          goal: goal.trim(),
-          status,
-          startDate: startDate
-            ? new Date(`${startDate}T00:00:00`).toISOString()
+          name: values.name.trim(),
+          goal: values.goal.trim(),
+          status: values.status as SprintStatus,
+          startDate: values.startDate
+            ? new Date(
+                `${values.startDate}T00:00:00`,
+              ).toISOString()
             : undefined,
-          endDate: endDate
-            ? new Date(`${endDate}T23:59:59`).toISOString()
+          endDate: values.endDate
+            ? new Date(
+                `${values.endDate}T23:59:59`,
+              ).toISOString()
             : undefined,
         });
 
         if (!result.ok) {
-          toast.error(result.message ?? "Unable to update sprint.");
+          toast.error(
+            result.message ??
+              "Unable to update sprint.",
+          );
           return;
         }
 
-        toast.success(result.message ?? "Sprint updated successfully.");
+        toast.success(
+          result.message ??
+            "Sprint updated successfully.",
+        );
 
         if (result.data) {
           onSuccess?.(result.data);
@@ -138,23 +198,33 @@ export function SprintFormDialog({
 
       const result = await createSprint({
         projectId,
-        name: name.trim(),
-        goal: goal.trim(),
-        status,
-        startDate: startDate
-          ? new Date(`${startDate}T00:00:00`).toISOString()
+        name: values.name.trim(),
+        goal: values.goal.trim(),
+        status: values.status as SprintStatus,
+        startDate: values.startDate
+          ? new Date(
+              `${values.startDate}T00:00:00`,
+            ).toISOString()
           : undefined,
-        endDate: endDate
-          ? new Date(`${endDate}T23:59:59`).toISOString()
+        endDate: values.endDate
+          ? new Date(
+              `${values.endDate}T23:59:59`,
+            ).toISOString()
           : undefined,
       });
 
       if (!result.ok) {
-        toast.error(result.message ?? "Unable to create sprint.");
+        toast.error(
+          result.message ??
+            "Unable to create sprint.",
+        );
         return;
       }
 
-      toast.success(result.message ?? "Sprint created successfully.");
+      toast.success(
+        result.message ??
+          "Sprint created successfully.",
+      );
 
       if (result.data) {
         onSuccess?.(result.data);
@@ -162,13 +232,16 @@ export function SprintFormDialog({
 
       onOpenChange(false);
     } catch (error) {
-      console.error("Sprint form error:", error);
+      console.error(
+        "Sprint form error:",
+        error,
+      );
 
       toast.error(
-        editing ? "Unable to update sprint." : "Unable to create sprint.",
+        editing
+          ? "Unable to update sprint."
+          : "Unable to create sprint.",
       );
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -176,14 +249,18 @@ export function SprintFormDialog({
     <Dialog
       open={open}
       onOpenChange={(value) => {
-        if (!loading) {
+        if (!isSubmitting) {
           onOpenChange(value);
         }
       }}
     >
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{editing ? "Edit sprint" : "Create sprint"}</DialogTitle>
+          <DialogTitle>
+            {editing
+              ? "Edit sprint"
+              : "Create sprint"}
+          </DialogTitle>
 
           <DialogDescription>
             {editing
@@ -192,77 +269,144 @@ export function SprintFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-5"
+        >
           <div className="space-y-2">
-            <Label htmlFor="sprint-name">Name</Label>
+            <Label htmlFor="sprint-name">
+              Name
+            </Label>
 
             <Input
               id="sprint-name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
+              {...register("name")}
               placeholder="Sprint 1"
-              disabled={loading}
+              disabled={isSubmitting}
+              aria-invalid={Boolean(
+                errors.name,
+              )}
             />
+
+            {errors.name && (
+              <p className="text-sm text-destructive">
+                {errors.name.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="sprint-goal">Goal</Label>
+            <Label htmlFor="sprint-goal">
+              Goal
+            </Label>
 
             <Textarea
               id="sprint-goal"
-              value={goal}
-              onChange={(event) => setGoal(event.target.value)}
+              {...register("goal")}
               placeholder="What should this sprint accomplish?"
               rows={4}
-              disabled={loading}
+              disabled={isSubmitting}
+              aria-invalid={Boolean(
+                errors.goal,
+              )}
             />
+
+            {errors.goal && (
+              <p className="text-sm text-destructive">
+                {errors.goal.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label>Status</Label>
+            <Label htmlFor="sprint-status">
+              Status
+            </Label>
 
             <Select
               value={status}
-              onValueChange={(value) => setStatus(value as SprintStatus)}
-              disabled={loading}
+              onValueChange={(value) => {
+                if (value !== null) {
+                  setValue(
+                    "status",
+                    value as SprintFormValues["status"],
+                    {
+                      shouldValidate: true,
+                    },
+                  );
+                }
+              }}
+              disabled={isSubmitting}
             >
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger id="sprint-status">
+                <SelectValue placeholder="Select status" />
               </SelectTrigger>
 
               <SelectContent>
-                <SelectItem value="PLANNING">Planning</SelectItem>
+                <SelectItem value="PLANNING">
+                  Planning
+                </SelectItem>
 
-                <SelectItem value="ACTIVE">Active</SelectItem>
+                <SelectItem value="ACTIVE">
+                  Active
+                </SelectItem>
 
-                <SelectItem value="COMPLETED">Completed</SelectItem>
+                <SelectItem value="COMPLETED">
+                  Completed
+                </SelectItem>
               </SelectContent>
             </Select>
+
+            {errors.status && (
+              <p className="text-sm text-destructive">
+                {errors.status.message}
+              </p>
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="sprint-start">Start date</Label>
+              <Label htmlFor="sprint-start">
+                Start date
+              </Label>
 
               <Input
                 id="sprint-start"
                 type="date"
-                value={startDate}
-                onChange={(event) => setStartDate(event.target.value)}
-                disabled={loading}
+                {...register("startDate")}
+                disabled={isSubmitting}
+                aria-invalid={Boolean(
+                  errors.startDate,
+                )}
               />
+
+              {errors.startDate && (
+                <p className="text-sm text-destructive">
+                  {errors.startDate.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sprint-end">End date</Label>
+              <Label htmlFor="sprint-end">
+                End date
+              </Label>
 
               <Input
                 id="sprint-end"
                 type="date"
-                value={endDate}
-                onChange={(event) => setEndDate(event.target.value)}
-                disabled={loading}
+                {...register("endDate")}
+                disabled={isSubmitting}
+                aria-invalid={Boolean(
+                  errors.endDate,
+                )}
               />
+
+              {errors.endDate && (
+                <p className="text-sm text-destructive">
+                  {errors.endDate.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -270,17 +414,24 @@ export function SprintFormDialog({
             <Button
               type="button"
               variant="outline"
-              disabled={loading}
-              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+              onClick={() =>
+                onOpenChange(false)
+              }
             >
               Cancel
             </Button>
 
-            <Button type="submit" disabled={loading}>
-              {loading ? (
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 size-4 animate-spin" />
-                  {editing ? "Updating..." : "Creating..."}
+                  {editing
+                    ? "Updating..."
+                    : "Creating..."}
                 </>
               ) : editing ? (
                 "Update sprint"
@@ -295,7 +446,9 @@ export function SprintFormDialog({
   );
 }
 
-function toDateInputValue(value: string | null) {
+function toDateInputValue(
+  value: string | null,
+) {
   if (!value) {
     return "";
   }
@@ -308,9 +461,13 @@ function toDateInputValue(value: string | null) {
 
   const year = date.getFullYear();
 
-  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const month = String(
+    date.getMonth() + 1,
+  ).padStart(2, "0");
 
-  const day = String(date.getDate()).padStart(2, "0");
+  const day = String(
+    date.getDate(),
+  ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }

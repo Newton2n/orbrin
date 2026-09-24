@@ -1,8 +1,11 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Send } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import {
   createComment,
@@ -20,42 +23,64 @@ type CommentFormProps = {
   onCancel?: () => void;
 };
 
+const commentSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, "Comment cannot be empty.")
+    .max(2000, "Comment must be less than 2000 characters."),
+});
+
+type CommentFormValues = z.infer<typeof commentSchema>;
+
 export function CommentForm({
   taskId,
   comment,
   onSuccess,
   onCancel,
 }: CommentFormProps) {
-  const [content, setContent] = useState(comment?.content ?? "");
   const [saving, setSaving] = useState(false);
 
   const editing = Boolean(comment);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CommentFormValues>({
+    resolver: zodResolver(commentSchema),
+    defaultValues: {
+      content: comment?.content ?? "",
+    },
+  });
 
-    const value = content.trim();
+  useEffect(() => {
+    reset({
+      content: comment?.content ?? "",
+    });
+  }, [comment, reset]);
 
-    if (!value) {
-      toast.error("Comment cannot be empty.");
-      return;
-    }
-
+  async function onSubmit(values: CommentFormValues) {
     setSaving(true);
 
     try {
+      const content = values.content.trim();
+
       const result =
         editing && comment
           ? await updateComment({
               commentId: comment.id,
-              content: value,
+              content,
             })
           : await createComment(taskId, {
-              content: value,
+              content,
             });
 
       if (!result.success) {
-        toast.error(result.message ?? "Unable to save comment.");
+        toast.error(
+          result.message ?? "Unable to save comment.",
+        );
         return;
       }
 
@@ -65,9 +90,14 @@ export function CommentForm({
           : "Comment added successfully.",
       );
 
-      setContent("");
+      reset({
+        content: "",
+      });
+
       onSuccess();
-    } catch {
+    } catch (error) {
+      console.error(error);
+
       toast.error("Something went wrong.");
     } finally {
       setSaving(false);
@@ -75,14 +105,25 @@ export function CommentForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <Textarea
-        value={content}
-        onChange={(event) => setContent(event.target.value)}
-        placeholder="Write a comment..."
-        rows={3}
-        disabled={saving}
-      />
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-3"
+    >
+      <div className="space-y-1.5">
+        <Textarea
+          {...register("content")}
+          placeholder="Write a comment..."
+          rows={3}
+          disabled={saving}
+          aria-invalid={Boolean(errors.content)}
+        />
+
+        {errors.content && (
+          <p className="text-sm text-destructive">
+            {errors.content.message}
+          </p>
+        )}
+      </div>
 
       <div className="flex justify-end gap-2">
         {editing && onCancel ? (
@@ -96,7 +137,7 @@ export function CommentForm({
           </Button>
         ) : null}
 
-        <Button type="submit" disabled={saving || !content.trim()}>
+        <Button type="submit" disabled={saving}>
           {saving ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
