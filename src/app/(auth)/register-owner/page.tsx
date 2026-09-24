@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
+
 import { registerOwner } from "../../../actions/auth.action";
 import { Button } from "../../../components/ui/button";
 import {
@@ -30,17 +32,14 @@ import { registerOwnerSchema } from "../../../features/auth/schemas/auth.schema"
 
 type OwnerValues = z.infer<typeof registerOwnerSchema>;
 
-function generateRandomSuffix(): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < 4; i++) {
-    result += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return result;
+function generateSuffix() {
+  return Math.random()
+    .toString(36)
+    .slice(2, 6);
 }
 
-function generateSlugFromName(name: string): string {
-  const base = name
+function generateSlug(name: string) {
+  const slug = name
     .toLowerCase()
     .trim()
     .replace(/[^\p{L}\p{N}\s-]/gu, "")
@@ -48,14 +47,21 @@ function generateSlugFromName(name: string): string {
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-  if (!base) return generateRandomSuffix();
-
-  return `${base}-${generateRandomSuffix()}`;
+  return slug
+    ? `${slug}-${generateSuffix()}`
+    : generateSuffix();
 }
 
 export default function RegisterOwnerPage() {
   const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
+
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [slugTouched, setSlugTouched] =
+    useState(false);
+
+  const lastGeneratedName = useRef("");
 
   const form = useForm<OwnerValues>({
     resolver: zodResolver(registerOwnerSchema),
@@ -69,181 +75,294 @@ export default function RegisterOwnerPage() {
     },
   });
 
-  const orgNameValue = form.watch("organizationName");
-  const orgSlugValue = form.watch("organizationSlug");
+  const organizationName = form.watch(
+    "organizationName",
+  );
 
-  const [slugTouched, setSlugTouched] = useState(false);
-  const lastNameUsedForSlug = useRef<string>("");
+  const organizationSlug = form.watch(
+    "organizationSlug",
+  );
 
   useEffect(() => {
     if (slugTouched) return;
 
-    const trimmedName = orgNameValue.trim();
-    if (!trimmedName) {
-      if (!orgSlugValue && lastNameUsedForSlug.current) {
-        form.setValue("organizationSlug", "", {
-          shouldValidate: true,
-          shouldDirty: false,
-        });
+    const name = organizationName.trim();
+
+    if (!name) {
+      if (organizationSlug) {
+        form.setValue("organizationSlug", "");
       }
+
+      lastGeneratedName.current = "";
+
       return;
     }
 
-    if (trimmedName === lastNameUsedForSlug.current) return;
+    if (name === lastGeneratedName.current) {
+      return;
+    }
 
-    const generated = generateSlugFromName(trimmedName);
-    lastNameUsedForSlug.current = trimmedName;
+    const slug = generateSlug(name);
 
-    form.setValue("organizationSlug", generated, {
+    lastGeneratedName.current = name;
+
+    form.setValue("organizationSlug", slug, {
       shouldValidate: true,
       shouldDirty: false,
     });
-  }, [orgNameValue, slugTouched, form, orgSlugValue]);
+  }, [
+    organizationName,
+    organizationSlug,
+    slugTouched,
+    form,
+  ]);
 
-  async function onSubmit(values: OwnerValues) {
+  async function submit(values: OwnerValues) {
     try {
       const result = await registerOwner(values);
-      if (!result.success) throw new Error(result.message);
+
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+
       toast.success("Workspace created", {
-        description: "You can now sign in to Orbrin.",
+        description:
+          "Your workspace is ready. You can now sign in.",
       });
+
       router.push("/login");
     } catch (error) {
-      toast.error("Registration failed", {
+      toast.error("Unable to create workspace", {
         description:
-          error instanceof Error ? error.message : "Please try again.",
+          error instanceof Error
+            ? error.message
+            : "Please try again.",
       });
     }
   }
 
-  const fields: {
-    name: keyof OwnerValues;
-    label: string;
-    type?: "text" | "email" | "password";
-    placeholder?: string;
-  }[] = [
-    { name: "fullName", label: "Full name", type: "text" },
-    { name: "email", label: "Email", type: "email" },
-    {
-      name: "password",
-      label: "Password",
-      type: showPassword ? "text" : "password",
-    },
-    { name: "organizationName", label: "Organization name", type: "text" },
-    {
-      name: "organizationSlug",
-      label: "Organization slug",
-      type: "text",
-      placeholder: "acme-studio",
-    },
-  ];
-
   return (
-    <Card className="border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <CardHeader className="px-5 pt-5 sm:px-6 sm:pt-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="h-1.5 w-1.5 rounded-full bg-black dark:bg-white" />
-            <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-zinc-500 dark:text-zinc-400">
-              Orbrin
-            </p>
-          </div>
+    <div className="w-full max-w-md">
+      {/* Header */}
+      <div className="mb-6 text-center">
+        <Link
+          href="/login"
+          className="mb-6 inline-flex items-center gap-2"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-900 text-sm font-semibold text-white dark:bg-white dark:text-zinc-900">
+            O
+          </span>
 
-          <CardTitle className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-3xl">
-            Create your workspace
-          </CardTitle>
-          <CardDescription className="text-sm text-zinc-500 dark:text-zinc-400 sm:text-base">
-            Set up the organization where your team will do its best work.
+          <span className="text-lg font-semibold">
+            Orbrin
+          </span>
+        </Link>
+
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Create your workspace
+        </h1>
+
+        <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+          Set up your organization and become its owner.
+        </p>
+      </div>
+
+      <Card className="border-zinc-200 shadow-sm dark:border-zinc-800">
+        <CardHeader className="sr-only">
+          <CardTitle>Create workspace</CardTitle>
+
+          <CardDescription>
+            Create your Orbrin workspace.
           </CardDescription>
-        </div>
-      </CardHeader>
+        </CardHeader>
 
-      <CardContent className="px-5 pb-5 sm:px-6 sm:pb-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {fields.map((f) => {
-              const isPassword = f.name === "password";
-              const isSlug = f.name === "organizationSlug";
+        <CardContent className="p-5 sm:p-6">
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(submit)}
+              className="space-y-4"
+            >
+              <FormField
+                control={form.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full name</FormLabel>
 
-              return (
+                    <FormControl>
+                      <Input
+                        {...field}
+                        autoComplete="name"
+                        placeholder="John Doe"
+                        className="h-11 rounded-lg"
+                      />
+                    </FormControl>
+
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="email"
+                        autoComplete="email"
+                        placeholder="you@company.com"
+                        className="h-11 rounded-lg"
+                      />
+                    </FormControl>
+
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          {...field}
+                          type={
+                            showPassword
+                              ? "text"
+                              : "password"
+                          }
+                          autoComplete="new-password"
+                          placeholder="At least 6 characters"
+                          className="h-11 rounded-lg pr-10"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowPassword(
+                              (value) => !value,
+                            )
+                          }
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                          aria-label={
+                            showPassword
+                              ? "Hide password"
+                              : "Show password"
+                          }
+                        >
+                          {showPassword ? (
+                            <EyeOff className="size-4" />
+                          ) : (
+                            <Eye className="size-4" />
+                          )}
+                        </button>
+                      </div>
+                    </FormControl>
+
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="border-t border-zinc-200 pt-4 dark:border-zinc-800">
+                <p className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-400">
+                  Workspace
+                </p>
+
                 <FormField
-                  key={f.name}
                   control={form.control}
-                  name={f.name}
+                  name="organizationName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-medium tracking-wide text-zinc-700 dark:text-zinc-300">
-                        {f.label}
+                      <FormLabel>
+                        Organization name
                       </FormLabel>
+
                       <FormControl>
-                        {isPassword ? (
-                          <div className="relative">
-                            <Input
-                              type={f.type}
-                              placeholder="••••••••"
-                              className="h-11 rounded-md border border-zinc-200 bg-white pr-10 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-0 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-600"
-                              {...field}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowPassword((s) => !s)}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-zinc-500 transition hover:text-zinc-800 focus:outline-none focus:ring-0 dark:text-zinc-400 dark:hover:text-zinc-200"
-                              aria-label={
-                                showPassword ? "Hide password" : "Show password"
-                              }
-                            >
-                              {showPassword ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </button>
-                          </div>
-                        ) : (
-                          <Input
-                            type={f.type}
-                            placeholder={f.placeholder}
-                            className="h-11 rounded-md border border-zinc-200 bg-white text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-0 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-600"
-                            {...field}
-                            onBlur={(e) => {
-                              if (isSlug) setSlugTouched(true);
-                              field.onBlur();
-                            }}
-                          />
-                        )}
+                        <Input
+                          {...field}
+                          placeholder="Acme Inc."
+                          className="h-11 rounded-lg"
+                        />
                       </FormControl>
-                      <FormMessage className="text-xs" />
+
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
-              );
-            })}
 
-            <Button
-              className="mt-1 h-11 w-full rounded-md bg-zinc-900 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-              type="submit"
-              disabled={form.formState.isSubmitting || !form.formState.isValid}
-            >
-              {form.formState.isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Create workspace
-            </Button>
-          </form>
-        </Form>
+                <FormField
+                  control={form.control}
+                  name="organizationSlug"
+                  render={({ field }) => (
+                    <FormItem className="mt-4">
+                      <FormLabel>
+                        Workspace URL
+                      </FormLabel>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Already have a workspace?{" "}
-            <Link
-              className="font-medium text-zinc-900 underline-offset-4 transition hover:underline dark:text-zinc-100"
-              href="/login"
-            >
-              Sign in
-            </Link>
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="acme-inc"
+                          onBlur={() => {
+                            setSlugTouched(true);
+                            field.onBlur();
+                          }}
+                          className="h-11 rounded-lg"
+                        />
+                      </FormControl>
+
+                      <p className="text-xs text-zinc-400">
+                        Used to identify your workspace.
+                      </p>
+
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={
+                  form.formState.isSubmitting ||
+                  !form.formState.isValid
+                }
+                className="h-11 w-full rounded-lg"
+              >
+                {form.formState.isSubmitting && (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                )}
+
+                Create workspace
+              </Button>
+            </form>
+          </Form>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="font-medium text-zinc-950 hover:underline dark:text-white"
+              >
+                Sign in
+              </Link>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
+

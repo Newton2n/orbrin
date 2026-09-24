@@ -169,22 +169,29 @@ export async function registerMember(input: unknown) {
   );
 }
 
-// Google login function
 export async function googleLogin(input: unknown) {
   const parsed = googleLoginSchema.safeParse(input);
-  if (!parsed.success)
+
+  if (!parsed.success) {
     return actionFailure("Invalid Google login details.", null);
-  const result = await backendRequest<LoginResponse>("/auth/google", {
+  }
+
+  const result = await backendRequest<LoginResponse>("/auth/google-login", {
     method: "POST",
     body: parsed.data,
   });
-  if (!result.ok || !result.payload)
+
+  if (!result.ok || !result.payload) {
     return actionFailure(
       backendMessage(result.payload, "Unable to sign in with Google."),
       null,
     );
+  }
+
   const payload = unwrapPayload<LoginResponse>(result.payload);
+
   await saveSession(payload);
+
   return actionSuccess(payload, "Welcome back.");
 }
 

@@ -1,22 +1,30 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Loader2,
+  ShieldCheck,
+  UserCheck,
+  Users2,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type InputHTMLAttributes, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+
 import {
   forgotPassword,
   login,
   registerMember,
-  registerOwner,
   resetPassword,
   sendVerificationEmail,
   verifyEmail,
 } from "../actions/auth.action";
+import { GoogleLoginButton } from "./auth/google-login-button";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -40,72 +48,82 @@ const schemas = {
     email: z.string().trim().email("Enter a valid email address."),
     password: z.string().min(1, "Enter your password."),
   }),
-  register: z.object({
-    fullName: z.string().trim().min(1, "Enter your full name."),
-    email: z.string().trim().email("Enter a valid email address."),
-    password: z.string().min(6, "Use at least 6 characters."),
-    organizationName: z.string().trim().min(1, "Enter an organization name."),
-    organizationSlug: z
-      .string()
-      .trim()
-      .min(1, "Enter an organization slug.")
-      .regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers, and hyphens."),
-  }),
+
   member: z.object({
     fullName: z.string().trim().min(1, "Enter your full name."),
     email: z.string().trim().email("Enter a valid email address."),
     password: z.string().min(6, "Use at least 6 characters."),
-    organizationId: z.string().trim().min(1, "Enter your organization ID."),
+    organizationId: z
+      .string()
+      .trim()
+      .min(1, "A valid invitation is required."),
   }),
+
   forgot: z.object({
     email: z.string().trim().email("Enter a valid email address."),
   }),
+
   reset: z.object({
     email: z.string().trim().email("Enter a valid email address."),
-    otp: z.string().regex(/^\d{6}$/, "Enter the 6-digit verification code."),
+    otp: z
+      .string()
+      .regex(/^\d{6}$/, "Enter the 6-digit verification code."),
     password: z.string().min(8, "Use at least 8 characters."),
   }),
+
   verify: z.object({
     email: z.string().trim().email("Enter a valid email address."),
-    otp: z.string().regex(/^\d{6}$/, "Enter the 6-digit verification code."),
+    otp: z
+      .string()
+      .regex(/^\d{6}$/, "Enter the 6-digit verification code."),
   }),
 } as const;
 
 type Mode = keyof typeof schemas;
+
 type Values = Record<string, string>;
 
-const copy: Record<
+interface AuthFormProps {
+  mode: Mode;
+  organizationId?: string;
+}
+
+const config: Record<
   Mode,
-  { title: string; description: string; action: string }
+  {
+    title: string;
+    description: string;
+    action: string;
+  }
 > = {
   login: {
     title: "Welcome back",
     description: "Sign in to continue to your workspace.",
     action: "Sign in",
   },
-  register: {
-    title: "Create your workspace",
-    description: "Set up an organization for your team.",
-    action: "Create workspace",
-  },
+
   member: {
-    title: "Join your organization",
-    description: "Create your member account.",
-    action: "Join organization",
+    title: "Join your team",
+    description: "Create your account using your team invitation.",
+    action: "Create account",
   },
+
   forgot: {
-    title: "Reset your password",
-    description: "We’ll send instructions to your email.",
-    action: "Send reset instructions",
+    title: "Forgot your password?",
+    description: "Enter your email and we'll send you a reset code.",
+    action: "Send reset code",
   },
+
   reset: {
-    title: "Choose a new password",
-    description: "Use the code from your reset email.",
+    title: "Reset your password",
+    description:
+      "Enter the code from your email and choose a new password.",
     action: "Update password",
   },
+
   verify: {
     title: "Verify your email",
-    description: "Enter the code from your verification email.",
+    description: "Enter the 6-digit code sent to your email.",
     action: "Verify email",
   },
 };
@@ -134,45 +152,15 @@ const fields: Record<
       label: "Password",
       type: "password",
       autoComplete: "current-password",
-      placeholder: "••••••••",
+      placeholder: "Enter your password",
     },
   ],
-  register: [
-    {
-      name: "fullName",
-      label: "Full name",
-      autoComplete: "name",
-      placeholder: "John Doe",
-    },
-    {
-      name: "email",
-      label: "Email",
-      type: "email",
-      autoComplete: "email",
-      placeholder: "you@company.com",
-    },
-    {
-      name: "password",
-      label: "Password",
-      type: "password",
-      autoComplete: "new-password",
-      placeholder: "••••••••",
-    },
-    {
-      name: "organizationName",
-      label: "Organization name",
-      placeholder: "Acme Inc",
-    },
-    {
-      name: "organizationSlug",
-      label: "Organization slug",
-      placeholder: "acme-team",
-    },
-  ],
+
   member: [
     {
       name: "fullName",
       label: "Full name",
+      type: "text",
       autoComplete: "name",
       placeholder: "John Doe",
     },
@@ -188,14 +176,10 @@ const fields: Record<
       label: "Password",
       type: "password",
       autoComplete: "new-password",
-      placeholder: "••••••••",
-    },
-    {
-      name: "organizationId",
-      label: "Organization ID",
-      placeholder: "org_123",
+      placeholder: "At least 6 characters",
     },
   ],
+
   forgot: [
     {
       name: "email",
@@ -205,6 +189,7 @@ const fields: Record<
       placeholder: "you@company.com",
     },
   ],
+
   reset: [
     {
       name: "email",
@@ -216,6 +201,7 @@ const fields: Record<
     {
       name: "otp",
       label: "Verification code",
+      type: "text",
       inputMode: "numeric",
       placeholder: "123456",
     },
@@ -224,9 +210,10 @@ const fields: Record<
       label: "New password",
       type: "password",
       autoComplete: "new-password",
-      placeholder: "••••••••",
+      placeholder: "At least 8 characters",
     },
   ],
+
   verify: [
     {
       name: "email",
@@ -238,322 +225,562 @@ const fields: Record<
     {
       name: "otp",
       label: "Verification code",
+      type: "text",
       inputMode: "numeric",
       placeholder: "123456",
     },
   ],
 };
 
-interface AuthFormProps {
-  mode: Mode;
-  onSuccess?: () => void;
-}
+const demoAccounts = {
+  admin: {
+    email: "demoAdmin@gmail.com",
+    password: "password123",
+    label: "Admin",
+    icon: ShieldCheck,
+  },
 
-export function AuthForm({ mode, onSuccess }: AuthFormProps) {
+  manager: {
+    email: "manager@gmail.com",
+    password: "password123",
+    label: "Manager",
+    icon: UserCheck,
+  },
+
+  member: {
+    email: "member@gmail.com",
+    password: "password123",
+    label: "Member",
+    icon: Users2,
+  },
+} as const;
+
+type DemoRole = keyof typeof demoAccounts;
+
+export function AuthForm({
+  mode,
+  organizationId,
+}: AuthFormProps) {
   const router = useRouter();
+
   const [showPassword, setShowPassword] = useState(false);
   const [success, setSuccess] = useState(false);
-  const config = copy[mode];
+  const [loadingRole, setLoadingRole] = useState<DemoRole | null>(null);
+
+  const currentConfig = config[mode];
+
+  const defaultValues: Values = Object.fromEntries(
+    fields[mode].map((field) => [field.name, ""]),
+  );
+
+  if (mode === "member" && organizationId) {
+    defaultValues.organizationId = organizationId;
+  }
+
   const form = useForm<Values>({
     resolver: zodResolver(schemas[mode]) as never,
-    defaultValues: Object.fromEntries(
-      fields[mode].map((field) => [field.name, ""]),
-    ),
-    mode: "onBlur",
+    defaultValues,
+    mode: "onChange",
   });
+
+  function redirectByRole(role?: string) {
+    if (role === "ADMIN") {
+      router.push("/dashboard/admin");
+    } else if (role === "MANAGER") {
+      router.push("/dashboard/manager");
+    } else if (role === "MEMBER") {
+      router.push("/dashboard/member");
+    } else {
+      router.push("/dashboard");
+    }
+
+    router.refresh();
+  }
+
+  async function handleLoginSubmission(
+    values: {
+      email: string;
+      password: string;
+    },
+    demoRole?: DemoRole,
+  ) {
+    if (demoRole) {
+      setLoadingRole(demoRole);
+    }
+
+    try {
+      const result = await login(values);
+
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+
+      const role = result.data?.user?.role;
+
+      if (!role) {
+        throw new Error("User role is undefined.");
+      }
+
+      if (demoRole) {
+        toast.success(`${demoAccounts[demoRole].label} demo login successful`, {
+          description: "Redirecting to the demo workspace.",
+        });
+      } else {
+        toast.success("Welcome back", {
+          description: "Your workspace is ready.",
+        });
+      }
+
+      redirectByRole(role);
+    } catch (error) {
+      toast.error(
+        demoRole ? "Demo login failed" : "Unable to sign in",
+        {
+          description:
+            error instanceof Error
+              ? error.message
+              : "Please try again.",
+        },
+      );
+    } finally {
+      setLoadingRole(null);
+    }
+  }
+
+  async function handleDemoLogin(role: DemoRole) {
+    if (form.formState.isSubmitting || loadingRole) {
+      return;
+    }
+
+    const account = demoAccounts[role];
+
+    await handleLoginSubmission(
+      {
+        email: account.email,
+        password: account.password,
+      },
+      role,
+    );
+  }
 
   async function submit(values: Values) {
     try {
       if (mode === "login") {
-        const result = await login({
+        await handleLoginSubmission({
           email: values.email,
           password: values.password,
         });
-        if (!result.success) throw new Error(result.message);
-        router.push("/dashboard");
+
         return;
       }
-      if (mode === "register") {
-        const result = await registerOwner({
-          fullName: values.fullName,
-          email: values.email,
-          password: values.password,
-          organizationName: values.organizationName,
-          organizationSlug: values.organizationSlug,
-        });
-        if (!result.success) throw new Error(result.message);
-      } else if (mode === "member") {
+
+      if (mode === "member") {
         const result = await registerMember({
           fullName: values.fullName,
           email: values.email,
           password: values.password,
           organizationId: values.organizationId,
         });
-        if (!result.success) throw new Error(result.message);
-      } else if (mode === "verify") {
+
+        if (!result.success) {
+          throw new Error(result.message);
+        }
+
+        toast.success("Account created", {
+          description: "You can now sign in to your workspace.",
+        });
+
+        router.push("/login");
+        return;
+      }
+
+      if (mode === "forgot") {
+        const result = await forgotPassword(values.email);
+
+        if (!result.success) {
+          throw new Error(result.message);
+        }
+
+        toast.success("Check your email", {
+          description:
+            "If the account exists, a password reset code has been sent.",
+        });
+
+        router.push(
+          `/reset-password?email=${encodeURIComponent(values.email)}`,
+        );
+
+        return;
+      }
+
+      if (mode === "reset") {
+        const result = await resetPassword({
+          email: values.email,
+          otp: values.otp,
+          password: values.password,
+        });
+
+        if (!result.success) {
+          throw new Error(result.message);
+        }
+
+        toast.success("Password updated", {
+          description: "You can now sign in with your new password.",
+        });
+
+        router.push("/login");
+        return;
+      }
+
+      if (mode === "verify") {
         const result = await verifyEmail({
           email: values.email,
           otp: values.otp,
         });
-        if (!result.success) throw new Error(result.message);
-      } else if (mode === "forgot") {
-        const result = await forgotPassword(values.email);
-        if (!result.success) throw new Error(result.message);
 
-        toast.success("Instructions sent", {
-          description: "If the account exists, instructions have been sent.",
-        });
-
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          router.push("/reset-password");
+        if (!result.success) {
+          throw new Error(result.message);
         }
-        return;
-      } else if (mode === "reset") {
-        const result = await resetPassword(values);
-        if (!result.success) throw new Error(result.message);
-      }
 
-      setSuccess(true);
-      toast.success(
-        mode === "verify" || mode === "reset"
-          ? "Password updated"
-          : "Request completed",
-      );
-
-      if (onSuccess) {
-        onSuccess();
+        setSuccess(true);
       }
     } catch (error) {
-      toast.error("Request failed", {
+      toast.error("Something went wrong", {
         description:
-          error instanceof Error ? error.message : "Please try again.",
+          error instanceof Error
+            ? error.message
+            : "Please try again.",
       });
     }
   }
 
-  if (success)
+  if (success) {
     return (
-      <div className="relative min-h-screen w-full bg-white dark:bg-zinc-950">
-        <div className="mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
-          <div className="grid w-full max-w-sm grid-cols-1 gap-6">
-            <Card className="border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-              <CardHeader className="px-5 pt-5 sm:px-6 sm:pt-6">
-                <CardTitle className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  {mode === "verify"
-                    ? "Email verified"
-                    : mode === "reset"
-                      ? "Password updated"
-                      : "Check your inbox"}
-                </CardTitle>
-                <CardDescription className="text-sm text-zinc-500 dark:text-zinc-400">
-                  Your request was accepted by the server. Follow the next steps
-                  in your email.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-5 pb-5 sm:px-6 sm:pb-6">
-                <Button
-                  asChild
-                  className="h-11 w-full rounded-md bg-zinc-900 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-                >
-                  <Link href="/login">Return to sign in</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+      <div className="w-full max-w-md">
+        <Card className="border-zinc-200 shadow-sm dark:border-zinc-800">
+          <CardHeader className="space-y-2 px-6 pt-6">
+            <CardTitle className="text-xl">
+              Email verified
+            </CardTitle>
+
+            <CardDescription>
+              Your email has been verified successfully.
+              You can now sign in to your account.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="px-6 pb-6">
+            <Button asChild className="h-11 w-full">
+              <Link href="/login">Continue to sign in</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
+  }
+
+  const showGoogle = mode === "login" || mode === "member";
 
   return (
-    <div className="relative min-h-screen w-full bg-white dark:bg-zinc-950">
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
-        <div className="grid w-full max-w-sm grid-cols-1 gap-6">
-          {/* Brand + title */}
-          <div className="space-y-2 text-center">
-            <div className="flex items-center justify-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-black dark:bg-white" />
-              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-zinc-500 dark:text-zinc-400">
-                Orbrin
-              </p>
-            </div>
+    <div className="w-full max-w-md">
+      {/* Header */}
+      <div className="mb-6 text-center">
+        <Link
+          href="/login"
+          className="mb-6 inline-flex items-center gap-2"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-900 text-sm font-semibold text-white dark:bg-white dark:text-zinc-900">
+            O
+          </span>
 
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-3xl">
-              {config.title}
-            </h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 sm:text-base">
-              {config.description}
-            </p>
-          </div>
+          <span className="text-lg font-semibold tracking-tight">
+            Orbrin
+          </span>
+        </Link>
 
-          {/* Card */}
-          <Card className="border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <CardHeader className="px-5 pt-5 sm:px-6 sm:pt-6">
-              <CardTitle className="sr-only">{config.title}</CardTitle>
-              <CardDescription className="sr-only">
-                {config.description}
-              </CardDescription>
-            </CardHeader>
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white sm:text-3xl">
+          {currentConfig.title}
+        </h1>
 
-            <CardContent className="px-5 pb-5 sm:px-6 sm:pb-6">
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit(submit)}
-                  className="space-y-4"
-                >
-                  {fields[mode].map((field) => (
-                    <FormField
-                      key={field.name}
-                      control={form.control}
-                      name={field.name}
-                      render={({ field: control }) => (
-                        <FormItem>
-                          <div className="flex items-center justify-between">
-                            <FormLabel className="text-xs font-medium tracking-wide text-zinc-700 dark:text-zinc-300">
-                              {field.label}
-                            </FormLabel>
-                            {mode === "login" && field.name === "password" && (
+        <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+          {currentConfig.description}
+        </p>
+      </div>
+
+      <Card className="border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <CardHeader className="sr-only">
+          <CardTitle>{currentConfig.title}</CardTitle>
+
+          <CardDescription>
+            {currentConfig.description}
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="p-5 sm:p-6">
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(submit)}
+              className="space-y-4"
+            >
+              {fields[mode].map((field) => (
+                <FormField
+                  key={field.name}
+                  control={form.control}
+                  name={field.name}
+                  render={({ field: control }) => {
+                    const isPassword = field.type === "password";
+
+                    return (
+                      <FormItem>
+                        <div className="flex items-center justify-between">
+                          <FormLabel className="text-sm font-medium">
+                            {field.label}
+                          </FormLabel>
+
+                          {mode === "login" &&
+                            field.name === "password" && (
                               <Link
                                 href="/forgot-password"
-                                className="text-xs text-zinc-500 underline-offset-4 transition hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
+                                className="text-xs font-medium text-zinc-500 transition hover:text-zinc-950 hover:underline dark:text-zinc-400 dark:hover:text-white"
                               >
                                 Forgot password?
                               </Link>
                             )}
-                          </div>
-                          <FormControl>
-                            <div className="relative">
-                              <Input
-                                {...control}
-                                type={
-                                  field.type === "password" && showPassword
-                                    ? "text"
-                                    : field.type
-                                }
-                                autoComplete={field.autoComplete}
-                                placeholder={field.placeholder}
-                                inputMode={
-                                  field.inputMode as "numeric" | undefined
-                                }
-                                className="h-11 rounded-md border border-zinc-200 bg-white text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-0 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-600"
-                              />
-                              {field.type === "password" && (
-                                <button
-                                  type="button"
-                                  aria-label={
-                                    showPassword
-                                      ? "Hide password"
-                                      : "Show password"
-                                  }
-                                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-zinc-500 transition hover:text-zinc-800 focus:outline-none focus:ring-0 dark:text-zinc-400 dark:hover:text-zinc-200"
-                                  onClick={() =>
-                                    setShowPassword((value) => !value)
-                                  }
-                                >
-                                  {showPassword ? (
-                                    <EyeOff className="h-4 w-4" />
-                                  ) : (
-                                    <Eye className="h-4 w-4" />
-                                  )}
-                                </button>
-                              )}
-                            </div>
-                          </FormControl>
-                          <FormMessage className="text-xs" />
-                        </FormItem>
-                      )}
-                    />
-                  ))}
-                  <Button
-                    type="submit"
-                    className="mt-1 h-11 w-full rounded-md bg-zinc-900 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-                    disabled={form.formState.isSubmitting}
-                  >
-                    {form.formState.isSubmitting && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {config.action}
-                  </Button>
-                </form>
-              </Form>
+                        </div>
 
-              <div className="mt-6 text-center">
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  {mode === "login" ? (
-                    <>
-                      New to Orbrin?{" "}
-                      <Link
-                        className="font-medium text-zinc-900 underline-offset-4 transition hover:underline dark:text-zinc-100"
-                        href="/register"
-                      >
-                        Create a workspace
-                      </Link>
-                    </>
-                  ) : (
-                    <>
-                      Already have an account?{" "}
-                      <Link
-                        className="font-medium text-zinc-900 underline-offset-4 transition hover:underline dark:text-zinc-100"
-                        href="/login"
-                      >
-                        Sign in
-                      </Link>
-                    </>
-                  )}
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              {...control}
+                              type={
+                                isPassword && showPassword
+                                  ? "text"
+                                  : field.type
+                              }
+                              autoComplete={field.autoComplete}
+                              placeholder={field.placeholder}
+                              inputMode={field.inputMode}
+                              className="h-11 rounded-lg border-zinc-200 bg-white pr-10 shadow-none transition focus-visible:ring-2 focus-visible:ring-zinc-950 dark:border-zinc-800 dark:bg-zinc-950 dark:focus-visible:ring-zinc-300"
+                            />
+
+                            {isPassword && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setShowPassword(
+                                    (value) => !value,
+                                  )
+                                }
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-white"
+                                aria-label={
+                                  showPassword
+                                    ? "Hide password"
+                                    : "Show password"
+                                }
+                              >
+                                {showPassword ? (
+                                  <EyeOff className="size-4" />
+                                ) : (
+                                  <Eye className="size-4" />
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        </FormControl>
+
+                        <FormMessage className="text-xs" />
+                      </FormItem>
+                    );
+                  }}
+                />
+              ))}
+
+              {mode === "member" && (
+                <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-xs leading-5 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+                  You're joining a team through an invitation.
+                  Your organization is determined by the
+                  invitation link.
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                disabled={
+                  form.formState.isSubmitting ||
+                  !form.formState.isValid ||
+                  !!loadingRole
+                }
+                className="h-11 w-full rounded-lg"
+              >
+                {form.formState.isSubmitting && (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                )}
+
+                {currentConfig.action}
+              </Button>
+            </form>
+          </Form>
+
+          {/* Demo accounts */}
+          {mode === "login" && (
+            <div className="mt-5 rounded-xl border border-zinc-200 bg-zinc-50/70 p-3 dark:border-zinc-800 dark:bg-zinc-950/50">
+              <div className="mb-3">
+                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                  Quick Demo Accounts
+                </p>
+
+                <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                  Sign in instantly with a demo role.
                 </p>
               </div>
 
-              {/* Resend button for verification */}
-              {mode === "verify" && (
-                <div className="mt-4 text-center">
-                  <button
-                    type="button"
-                    className="text-xs text-zinc-500 underline-offset-4 transition hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
-                    onClick={() =>
-                      sendVerificationEmail(form.getValues("email"))
-                        .then((result) => {
-                          if (!result.success) throw new Error(result.message);
-                          toast.success(
-                            "If the account exists and requires verification, a verification code has been sent.",
-                          );
-                        })
-                        .catch((error) =>
-                          toast.error("Unable to resend", {
-                            description:
-                              error instanceof Error
-                                ? error.message
-                                : "Please try again.",
-                          }),
-                        )
+              <div className="grid grid-cols-3 gap-2">
+                {(
+                  Object.entries(demoAccounts) as [
+                    DemoRole,
+                    (typeof demoAccounts)[DemoRole],
+                  ][]
+                ).map(([role, account]) => {
+                  const Icon = account.icon;
+                  const isLoading = loadingRole === role;
+
+                  return (
+                    <Button
+                      key={role}
+                      type="button"
+                      variant="outline"
+                      disabled={
+                        !!loadingRole ||
+                        form.formState.isSubmitting
+                      }
+                      onClick={() => handleDemoLogin(role)}
+                      className="h-auto min-h-16 flex-col gap-1.5 rounded-lg px-2 py-2.5"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Icon className="size-4" />
+                      )}
+
+                      <span className="text-xs">
+                        {account.label}
+                      </span>
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Google */}
+          {showGoogle && (
+            <>
+              <div className="my-5 flex items-center gap-3">
+                <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+
+                <span className="text-xs font-medium text-zinc-400">
+                  OR
+                </span>
+
+                <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+              </div>
+
+              <GoogleLoginButton
+                organizationId={
+                  mode === "member"
+                    ? organizationId
+                    : undefined
+                }
+              />
+            </>
+          )}
+
+          {/* Navigation */}
+          <div className="mt-6 text-center">
+            {mode === "login" && (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                New to Orbrin?{" "}
+                <Link
+                  href="/register-owner"
+                  className="font-medium text-zinc-950 hover:underline dark:text-white"
+                >
+                  Create a workspace
+                </Link>
+              </p>
+            )}
+
+            {mode === "member" && (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                Already have an account?{" "}
+                <Link
+                  href="/login"
+                  className="font-medium text-zinc-950 hover:underline dark:text-white"
+                >
+                  Sign in
+                </Link>
+              </p>
+            )}
+
+            {mode === "forgot" && (
+              <Link
+                href="/login"
+                className="text-sm font-medium text-zinc-600 hover:text-zinc-950 hover:underline dark:text-zinc-400 dark:hover:text-white"
+              >
+                Back to sign in
+              </Link>
+            )}
+
+            {mode === "reset" && (
+              <Link
+                href="/forgot-password"
+                className="text-sm font-medium text-zinc-600 hover:text-zinc-950 hover:underline dark:text-zinc-400 dark:hover:text-white"
+              >
+                Didn't receive a code? Send again
+              </Link>
+            )}
+
+            {mode === "verify" && (
+              <button
+                type="button"
+                className="text-sm font-medium text-zinc-600 hover:text-zinc-950 hover:underline dark:text-zinc-400 dark:hover:text-white"
+                onClick={async () => {
+                  const email = form.getValues("email");
+
+                  if (!email) {
+                    toast.error("Enter your email first.");
+                    return;
+                  }
+
+                  try {
+                    const result =
+                      await sendVerificationEmail(email);
+
+                    if (!result.success) {
+                      throw new Error(result.message);
                     }
-                  >
-                    Resend verification email
-                  </button>
-                </div>
-              )}
 
-              {/* Resend button for reset password */}
-              {mode === "reset" && (
-                <div className="mt-4 text-center">
-                  <Link
-                    href="/forgot-password"
-                    className="text-xs text-zinc-500 underline-offset-4 transition hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
-                  >
-                    Didn&apos;t get a code? Send again
-                  </Link>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    toast.success("Verification code sent");
+                  } catch (error) {
+                    toast.error("Unable to resend code", {
+                      description:
+                        error instanceof Error
+                          ? error.message
+                          : "Please try again.",
+                    });
+                  }
+                }}
+              >
+                Resend verification code
+              </button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-          <p className="mx-auto max-w-xs text-center text-xs text-zinc-400 dark:text-zinc-500">
-            By continuing, you agree to our Terms and Privacy Policy.
-          </p>
-        </div>
-      </div>
+      <p className="mt-5 px-4 text-center text-xs leading-5 text-zinc-400 dark:text-zinc-500">
+        By continuing, you agree to Orbrin's Terms and
+        Privacy Policy.
+      </p>
     </div>
   );
 }
-
-export default AuthForm;
