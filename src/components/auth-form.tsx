@@ -86,6 +86,7 @@ type Values = Record<string, string>;
 interface AuthFormProps {
   mode: Mode;
   organizationId?: string;
+  defaultEmail?: string;
 }
 
 const config: Record<
