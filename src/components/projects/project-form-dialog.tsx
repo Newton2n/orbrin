@@ -67,9 +67,7 @@ const PROJECT_STATUSES = [
   },
 ];
 
-export function ProjectFormDialog(
-  props: ProjectFormDialogProps,
-) {
+export function ProjectFormDialog(props: ProjectFormDialogProps) {
   const { open, onOpenChange, mode } = props;
 
   const project = mode === "create" ? null : props.project;
@@ -91,9 +89,7 @@ export function ProjectFormDialog(
     const currentStatus = project?.status ?? "ACTIVE";
 
     setStatus(
-      PROJECT_STATUSES.some(
-        (item) => item.value === currentStatus,
-      )
+      PROJECT_STATUSES.some((item) => item.value === currentStatus)
         ? currentStatus
         : "ACTIVE",
     );
@@ -119,9 +115,7 @@ export function ProjectFormDialog(
     return true;
   }
 
-  async function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>,
-  ) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (saving) return;
@@ -135,10 +129,7 @@ export function ProjectFormDialog(
         formData.append("name", name.trim());
 
         if (description.trim()) {
-          formData.append(
-            "description",
-            description.trim(),
-          );
+          formData.append("description", description.trim());
         }
 
         if (file) {
@@ -152,15 +143,11 @@ export function ProjectFormDialog(
         const result = await createProject(formData);
 
         if (!result.ok) {
-          toast.error(
-            result.message ?? "Unable to create project.",
-          );
+          toast.error(result.message ?? "Unable to create project.");
           return;
         }
 
-        toast.success(
-          result.message ?? "Project created successfully.",
-        );
+        toast.success(result.message ?? "Project created successfully.");
 
         onOpenChange(false);
         return;
@@ -177,15 +164,11 @@ export function ProjectFormDialog(
         });
 
         if (!result.ok) {
-          toast.error(
-            result.message ?? "Unable to update project.",
-          );
+          toast.error(result.message ?? "Unable to update project.");
           return;
         }
 
-        toast.success(
-          result.message ?? "Project updated successfully.",
-        );
+        toast.success(result.message ?? "Project updated successfully.");
 
         onOpenChange(false);
         return;
@@ -204,21 +187,15 @@ export function ProjectFormDialog(
           return;
         }
 
-        const result = await uploadProjectDocument(
-          project.id,
-          file,
-        );
+        const result = await uploadProjectDocument(project.id, file);
 
         if (!result.ok) {
-          toast.error(
-            result.message ?? "Unable to upload document.",
-          );
+          toast.error(result.message ?? "Unable to upload document.");
           return;
         }
 
         toast.success(
-          result.message ??
-            "Project document uploaded successfully.",
+          result.message ?? "Project document uploaded successfully.",
         );
 
         onOpenChange(false);
@@ -250,39 +227,28 @@ export function ProjectFormDialog(
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-5"
-        >
+        <form onSubmit={handleSubmit} className="space-y-5">
           {!documentMode && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="project-name">
-                  Project name
-                </Label>
+                <Label htmlFor="project-name">Project name</Label>
 
                 <Input
                   id="project-name"
                   value={name}
-                  onChange={(event) =>
-                    setName(event.target.value)
-                  }
+                  onChange={(event) => setName(event.target.value)}
                   placeholder="Website Revamp"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="project-description">
-                  Description
-                </Label>
+                <Label htmlFor="project-description">Description</Label>
 
                 <Textarea
                   id="project-description"
                   value={description}
-                  onChange={(event) =>
-                    setDescription(event.target.value)
-                  }
+                  onChange={(event) => setDescription(event.target.value)}
                   placeholder="Describe the project..."
                   rows={4}
                 />
@@ -292,9 +258,7 @@ export function ProjectFormDialog(
 
           {mode === "edit" && (
             <div className="space-y-2">
-              <Label htmlFor="project-status">
-                Status
-              </Label>
+              <Label htmlFor="project-status">Status</Label>
 
               <Select
                 value={status}
@@ -310,10 +274,7 @@ export function ProjectFormDialog(
 
                 <SelectContent>
                   {PROJECT_STATUSES.map((item) => (
-                    <SelectItem
-                      key={item.value}
-                      value={item.value}
-                    >
+                    <SelectItem key={item.value} value={item.value}>
                       {item.label}
                     </SelectItem>
                   ))}
@@ -327,9 +288,7 @@ export function ProjectFormDialog(
               <Label htmlFor="project-document">
                 PDF document
                 {mode === "create" && (
-                  <span className="ml-1 text-muted-foreground">
-                    (optional)
-                  </span>
+                  <span className="ml-1 text-muted-foreground">(optional)</span>
                 )}
               </Label>
 
@@ -337,11 +296,7 @@ export function ProjectFormDialog(
                 id="project-document"
                 type="file"
                 accept="application/pdf,.pdf"
-                onChange={(event) =>
-                  setFile(
-                    event.target.files?.[0] ?? null,
-                  )
-                }
+                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
               />
 
               {file && (

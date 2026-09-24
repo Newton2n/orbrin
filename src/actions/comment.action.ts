@@ -9,124 +9,267 @@ import {
   unwrapPayload,
 } from "../lib/server/backend-api";
 
+export type CommentAuthor = {
+  id: string;
+  fullName: string;
+  email: string;
+};
+
 export type Comment = {
   id: string;
   taskId: string;
-  authorId?: string;
+  authorId: string;
   content: string;
-  createdAt?: string;
-  updatedAt?: string;
-  author?: {
-    id?: string;
-    fullName?: string;
-    email?: string;
-    profileImageUrl?: string | null;
-  };
-  [key: string]: unknown;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  author?: CommentAuthor;
 };
 
-export type CommentListParams = {
+export type CommentPagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+};
+
+export type CommentListResponse = {
+  comments: Comment[];
+  pagination: CommentPagination;
+};
+
+export type CommentActionResult<T> = {
+  ok: boolean;
+  success: boolean;
+  data: T;
+  message?: string;
+};
+
+export type CreateCommentInput = {
+  content: string;
+};
+
+export type UpdateCommentInput = {
+  commentId: string;
+  content: string;
+};
+
+export type CommentQueryParams = {
   page?: number;
   limit?: number;
+  search?: string;
+  sortBy?: "createdAt" | "updatedAt";
   sortOrder?: "asc" | "desc";
 };
 
-function refresh() {
-  for (const path of [
-    "/dashboard/tasks",
-    "/dashboard/admin/tasks",
-    "/dashboard/manager/tasks",
-    "/dashboard/member/tasks",
-  ])
-    revalidatePath(path);
+const commentPaths = [
+  "/dashboard/task",
+  "/dashboard/admin/task",
+  "/dashboard/manager/task",
+  "/dashboard/member/task",
+];
+
+function commentFailure<T>(message: string, data: T): CommentActionResult<T> {
+  return {
+    ok: false,
+    success: false,
+    message,
+    data,
+  };
 }
 
+function commentSuccess<T>(data: T, message?: string): CommentActionResult<T> {
+  return {
+    ok: true,
+    success: true,
+    message,
+    data,
+  };
+}
+
+function revalidateCommentPaths() {
+  for (const path of commentPaths) {
+    revalidatePath(path);
+  }
+}
+
+function getDefaultPagination(
+  params: CommentQueryParams = {},
+): CommentPagination {
+  return {
+    page: params.page ?? 1,
+    limit: params.limit ?? 10,
+    total: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  };
+}
+
+function buildCommentQuery(params: CommentQueryParams = {}) {
+  const query = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== "") {
+      query.set(key, String(value));
+    }
+  }
+
+  const queryString = query.toString();
+
+  return queryString ? `?${queryString}` : "";
+}
+
+/**
+ * Get comments for a task
+ */
 export async function getCommentsByTask(
   taskId: string,
-  params: CommentListParams = {},
-) {
-  const query = new URLSearchParams({
-    page: String(params.page ?? 1),
-    limit: String(params.limit ?? 50),
-    sortBy: "createdAt",
-    sortOrder: params.sortOrder ?? "desc",
-  });
+  params: CommentQueryParams = {},
+): Promise<CommentActionResult<CommentListResponse>> {
+  if (!taskId) {
+    return commentFailure("Task ID is required.", {
+      comments: [],
+      pagination: getDefaultPagination(params),
+    });
+  }
+
+  const query = buildCommentQuery(params);
+
   const result = await backendRequest<unknown>(
-    `/comments/tasks/${taskId}?${query}`,
+    `/comments/tasks/${taskId}${query}`,
   );
-  if (!result.ok)
-    return actionFailure(
+
+  if (!result.ok) {
+    return commentFailure(
       backendMessage(result.payload, "Unable to fetch comments."),
-      [] as Comment[],
+      {
+        comments: [],
+        pagination: getDefaultPagination(params),
+      },
     );
-  const payload = unwrapPayload(result.payload);
-  const source =
-    payload && typeof payload === "object"
-      ? (payload as Record<string, unknown>)
-      : {};
-  const items = Array.isArray(source.items)
-    ? source.items
-    : Array.isArray(source.comments)
-      ? source.comments
-      : Array.isArray(payload)
-        ? payload
-        : [];
-  return actionSuccess(items as Comment[]);
+  }
+
+  const payload = result.payload;
+
+  if (!payload || typeof payload !== "object") {
+    return commentFailure("Invalid comment response from server.", {
+      comments: [],
+      pagination: getDefaultPagination(params),
+    });
+  }
+
+  const response = payload as {
+    data?: unknown;
+    pagination?: CommentPagination;
+  };
+
+  return commentSuccess({
+    comments: Array.isArray(response.data) ? (response.data as Comment[]) : [],
+    pagination: response.pagination ?? getDefaultPagination(params),
+  });
 }
 
+/**
+ * Create comment
+ */
 export async function createComment(
   taskId: string,
-  input: { content: string },
-) {
-  const result = await backendRequest<Comment>(`/comments/tasks/${taskId}`, {
+  input: CreateCommentInput,
+): Promise<CommentActionResult<Comment | null>> {
+  if (!taskId) {
+    return commentFailure("Task ID is required.", null);
+  }
+
+  if (!input.content?.trim()) {
+    return commentFailure("Comment content is required.", null);
+  }
+
+  const result = await backendRequest<unknown>(`/comments/tasks/${taskId}`, {
     method: "POST",
-    body: input,
+    body: {
+      content: input.content.trim(),
+    },
   });
-  if (!result.ok)
-    return actionFailure(
-      backendMessage(result.payload, "Unable to add comment."),
+
+  if (!result.ok) {
+    return commentFailure(
+      backendMessage(result.payload, "Unable to create comment."),
       null,
     );
-  refresh();
-  return actionSuccess(
+  }
+
+  revalidateCommentPaths();
+
+  return commentSuccess(
     unwrapPayload<Comment>(result.payload),
-    "Comment added.",
+    "Comment added successfully.",
   );
 }
 
+/**
+ * Update comment
+ */
 export async function updateComment(
-  commentId: string,
-  input: { content: string },
-) {
-  const result = await backendRequest<Comment>(`/comments/${commentId}`, {
+  input: UpdateCommentInput,
+): Promise<CommentActionResult<Comment | null>> {
+  if (!input.commentId) {
+    return commentFailure("Comment ID is required.", null);
+  }
+
+  if (!input.content?.trim()) {
+    return commentFailure("Comment content is required.", null);
+  }
+
+  const result = await backendRequest<unknown>(`/comments/${input.commentId}`, {
     method: "PATCH",
-    body: input,
+    body: {
+      content: input.content.trim(),
+    },
   });
-  if (!result.ok)
-    return actionFailure(
+
+  if (!result.ok) {
+    return commentFailure(
       backendMessage(result.payload, "Unable to update comment."),
       null,
     );
-  refresh();
-  return actionSuccess(
+  }
+
+  revalidateCommentPaths();
+
+  return commentSuccess(
     unwrapPayload<Comment>(result.payload),
-    "Comment updated.",
+    "Comment updated successfully.",
   );
 }
 
-export async function deleteComment(commentId: string) {
-  const result = await backendRequest<null>(`/comments/${commentId}`, {
+/**
+ * Delete comment
+ */
+export async function deleteComment(
+  commentId: string,
+): Promise<CommentActionResult<Comment | null>> {
+  if (!commentId) {
+    return commentFailure("Comment ID is required.", null);
+  }
+
+  const result = await backendRequest<unknown>(`/comments/${commentId}`, {
     method: "DELETE",
   });
-  if (!result.ok)
-    return actionFailure(
+
+  if (!result.ok) {
+    return commentFailure(
       backendMessage(result.payload, "Unable to delete comment."),
       null,
     );
-  refresh();
-  return actionSuccess(null, "Comment deleted.");
-}
+  }
 
-export const getTaskComments = getCommentsByTask;
-export const addComment = async (taskId: string, content: string) =>
-  createComment(taskId, { content });
+  revalidateCommentPaths();
+
+  return commentSuccess(
+    unwrapPayload<Comment>(result.payload),
+    "Comment deleted successfully.",
+  );
+}

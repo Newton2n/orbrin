@@ -108,7 +108,6 @@ export type TeamAssignment = {
   assignedAt: string;
 };
 
-
 //helper functions for project actions
 function projectFailure<T>(message: string, data: T): ProjectActionResult<T> {
   return {
@@ -145,11 +144,7 @@ function revalidateProjectPaths(projectId?: string) {
   }
 }
 
-// ============================================================
-// GET ALL PROJECTS
-// GET /projects
-// ============================================================
-
+//get all projects
 export async function getAllProjects(
   params: ProjectListParams = {},
 ): Promise<ProjectActionResult<ProjectListResponse>> {
@@ -216,10 +211,94 @@ export async function getAllProjects(
   });
 }
 
-// ============================================================
-// GET PROJECT BY ID
-// GET /projects/:projectId
-// ============================================================
+// export type ProjectStatus = "active" | "inactive" | "completed";
+
+// export type ProjectSprintTask = {
+//   id: string;
+//   projectId: string;
+//   sprintId: string | null;
+//   parentTaskId: string | null;
+//   creatorId: string | null;
+//   assigneeId: string | null;
+//   title: string;
+//   description: string | null;
+//   status: "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
+//   priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+//   dueDate: string | null;
+//   deletedAt: string | null;
+//   createdAt: string;
+//   updatedAt: string;
+// };
+
+// export type ProjectSprint = {
+//   id: string;
+//   projectId: string;
+//   name: string;
+//   goal: string | null;
+//   status: "PLANNING" | "ACTIVE" | "COMPLETED";
+//   startDate: string | null;
+//   endDate: string | null;
+//   deletedAt: string | null;
+//   createdAt: string;
+//   updatedAt: string;
+//   tasks: ProjectSprintTask[];
+// };
+
+// export type ProjectTeam = {
+//   projectId: string;
+//   teamId: string;
+//   assignedAt: string;
+// };
+
+// export type Project = {
+//   id: string;
+//   organizationId: string;
+//   name: string;
+//   description: string | null;
+//   documentUrl: string | null;
+//   documentPublicId: string | null;
+//   status: ProjectStatus;
+//   deletedAt: string | null;
+//   createdAt: string;
+//   updatedAt: string;
+
+//   sprints: ProjectSprint[];
+//   teams: ProjectTeam[];
+//   tasksWithoutSprint: ProjectSprintTask[];
+// };
+
+// export type ProjectActionResult<T> = {
+//   ok: boolean;
+//   success: boolean;
+//   data: T;
+//   message?: string;
+// };
+
+// const projectFailure = <T = null>(
+//   message: string,
+//   data: T,
+// ): ProjectActionResult<T> => {
+//   return {
+//     ok: false,
+//     success: false,
+//     data,
+//     message,
+//   };
+// };
+
+// const projectSuccess = <T>(
+//   data: T,
+//   message?: string,
+// ): ProjectActionResult<T> => {
+//   return {
+//     ok: true,
+//     success: true,
+//     data,
+//     message,
+//   };
+// };
+
+// create project
 
 export async function getProjectById(
   projectId: string,
@@ -237,15 +316,19 @@ export async function getProjectById(
     );
   }
 
-  return projectSuccess(unwrapPayload<Project>(result.payload));
+  const project = unwrapPayload<Project>(result.payload);
+
+  if (!project) {
+    return projectFailure("Project not found.", null);
+  }
+
+  return projectSuccess(
+    project,
+    backendMessage(result.payload, "Project retrieved successfully."),
+  );
 }
 
-// ============================================================
-// CREATE PROJECT
-// POST /projects
-// multipart/form-data
-// ============================================================
-
+//create project
 export async function createProject(
   formData: FormData,
 ): Promise<ProjectActionResult<Project | null>> {
@@ -288,11 +371,6 @@ export async function createProject(
   );
 }
 
-// ============================================================
-// UPDATE PROJECT
-// PATCH /projects/:projectId
-// ============================================================
-
 export type UpdateProjectInput = {
   projectId: string;
   name?: string;
@@ -300,6 +378,7 @@ export type UpdateProjectInput = {
   status?: string;
 };
 
+//update project
 export async function updateProject(
   input: UpdateProjectInput,
 ): Promise<ProjectActionResult<Project | null>> {
@@ -347,11 +426,7 @@ export async function updateProject(
   );
 }
 
-// ============================================================
-// DELETE PROJECT
-// DELETE /projects/:projectId
-// ============================================================
-
+//delete project
 export async function deleteProject(
   projectId: string,
 ): Promise<ProjectActionResult<Project | null>> {
@@ -378,11 +453,7 @@ export async function deleteProject(
   );
 }
 
-// ============================================================
-// ASSIGN TEAM
-// POST /projects/:projectId/teams
-// ============================================================
-
+//assign team to project
 export async function assignTeamToProject(
   projectId: string,
   teamId: string,
@@ -417,11 +488,7 @@ export async function assignTeamToProject(
   );
 }
 
-// ============================================================
-// REMOVE TEAM
-// DELETE /projects/:projectId/teams/:teamId
-// ============================================================
-
+//remove team from project
 export async function removeTeamFromProject(
   projectId: string,
   teamId: string,
@@ -456,12 +523,7 @@ export async function removeTeamFromProject(
   );
 }
 
-// ============================================================
-// UPLOAD PROJECT DOCUMENT
-// PATCH /projects/:projectId/document
-// multipart/form-data
-// ============================================================
-
+//upload project document
 export async function uploadProjectDocument(
   projectId: string,
   document: File,
@@ -504,11 +566,7 @@ export async function uploadProjectDocument(
   );
 }
 
-// ============================================================
-// DELETE PROJECT DOCUMENT
-// DELETE /projects/:projectId/document
-// ============================================================
-
+//delete project document
 export async function deleteProjectDocument(
   projectId: string,
 ): Promise<ProjectActionResult<null>> {
@@ -532,12 +590,7 @@ export async function deleteProjectDocument(
   return projectSuccess(null, "Project document deleted successfully.");
 }
 
-// ============================================================
-// FRONTEND CONVENIENCE ACTION
-// No dedicated backend endpoint exists.
-// Uses GET /projects/:projectId and extracts teams.
-// ============================================================
-
+//get project teams
 export async function getProjectTeams(
   projectId: string,
 ): Promise<ProjectActionResult<ProjectTeam[]>> {

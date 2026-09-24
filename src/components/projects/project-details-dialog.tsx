@@ -68,15 +68,10 @@ export function ProjectDetailsDialog({
 
   return (
     <>
-      <Dialog
-        open={open}
-        onOpenChange={onOpenChange}
-      >
+      <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>
-              {project.name}
-            </DialogTitle>
+            <DialogTitle>{project.name}</DialogTitle>
 
             <DialogDescription>
               Project details and management options.
@@ -90,9 +85,7 @@ export function ProjectDetailsDialog({
               </p>
 
               <div className="mt-2">
-                <Badge>
-                  {formatStatus(project.status)}
-                </Badge>
+                <Badge>{formatStatus(project.status)}</Badge>
               </div>
             </div>
 
@@ -101,9 +94,7 @@ export function ProjectDetailsDialog({
                 Teams
               </p>
 
-              <p className="mt-2 font-medium">
-                {project.teams?.length ?? 0}
-              </p>
+              <p className="mt-2 font-medium">{project.teams?.length ?? 0}</p>
             </div>
 
             <div className="sm:col-span-2">
@@ -112,8 +103,7 @@ export function ProjectDetailsDialog({
               </p>
 
               <p className="mt-2 text-sm">
-                {project.description ||
-                  "No description provided."}
+                {project.description || "No description provided."}
               </p>
             </div>
 
@@ -122,9 +112,7 @@ export function ProjectDetailsDialog({
                 Tasks
               </p>
 
-              <p className="mt-2 font-medium">
-                {project.tasks?.length ?? 0}
-              </p>
+              <p className="mt-2 font-medium">{project.tasks?.length ?? 0}</p>
             </div>
 
             <div>
@@ -134,9 +122,7 @@ export function ProjectDetailsDialog({
 
               <p className="mt-2 text-sm">
                 {project.createdAt
-                  ? new Date(
-                      project.createdAt,
-                    ).toLocaleString()
+                  ? new Date(project.createdAt).toLocaleString()
                   : "Unknown"}
               </p>
             </div>
@@ -148,9 +134,7 @@ export function ProjectDetailsDialog({
 
               <p className="mt-2 text-sm">
                 {project.updatedAt
-                  ? new Date(
-                      project.updatedAt,
-                    ).toLocaleString()
+                  ? new Date(project.updatedAt).toLocaleString()
                   : "Unknown"}
               </p>
             </div>
@@ -158,15 +142,8 @@ export function ProjectDetailsDialog({
 
           <div className="flex flex-wrap gap-2 border-t pt-4">
             {project.documentUrl ? (
-              <Button
-                variant="outline"
-                asChild
-              >
-                <a
-                  href={project.documentUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
+              <Button variant="outline" asChild>
+                <a href={project.documentUrl} target="_blank" rel="noreferrer">
                   View document
                 </a>
               </Button>
@@ -177,33 +154,19 @@ export function ProjectDetailsDialog({
             )}
 
             {canUploadDocument && (
-              <Button
-                variant="outline"
-                onClick={onUploadDocument}
-              >
-                {project.documentUrl
-                  ? "Replace document"
-                  : "Upload document"}
+              <Button variant="outline" onClick={onUploadDocument}>
+                {project.documentUrl ? "Replace document" : "Upload document"}
               </Button>
             )}
 
-            {canDeleteDocument &&
-              project.documentUrl && (
-                <Button
-                  variant="destructive"
-                  onClick={onDeleteDocument}
-                >
-                  Delete document
-                </Button>
-              )}
+            {canDeleteDocument && project.documentUrl && (
+              <Button variant="destructive" onClick={onDeleteDocument}>
+                Delete document
+              </Button>
+            )}
 
             {canManageTeams && (
-              <Button
-                variant="outline"
-                onClick={() =>
-                  setTeamsOpen(true)
-                }
-              >
+              <Button variant="outline" onClick={() => setTeamsOpen(true)}>
                 Manage teams
               </Button>
             )}
@@ -211,29 +174,18 @@ export function ProjectDetailsDialog({
 
           <DialogFooter>
             {canEdit && (
-              <Button
-                variant="outline"
-                onClick={onEdit}
-              >
+              <Button variant="outline" onClick={onEdit}>
                 Edit
               </Button>
             )}
 
             {canDelete && (
-              <Button
-                variant="destructive"
-                onClick={onDelete}
-              >
+              <Button variant="destructive" onClick={onDelete}>
                 Delete project
               </Button>
             )}
 
-            <Button
-              variant="outline"
-              onClick={() =>
-                onOpenChange(false)
-              }
-            >
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
               Close
             </Button>
           </DialogFooter>

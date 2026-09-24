@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { getProjectById } from "@/actions/project.action";
+import { getSprintsByProject, type Sprint } from "@/actions/sprint.action";
 
 import { ProjectDetailControls } from "@/components/projects/project-detail-controls";
 import { SprintList } from "@/components/sprints/sprint-list";
@@ -15,13 +16,27 @@ export default async function AdminProjectDetailsPage({
 }) {
   const { projectId } = await params;
 
-  const result = await getProjectById(projectId);
+  const [projectResult, sprintResult] = await Promise.all([
+    getProjectById(projectId),
+    getSprintsByProject(projectId, {
+      page: 1,
+      limit: 100,
+      sortBy: "createdAt",
+      sortOrder: "desc",
+    }),
+  ]);
 
-  if (!result.ok || !result.data) {
+  if (!projectResult.ok || !projectResult.data) {
     notFound();
   }
 
-  const project = result.data;
+  const project = projectResult.data;
+
+  const activeSprints: Sprint[] = sprintResult.ok
+    ? (sprintResult.data.sprints ?? []).filter(
+        (sprint) => sprint.deletedAt === null && sprint.status !== "COMPLETED",
+      )
+    : [];
 
   return (
     <div className="space-y-8">
@@ -72,16 +87,18 @@ export default async function AdminProjectDetailsPage({
 
       <section className="space-y-4">
         <div>
-          <h2 className="text-xl font-semibold sm:text-2xl">Tasks</h2>
+          <h2 className="text-xl font-semibold sm:text-2xl">All Tasks</h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            Track tasks belonging to this project.
+            Manage all tasks in this project, assign team members, and organize
+            work into sprints.
           </p>
         </div>
 
         <TaskList
-          role="ADMIN"
           projectId={projectId}
+          role="ADMIN"
+          sprints={activeSprints}
           canCreate
           canEdit
           canDelete

@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useState,
-} from "react";
+import { useEffect, useState } from "react";
 
 import {
   createSprint,
@@ -43,17 +40,13 @@ import { toast } from "sonner";
 
 type SprintFormDialogProps = {
   open: boolean;
-  onOpenChange: (
-    open: boolean,
-  ) => void;
+  onOpenChange: (open: boolean) => void;
 
   projectId: string;
 
   sprint?: Sprint | null;
 
-  onSuccess?: (
-    sprint: Sprint,
-  ) => void;
+  onSuccess?: (sprint: Sprint) => void;
 };
 
 export function SprintFormDialog({
@@ -65,23 +58,17 @@ export function SprintFormDialog({
 }: SprintFormDialogProps) {
   const editing = Boolean(sprint);
 
-  const [name, setName] =
-    useState("");
+  const [name, setName] = useState("");
 
-  const [goal, setGoal] =
-    useState("");
+  const [goal, setGoal] = useState("");
 
-  const [status, setStatus] =
-    useState<SprintStatus>("PLANNING");
+  const [status, setStatus] = useState<SprintStatus>("PLANNING");
 
-  const [startDate, setStartDate] =
-    useState("");
+  const [startDate, setStartDate] = useState("");
 
-  const [endDate, setEndDate] =
-    useState("");
+  const [endDate, setEndDate] = useState("");
 
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -92,16 +79,8 @@ export function SprintFormDialog({
       setName(sprint.name);
       setGoal(sprint.goal ?? "");
       setStatus(sprint.status);
-      setStartDate(
-        toDateInputValue(
-          sprint.startDate,
-        ),
-      );
-      setEndDate(
-        toDateInputValue(
-          sprint.endDate,
-        ),
-      );
+      setStartDate(toDateInputValue(sprint.startDate));
+      setEndDate(toDateInputValue(sprint.endDate));
       return;
     }
 
@@ -112,26 +91,16 @@ export function SprintFormDialog({
     setEndDate("");
   }, [open, sprint]);
 
-  async function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>,
-  ) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!name.trim()) {
-      toast.error(
-        "Sprint name is required.",
-      );
+      toast.error("Sprint name is required.");
       return;
     }
 
-    if (
-      startDate &&
-      endDate &&
-      startDate > endDate
-    ) {
-      toast.error(
-        "End date cannot be before start date.",
-      );
+    if (startDate && endDate && startDate > endDate) {
+      toast.error("End date cannot be before start date.");
       return;
     }
 
@@ -139,95 +108,64 @@ export function SprintFormDialog({
       setLoading(true);
 
       if (sprint) {
-        const result =
-          await updateSprint({
-            sprintId: sprint.id,
-            name: name.trim(),
-            goal: goal.trim(),
-            status,
-            startDate: startDate
-              ? new Date(
-                  `${startDate}T00:00:00`,
-                ).toISOString()
-              : undefined,
-            endDate: endDate
-              ? new Date(
-                  `${endDate}T23:59:59`,
-                ).toISOString()
-              : undefined,
-          });
+        const result = await updateSprint({
+          sprintId: sprint.id,
+          name: name.trim(),
+          goal: goal.trim(),
+          status,
+          startDate: startDate
+            ? new Date(`${startDate}T00:00:00`).toISOString()
+            : undefined,
+          endDate: endDate
+            ? new Date(`${endDate}T23:59:59`).toISOString()
+            : undefined,
+        });
 
         if (!result.ok) {
-          toast.error(
-            result.message ??
-              "Unable to update sprint.",
-          );
+          toast.error(result.message ?? "Unable to update sprint.");
           return;
         }
 
-        toast.success(
-          result.message ??
-            "Sprint updated successfully.",
-        );
+        toast.success(result.message ?? "Sprint updated successfully.");
 
         if (result.data) {
-          onSuccess?.(
-            result.data,
-          );
+          onSuccess?.(result.data);
         }
 
         onOpenChange(false);
         return;
       }
 
-      const result =
-        await createSprint({
-          projectId,
-          name: name.trim(),
-          goal: goal.trim(),
-          status,
-          startDate: startDate
-            ? new Date(
-                `${startDate}T00:00:00`,
-              ).toISOString()
-            : undefined,
-          endDate: endDate
-            ? new Date(
-                `${endDate}T23:59:59`,
-              ).toISOString()
-            : undefined,
-        });
+      const result = await createSprint({
+        projectId,
+        name: name.trim(),
+        goal: goal.trim(),
+        status,
+        startDate: startDate
+          ? new Date(`${startDate}T00:00:00`).toISOString()
+          : undefined,
+        endDate: endDate
+          ? new Date(`${endDate}T23:59:59`).toISOString()
+          : undefined,
+      });
 
       if (!result.ok) {
-        toast.error(
-          result.message ??
-            "Unable to create sprint.",
-        );
+        toast.error(result.message ?? "Unable to create sprint.");
         return;
       }
 
-      toast.success(
-        result.message ??
-          "Sprint created successfully.",
-      );
+      toast.success(result.message ?? "Sprint created successfully.");
 
       if (result.data) {
-        onSuccess?.(
-          result.data,
-        );
+        onSuccess?.(result.data);
       }
 
       onOpenChange(false);
     } catch (error) {
-      console.error(
-        "Sprint form error:",
-        error,
-      );
+      console.error("Sprint form error:", error);
 
       toast.error(
-        editing
-          ? "Unable to update sprint."
-          : "Unable to create sprint.",
+        editing ? "Unable to update sprint." : "Unable to create sprint.",
       );
     } finally {
       setLoading(false);
@@ -245,11 +183,7 @@ export function SprintFormDialog({
     >
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>
-            {editing
-              ? "Edit sprint"
-              : "Create sprint"}
-          </DialogTitle>
+          <DialogTitle>{editing ? "Edit sprint" : "Create sprint"}</DialogTitle>
 
           <DialogDescription>
             {editing
@@ -258,41 +192,26 @@ export function SprintFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-5"
-        >
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="sprint-name">
-              Name
-            </Label>
+            <Label htmlFor="sprint-name">Name</Label>
 
             <Input
               id="sprint-name"
               value={name}
-              onChange={(event) =>
-                setName(
-                  event.target.value,
-                )
-              }
+              onChange={(event) => setName(event.target.value)}
               placeholder="Sprint 1"
               disabled={loading}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="sprint-goal">
-              Goal
-            </Label>
+            <Label htmlFor="sprint-goal">Goal</Label>
 
             <Textarea
               id="sprint-goal"
               value={goal}
-              onChange={(event) =>
-                setGoal(
-                  event.target.value,
-                )
-              }
+              onChange={(event) => setGoal(event.target.value)}
               placeholder="What should this sprint accomplish?"
               rows={4}
               disabled={loading}
@@ -300,17 +219,11 @@ export function SprintFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>
-              Status
-            </Label>
+            <Label>Status</Label>
 
             <Select
               value={status}
-              onValueChange={(value) =>
-                setStatus(
-                  value as SprintStatus,
-                )
-              }
+              onValueChange={(value) => setStatus(value as SprintStatus)}
               disabled={loading}
             >
               <SelectTrigger>
@@ -318,54 +231,36 @@ export function SprintFormDialog({
               </SelectTrigger>
 
               <SelectContent>
-                <SelectItem value="PLANNING">
-                  Planning
-                </SelectItem>
+                <SelectItem value="PLANNING">Planning</SelectItem>
 
-                <SelectItem value="ACTIVE">
-                  Active
-                </SelectItem>
+                <SelectItem value="ACTIVE">Active</SelectItem>
 
-                <SelectItem value="COMPLETED">
-                  Completed
-                </SelectItem>
+                <SelectItem value="COMPLETED">Completed</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="sprint-start">
-                Start date
-              </Label>
+              <Label htmlFor="sprint-start">Start date</Label>
 
               <Input
                 id="sprint-start"
                 type="date"
                 value={startDate}
-                onChange={(event) =>
-                  setStartDate(
-                    event.target.value,
-                  )
-                }
+                onChange={(event) => setStartDate(event.target.value)}
                 disabled={loading}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sprint-end">
-                End date
-              </Label>
+              <Label htmlFor="sprint-end">End date</Label>
 
               <Input
                 id="sprint-end"
                 type="date"
                 value={endDate}
-                onChange={(event) =>
-                  setEndDate(
-                    event.target.value,
-                  )
-                }
+                onChange={(event) => setEndDate(event.target.value)}
                 disabled={loading}
               />
             </div>
@@ -376,23 +271,16 @@ export function SprintFormDialog({
               type="button"
               variant="outline"
               disabled={loading}
-              onClick={() =>
-                onOpenChange(false)
-              }
+              onClick={() => onOpenChange(false)}
             >
               Cancel
             </Button>
 
-            <Button
-              type="submit"
-              disabled={loading}
-            >
+            <Button type="submit" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 size-4 animate-spin" />
-                  {editing
-                    ? "Updating..."
-                    : "Creating..."}
+                  {editing ? "Updating..." : "Creating..."}
                 </>
               ) : editing ? (
                 "Update sprint"
@@ -407,9 +295,7 @@ export function SprintFormDialog({
   );
 }
 
-function toDateInputValue(
-  value: string | null,
-) {
+function toDateInputValue(value: string | null) {
   if (!value) {
     return "";
   }
@@ -420,16 +306,11 @@ function toDateInputValue(
     return "";
   }
 
-  const year =
-    date.getFullYear();
+  const year = date.getFullYear();
 
-  const month = String(
-    date.getMonth() + 1,
-  ).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
 
-  const day = String(
-    date.getDate(),
-  ).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
+
 import {
   actionFailure,
   actionSuccess,
@@ -9,256 +9,387 @@ import {
   backendRequest,
   unwrapPayload,
 } from "../lib/server/backend-api";
-import type { PaginatedResponse } from "./project.action";
 
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
+
 export type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+
+export type TaskProject = {
+  id: string;
+  name: string;
+};
+
+export type TaskUser = {
+  id: string;
+  fullName: string;
+  profileImageUrl?: string | null;
+  email: string;
+};
 
 export type Task = {
   id: string;
-  title: string;
-  description?: string | null;
-  status: TaskStatus;
-  priority: TaskPriority;
-  dueDate?: string | null;
-  assigneeId?: string | null;
   projectId: string;
-  sprintId?: string | null;
-  parentTaskId?: string | null;
-  createdAt: string;
-  updatedAt?: string;
-  assignee?: {
-    id?: string;
-    name?: string;
-    email?: string;
-    role?: string;
-  } | null;
-  project?: { id?: string; name?: string } | null;
-  [key: string]: unknown;
-};
-
-export type TaskListParams = {
-  page?: number;
-  limit?: number;
-  search?: string;
-  sortBy?: "title" | "createdAt" | "updatedAt" | string;
-  sortOrder?: "asc" | "desc";
-  status?: TaskStatus;
-  priority?: TaskPriority;
-  assigneeId?: string;
-  sprintId?: string;
-};
-
-export type TaskInput = Partial<{
+  sprintId: string | null;
+  parentTaskId: string | null;
+  creatorId: string | null;
+  assigneeId: string | null;
   title: string;
-  description: string;
+  description: string | null;
   status: TaskStatus;
   priority: TaskPriority;
-  dueDate: string;
-  assigneeId: string;
-  sprintId: string;
-  parentTaskId: string;
-}>;
-
-export type Comment = {
-  id: string;
-  content: string;
-  createdAt?: string;
-  user?: { fullName?: string };
+  dueDate: string | null;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  project?: TaskProject | null;
+  assignee?: TaskUser | null;
 };
 
-type TaskResult<T> = {
+export type TaskPagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+};
+
+export type TaskListResponse = {
+  tasks: Task[];
+  pagination: TaskPagination;
+};
+
+export type TaskActionResult<T> = {
   ok: boolean;
   success: boolean;
   data: T;
   message?: string;
 };
 
-function success<T>(data: T, message?: string): TaskResult<T> {
-  return { ...actionSuccess(data, message), ok: true };
-}
+export type CreateTaskInput = {
+  title: string;
+  description?: string;
+  status?: Extract<TaskStatus, "TODO" | "IN_PROGRESS" | "DONE">;
+  priority?: TaskPriority;
+  dueDate?: string;
+  assigneeId?: string;
+  sprintId?: string;
+  parentTaskId?: string;
+};
 
-function failure<T>(message: string, data: T): TaskResult<T> {
-  return { ...actionFailure(message, data), ok: false };
-}
+export type UpdateTaskInput = {
+  taskId: string;
+  title?: string;
+  description?: string;
+  status?: Extract<TaskStatus, "TODO" | "IN_PROGRESS" | "DONE">;
+  priority?: TaskPriority;
+  dueDate?: string;
+  assigneeId?: string;
+  sprintId?: string;
+  parentTaskId?: string;
+};
 
-function normalize<T>(
-  payload: unknown,
-  params: TaskListParams,
-): PaginatedResponse<T> {
-  const source =
-    payload && typeof payload === "object"
-      ? (payload as Record<string, unknown>)
-      : {};
-  const nested =
-    source.data && typeof source.data === "object"
-      ? (source.data as Record<string, unknown>)
-      : source;
-  const items = Array.isArray(nested.items)
-    ? nested.items
-    : Array.isArray(nested.tasks)
-      ? nested.tasks
-      : Array.isArray(nested.data)
-        ? nested.data
-        : Array.isArray(payload)
-          ? payload
-          : [];
-  const total = Number(nested.total ?? nested.totalCount ?? items.length);
-  const limit = Number(nested.limit ?? params.limit ?? 10);
-  return {
-    items: items as T[],
-    total,
-    page: Number(nested.page ?? params.page ?? 1),
-    limit,
-    totalPages: Number(
-      nested.totalPages ?? Math.max(1, Math.ceil(total / limit)),
-    ),
-  };
-}
+export type TaskQueryParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  assigneeId?: string;
+  sprintId?: string;
+  sortBy?: "title" | "createdAt" | "updatedAt";
+  sortOrder?: "asc" | "desc";
+};
 
-function revalidateTaskPaths(projectId?: string) {
-  for (const path of [
-    "/dashboard/tasks",
-    "/dashboard/admin/tasks",
-    "/dashboard/manager/tasks",
-    "/dashboard/member/tasks",
-    "/dashboard/admin/projects",
-    "/dashboard/manager/projects",
-    "/dashboard/member/projects",
-  ])
-    revalidatePath(path);
-  if (projectId) revalidatePath(`/dashboard/projects/${projectId}`);
-}
+const taskFailure = <T = never>(message: string): TaskActionResult<T> => {
+  return actionFailure(message, undefined) as TaskActionResult<T>;
+};
 
-function queryString(params: TaskListParams) {
-  const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== "") query.set(key, String(value));
+const taskSuccess = <T>(data: T, message?: string): TaskActionResult<T> => {
+  return actionSuccess(data, message) as TaskActionResult<T>;
+};
+
+const buildQueryString = (params?: TaskQueryParams) => {
+  if (!params) {
+    return "";
   }
-  return query.size ? `?${query}` : "";
-}
 
-export async function getProjectTasks(
+  const searchParams = new URLSearchParams();
+
+  if (params.page !== undefined) {
+    searchParams.set("page", String(params.page));
+  }
+
+  if (params.limit !== undefined) {
+    searchParams.set("limit", String(params.limit));
+  }
+
+  if (params.search) {
+    searchParams.set("search", params.search);
+  }
+
+  if (params.status) {
+    searchParams.set("status", params.status);
+  }
+
+  if (params.priority) {
+    searchParams.set("priority", params.priority);
+  }
+
+  if (params.assigneeId) {
+    searchParams.set("assigneeId", params.assigneeId);
+  }
+
+  if (params.sprintId) {
+    searchParams.set("sprintId", params.sprintId);
+  }
+
+  if (params.sortBy) {
+    searchParams.set("sortBy", params.sortBy);
+  }
+
+  if (params.sortOrder) {
+    searchParams.set("sortOrder", params.sortOrder);
+  }
+
+  const query = searchParams.toString();
+
+  return query ? `?${query}` : "";
+};
+
+// Get project tasks
+export const getTasksByProject = async (
   projectId: string,
-  params: TaskListParams = {},
-) {
-  const result = await backendRequest<unknown>(
-    `/tasks/projects/${projectId}${queryString(params)}`,
-  );
-  if (!result.ok)
-    return failure(backendMessage(result.payload, "Unable to fetch tasks."), {
-      items: [],
-      total: 0,
-      page: params.page ?? 1,
-      limit: params.limit ?? 10,
-      totalPages: 0,
-    });
-  return success(normalize<Task>(unwrapPayload(result.payload), params));
-}
+  params?: TaskQueryParams,
+): Promise<TaskActionResult<TaskListResponse>> => {
+  const endpoint = `/tasks/projects/${projectId}${buildQueryString(params)}`;
 
-// Kept as an alias for the existing standalone tasks page.
-export const getTasks = getProjectTasks;
+  const result = await backendRequest<unknown>(endpoint);
 
-export async function getTaskById(taskId: string) {
-  const result = await backendRequest<Task>(`/tasks/${taskId}`);
-  if (!result.ok)
-    return failure(
-      backendMessage(result.payload, "Unable to fetch task."),
-      null,
+  if (!result.ok) {
+    return taskFailure(
+      backendMessage(result.payload, "Unable to load project tasks."),
     );
-  return success(unwrapPayload<Task>(result.payload));
-}
+  }
 
-export async function createTask(
+  const payload = result.payload as {
+    data?: unknown;
+    pagination?: TaskPagination;
+    message?: string;
+  };
+
+  const tasks = Array.isArray(payload.data) ? (payload.data as Task[]) : [];
+
+  return taskSuccess(
+    {
+      tasks,
+      pagination: payload.pagination ?? {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? 10,
+        total: tasks.length,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPreviousPage: false,
+      },
+    },
+    payload.message,
+  );
+};
+
+// Get assigned tasks
+export const getMyTasks = async (
+  params?: TaskQueryParams,
+): Promise<TaskActionResult<TaskListResponse>> => {
+  const endpoint = `/tasks/my-tasks${buildQueryString(params)}`;
+
+  const result = await backendRequest<unknown>(endpoint);
+
+  if (!result.ok) {
+    return taskFailure(
+      backendMessage(result.payload, "Unable to load your assigned tasks."),
+    );
+  }
+
+  const payload = result.payload as {
+    message?: string;
+    data?: unknown;
+    pagination?: TaskPagination;
+  };
+
+  const tasks: Task[] = Array.isArray(payload.data)
+    ? (payload.data as Task[])
+    : [];
+
+  const pagination: TaskPagination = payload.pagination ?? {
+    page: params?.page ?? 1,
+    limit: params?.limit ?? 10,
+    total: tasks.length,
+    totalPages: tasks.length > 0 ? 1 : 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  };
+
+  return taskSuccess(
+    {
+      tasks,
+      pagination,
+    },
+    payload.message ?? "Assigned tasks retrieved successfully.",
+  );
+};
+
+// Get created tasks
+export const getMyCreatedTasks = async (
+  params?: TaskQueryParams,
+): Promise<TaskActionResult<TaskListResponse>> => {
+  const endpoint = `/tasks/created-tasks${buildQueryString(params)}`;
+
+  const result = await backendRequest<unknown>(endpoint);
+
+  if (!result.ok) {
+    return taskFailure(
+      backendMessage(result.payload, "Unable to load your created tasks."),
+    );
+  }
+
+  const payload = result.payload as {
+    message?: string;
+    data?: unknown;
+    pagination?: TaskPagination;
+  };
+
+  const tasks: Task[] = Array.isArray(payload.data)
+    ? (payload.data as Task[])
+    : [];
+
+  const pagination: TaskPagination = payload.pagination ?? {
+    page: params?.page ?? 1,
+    limit: params?.limit ?? 10,
+    total: tasks.length,
+    totalPages: tasks.length > 0 ? 1 : 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  };
+
+  return taskSuccess(
+    {
+      tasks,
+      pagination,
+    },
+    payload.message ?? "Created tasks retrieved successfully.",
+  );
+};
+
+// Get one task
+export const getTaskById = async (
+  taskId: string,
+): Promise<TaskActionResult<Task>> => {
+  const result = await backendRequest<unknown>(`/tasks/${taskId}`);
+
+  if (!result.ok) {
+    return taskFailure(backendMessage(result.payload, "Unable to load task."));
+  }
+
+  const task = unwrapPayload<Task>(result.payload);
+
+  if (!task) {
+    return taskFailure("Task was not found.");
+  }
+
+  return taskSuccess(task);
+};
+
+// Create task
+export const createTask = async (
   projectId: string,
-  input: {
-    title: string;
-    description?: string;
-    status?: TaskStatus;
-    priority?: TaskPriority;
-    dueDate?: string;
-    assigneeId?: string;
-    sprintId?: string;
-    parentTaskId?: string;
-  },
-) {
-  const result = await backendRequest<Task>(`/tasks/projects/${projectId}`, {
+  input: CreateTaskInput,
+): Promise<TaskActionResult<Task>> => {
+  const result = await backendRequest<unknown>(`/tasks/projects/${projectId}`, {
     method: "POST",
     body: input,
   });
-  if (!result.ok)
-    return failure(
+
+  if (!result.ok) {
+    return taskFailure(
       backendMessage(result.payload, "Unable to create task."),
-      null,
     );
-  revalidateTaskPaths(projectId);
-  return success(unwrapPayload<Task>(result.payload), "Task created.");
-}
+  }
 
-export async function updateTask(taskId: string, input: TaskInput) {
-  const result = await backendRequest<Task>(`/tasks/${taskId}`, {
-    method: "PATCH",
-    body: input,
-  });
-  if (!result.ok)
-    return failure(
-      backendMessage(result.payload, "Unable to update task."),
-      null,
-    );
   const task = unwrapPayload<Task>(result.payload);
-  revalidateTaskPaths(task.projectId);
-  return success(task, "Task updated.");
-}
 
-export async function deleteTask(taskId: string) {
-  const result = await backendRequest<null>(`/tasks/${taskId}`, {
+  if (!task) {
+    return taskFailure("Task could not be created.");
+  }
+
+  revalidatePath("/dashboard/admin/task");
+  revalidatePath("/dashboard/manager/task");
+  revalidatePath("/dashboard/member/task");
+
+  return taskSuccess(
+    task,
+    backendMessage(result.payload, "Task created successfully."),
+  );
+};
+
+// Update task
+export const updateTask = async (
+  input: UpdateTaskInput,
+): Promise<TaskActionResult<Task>> => {
+  const { taskId, ...body } = input;
+
+  const result = await backendRequest<unknown>(`/tasks/${taskId}`, {
+    method: "PATCH",
+    body,
+  });
+
+  if (!result.ok) {
+    return taskFailure(
+      backendMessage(result.payload, "Unable to update task."),
+    );
+  }
+
+  const task = unwrapPayload<Task>(result.payload);
+
+  if (!task) {
+    return taskFailure("Task could not be updated.");
+  }
+
+  revalidatePath("/dashboard/admin/task");
+  revalidatePath("/dashboard/manager/task");
+  revalidatePath("/dashboard/member/task");
+
+  return taskSuccess(
+    task,
+    backendMessage(result.payload, "Task updated successfully."),
+  );
+};
+
+// Delete task
+export const deleteTask = async (
+  taskId: string,
+): Promise<TaskActionResult<Task>> => {
+  const result = await backendRequest<unknown>(`/tasks/${taskId}`, {
     method: "DELETE",
   });
-  if (!result.ok)
-    return failure(
+
+  if (!result.ok) {
+    return taskFailure(
       backendMessage(result.payload, "Unable to delete task."),
-      null,
     );
-  revalidateTaskPaths();
-  return success(null, "Task deleted.");
-}
+  }
 
-export async function getTaskComments(taskId: string) {
-  const result = await backendRequest<unknown>(
-    `/comments/tasks/${taskId}?page=1&limit=50&sortBy=createdAt&sortOrder=desc`,
+  const task = unwrapPayload<Task>(result.payload);
+
+  if (!task) {
+    return taskFailure("Task could not be deleted.");
+  }
+
+  revalidatePath("/dashboard/admin/task");
+  revalidatePath("/dashboard/manager/task");
+  revalidatePath("/dashboard/member/task");
+
+  return taskSuccess(
+    task,
+    backendMessage(result.payload, "Task deleted successfully."),
   );
-  if (!result.ok)
-    return failure(
-      backendMessage(result.payload, "Unable to fetch comments."),
-      [] as Comment[],
-    );
-  const payload = unwrapPayload(result.payload);
-  const source =
-    payload && typeof payload === "object"
-      ? (payload as Record<string, unknown>)
-      : {};
-  const items = Array.isArray(source.items)
-    ? source.items
-    : Array.isArray(source.comments)
-      ? source.comments
-      : Array.isArray(payload)
-        ? payload
-        : [];
-  return success(items as Comment[]);
-}
-
-export async function addComment(taskId: string, content: string) {
-  const parsed = z.string().trim().min(1).safeParse(content);
-  if (!parsed.success) return failure("Comment cannot be empty.", null);
-  const result = await backendRequest<Comment>(`/comments/tasks/${taskId}`, {
-    method: "POST",
-    body: { content: parsed.data },
-  });
-  if (!result.ok)
-    return failure(
-      backendMessage(result.payload, "Unable to add comment."),
-      null,
-    );
-  revalidateTaskPaths();
-  return success(unwrapPayload<Comment>(result.payload), "Comment added.");
-}
+};

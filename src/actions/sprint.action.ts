@@ -10,11 +10,7 @@ import {
   unwrapPayload,
 } from "../lib/server/backend-api";
 
-
-export type SprintStatus =
-  | "PLANNING"
-  | "ACTIVE"
-  | "COMPLETED";
+export type SprintStatus = "PLANNING" | "ACTIVE" | "COMPLETED";
 
 export type Sprint = {
   id: string;
@@ -96,14 +92,8 @@ export type UpdateSprintInput = {
   endDate?: string;
 };
 
-// ============================================================
-// Helpers
-// ============================================================
-
-function sprintFailure<T>(
-  message: string,
-  data: T,
-): SprintActionResult<T> {
+//helpers for SprintActionResult
+function sprintFailure<T>(message: string, data: T): SprintActionResult<T> {
   return {
     ok: false,
     success: false,
@@ -112,10 +102,7 @@ function sprintFailure<T>(
   };
 }
 
-function sprintSuccess<T>(
-  data: T,
-  message?: string,
-): SprintActionResult<T> {
+function sprintSuccess<T>(data: T, message?: string): SprintActionResult<T> {
   return {
     ok: true,
     success: true,
@@ -137,49 +124,26 @@ function revalidateSprintPaths(projectId?: string) {
   }
 
   if (projectId) {
-    revalidatePath(
-      `/dashboard/admin/projects/${projectId}`,
-    );
+    revalidatePath(`/dashboard/admin/projects/${projectId}`);
 
-    revalidatePath(
-      `/dashboard/manager/projects/${projectId}`,
-    );
+    revalidatePath(`/dashboard/manager/projects/${projectId}`);
 
-    revalidatePath(
-      `/dashboard/member/projects/${projectId}`,
-    );
+    revalidatePath(`/dashboard/member/projects/${projectId}`);
   }
 }
 
-// ============================================================
-// CREATE SPRINT
-// POST /sprints/projects/:projectId
-// ============================================================
-
+//create sprint
 export async function createSprint(
   input: CreateSprintInput,
 ): Promise<SprintActionResult<Sprint | null>> {
-  const {
-    projectId,
-    name,
-    goal,
-    status,
-    startDate,
-    endDate,
-  } = input;
+  const { projectId, name, goal, status, startDate, endDate } = input;
 
   if (!projectId) {
-    return sprintFailure(
-      "Project ID is required.",
-      null,
-    );
+    return sprintFailure("Project ID is required.", null);
   }
 
   if (!name?.trim()) {
-    return sprintFailure(
-      "Sprint name is required.",
-      null,
-    );
+    return sprintFailure("Sprint name is required.", null);
   }
 
   const body: Record<string, unknown> = {
@@ -212,10 +176,7 @@ export async function createSprint(
 
   if (!result.ok) {
     return sprintFailure(
-      backendMessage(
-        result.payload,
-        "Unable to create sprint.",
-      ),
+      backendMessage(result.payload, "Unable to create sprint."),
       null,
     );
   }
@@ -228,7 +189,6 @@ export async function createSprint(
   );
 }
 
-// ============================================================
 // GET SPRINTS BY PROJECT
 // GET /sprints/projects/:projectId
 //
@@ -238,67 +198,44 @@ export async function createSprint(
 // &limit=10
 // &sortBy=createdAt
 // &sortOrder=desc
-// ============================================================
 
 export async function getSprintsByProject(
   projectId: string,
   params: SprintListParams = {},
 ): Promise<SprintActionResult<SprintListResponse>> {
   if (!projectId) {
-    return sprintFailure(
-      "Project ID is required.",
-      {
-        sprints: [],
-        pagination: {
-          page: params.page ?? 1,
-          limit: params.limit ?? 10,
-          total: 0,
-          totalPages: 0,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
+    return sprintFailure("Project ID is required.", {
+      sprints: [],
+      pagination: {
+        page: params.page ?? 1,
+        limit: params.limit ?? 10,
+        total: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPreviousPage: false,
       },
-    );
+    });
   }
 
   const query = new URLSearchParams();
 
-  query.set(
-    "page",
-    String(params.page ?? 1),
-  );
+  query.set("page", String(params.page ?? 1));
 
-  query.set(
-    "limit",
-    String(params.limit ?? 10),
-  );
+  query.set("limit", String(params.limit ?? 10));
 
-  query.set(
-    "sortBy",
-    params.sortBy ?? "createdAt",
-  );
+  query.set("sortBy", params.sortBy ?? "createdAt");
 
-  query.set(
-    "sortOrder",
-    params.sortOrder ?? "desc",
-  );
+  query.set("sortOrder", params.sortOrder ?? "desc");
 
   if (params.search?.trim()) {
-    query.set(
-      "search",
-      params.search.trim(),
-    );
+    query.set("search", params.search.trim());
   }
 
   if (params.status) {
-    query.set(
-      "status",
-      params.status,
-    );
+    query.set("status", params.status);
   }
 
-  const endpoint =
-    `/sprints/projects/${projectId}?${query.toString()}`;
+  const endpoint = `/sprints/projects/${projectId}?${query.toString()}`;
 
   const result = await backendRequest<{
     success: boolean;
@@ -311,10 +248,7 @@ export async function getSprintsByProject(
 
   if (!result.ok) {
     return sprintFailure(
-      backendMessage(
-        result.payload,
-        "Unable to fetch sprints.",
-      ),
+      backendMessage(result.payload, "Unable to fetch sprints."),
       {
         sprints: [],
         pagination: {
@@ -332,26 +266,21 @@ export async function getSprintsByProject(
   const payload = result.payload;
 
   if (!payload || typeof payload !== "object") {
-    return sprintFailure(
-      "Invalid sprint response from server.",
-      {
-        sprints: [],
-        pagination: {
-          page: params.page ?? 1,
-          limit: params.limit ?? 10,
-          total: 0,
-          totalPages: 0,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
+    return sprintFailure("Invalid sprint response from server.", {
+      sprints: [],
+      pagination: {
+        page: params.page ?? 1,
+        limit: params.limit ?? 10,
+        total: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPreviousPage: false,
       },
-    );
+    });
   }
 
   return sprintSuccess({
-    sprints: Array.isArray(payload.data)
-      ? payload.data
-      : [],
+    sprints: Array.isArray(payload.data) ? payload.data : [],
 
     pagination: payload.pagination ?? {
       page: params.page ?? 1,
@@ -364,78 +293,42 @@ export async function getSprintsByProject(
   });
 }
 
-// ============================================================
-// GET SPRINTS
-//
-// Convenience alias for components that use getSprints.
-// ============================================================
-
+//get sprints
 export async function getSprints(
   projectId: string,
   params: SprintListParams = {},
 ) {
-  return getSprintsByProject(
-    projectId,
-    params,
-  );
+  return getSprintsByProject(projectId, params);
 }
 
-// ============================================================
 // GET SPRINT BY ID
-// GET /sprints/:sprintId
-// ============================================================
-
 export async function getSprintById(
   sprintId: string,
 ): Promise<SprintActionResult<Sprint | null>> {
   if (!sprintId) {
-    return sprintFailure(
-      "Sprint ID is required.",
-      null,
-    );
+    return sprintFailure("Sprint ID is required.", null);
   }
 
-  const result = await backendRequest<unknown>(
-    `/sprints/${sprintId}`,
-  );
+  const result = await backendRequest<unknown>(`/sprints/${sprintId}`);
 
   if (!result.ok) {
     return sprintFailure(
-      backendMessage(
-        result.payload,
-        "Unable to fetch sprint.",
-      ),
+      backendMessage(result.payload, "Unable to fetch sprint."),
       null,
     );
   }
 
-  return sprintSuccess(
-    unwrapPayload<Sprint>(result.payload),
-  );
+  return sprintSuccess(unwrapPayload<Sprint>(result.payload));
 }
 
-// ============================================================
 // UPDATE SPRINT
-// PATCH /sprints/:sprintId
-// ============================================================
-
 export async function updateSprint(
   input: UpdateSprintInput,
 ): Promise<SprintActionResult<Sprint | null>> {
-  const {
-    sprintId,
-    name,
-    goal,
-    status,
-    startDate,
-    endDate,
-  } = input;
+  const { sprintId, name, goal, status, startDate, endDate } = input;
 
   if (!sprintId) {
-    return sprintFailure(
-      "Sprint ID is required.",
-      null,
-    );
+    return sprintFailure("Sprint ID is required.", null);
   }
 
   const body: Record<string, unknown> = {};
@@ -461,26 +354,17 @@ export async function updateSprint(
   }
 
   if (Object.keys(body).length === 0) {
-    return sprintFailure(
-      "At least one sprint field is required.",
-      null,
-    );
+    return sprintFailure("At least one sprint field is required.", null);
   }
 
-  const result = await backendRequest<unknown>(
-    `/sprints/${sprintId}`,
-    {
-      method: "PATCH",
-      body,
-    },
-  );
+  const result = await backendRequest<unknown>(`/sprints/${sprintId}`, {
+    method: "PATCH",
+    body,
+  });
 
   if (!result.ok) {
     return sprintFailure(
-      backendMessage(
-        result.payload,
-        "Unable to update sprint.",
-      ),
+      backendMessage(result.payload, "Unable to update sprint."),
       null,
     );
   }
@@ -493,34 +377,22 @@ export async function updateSprint(
   );
 }
 
-// ============================================================
 // DELETE SPRINT
-// DELETE /sprints/:sprintId
-// ============================================================
 
 export async function deleteSprint(
   sprintId: string,
 ): Promise<SprintActionResult<Sprint | null>> {
   if (!sprintId) {
-    return sprintFailure(
-      "Sprint ID is required.",
-      null,
-    );
+    return sprintFailure("Sprint ID is required.", null);
   }
 
-  const result = await backendRequest<unknown>(
-    `/sprints/${sprintId}`,
-    {
-      method: "DELETE",
-    },
-  );
+  const result = await backendRequest<unknown>(`/sprints/${sprintId}`, {
+    method: "DELETE",
+  });
 
   if (!result.ok) {
     return sprintFailure(
-      backendMessage(
-        result.payload,
-        "Unable to delete sprint.",
-      ),
+      backendMessage(result.payload, "Unable to delete sprint."),
       null,
     );
   }

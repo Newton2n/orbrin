@@ -173,8 +173,7 @@ export function ProjectList({
 }: ProjectListProps) {
   const [projects, setProjects] = useState<Project[]>([]);
 
-  const [pagination, setPagination] =
-    useState<Pagination>(DEFAULT_PAGINATION);
+  const [pagination, setPagination] = useState<Pagination>(DEFAULT_PAGINATION);
 
   const [loading, setLoading] = useState(true);
 
@@ -187,27 +186,24 @@ export function ProjectList({
   const [status, setStatus] = useState("all");
   const [teamId, setTeamId] = useState("all");
 
-  const [sortBy, setSortBy] = useState<
-    "name" | "createdAt" | "updatedAt"
-  >("createdAt");
+  const [sortBy, setSortBy] = useState<"name" | "createdAt" | "updatedAt">(
+    "createdAt",
+  );
 
-  const [sortOrder, setSortOrder] =
-    useState<"asc" | "desc">("desc");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const [teams, setTeams] = useState<TeamOption[]>([]);
   const [teamsLoading, setTeamsLoading] = useState(false);
 
-  const [selectedProject, setSelectedProject] =
-    useState<Project | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const [formMode, setFormMode] = useState<
-    "create" | "edit" | "upload" | null
-  >(null);
+  const [formMode, setFormMode] = useState<"create" | "edit" | "upload" | null>(
+    null,
+  );
 
-  const [formProject, setFormProject] =
-    useState<Project | null>(null);
+  const [formProject, setFormProject] = useState<Project | null>(null);
 
   function getProjectQuery() {
     return {
@@ -233,9 +229,7 @@ export function ProjectList({
         if (cancelled) return;
 
         if (!result.success) {
-          toast.error(
-            result.message ?? "Unable to load teams.",
-          );
+          toast.error(result.message ?? "Unable to load teams.");
           setTeams([]);
           return;
         }
@@ -283,18 +277,14 @@ export function ProjectList({
         if (cancelled) return;
 
         if (!result.ok) {
-          toast.error(
-            result.message ?? "Unable to load projects.",
-          );
+          toast.error(result.message ?? "Unable to load projects.");
           setProjects([]);
           setPagination(DEFAULT_PAGINATION);
           return;
         }
 
         setProjects(result.data?.projects ?? []);
-        setPagination(
-          result.data?.pagination ?? DEFAULT_PAGINATION,
-        );
+        setPagination(result.data?.pagination ?? DEFAULT_PAGINATION);
       } catch {
         if (!cancelled) {
           toast.error("Unable to load projects.");
@@ -313,15 +303,7 @@ export function ProjectList({
     return () => {
       cancelled = true;
     };
-  }, [
-    page,
-    limit,
-    search,
-    status,
-    teamId,
-    sortBy,
-    sortOrder,
-  ]);
+  }, [page, limit, search, status, teamId, sortBy, sortOrder]);
 
   function resetFilters() {
     setSearchInput("");
@@ -362,16 +344,12 @@ export function ProjectList({
       const result = await getAllProjects(getProjectQuery());
 
       if (!result.ok) {
-        toast.error(
-          result.message ?? "Unable to refresh projects.",
-        );
+        toast.error(result.message ?? "Unable to refresh projects.");
         return;
       }
 
       setProjects(result.data?.projects ?? []);
-      setPagination(
-        result.data?.pagination ?? DEFAULT_PAGINATION,
-      );
+      setPagination(result.data?.pagination ?? DEFAULT_PAGINATION);
     } catch {
       toast.error("Unable to refresh projects.");
     } finally {
@@ -389,15 +367,11 @@ export function ProjectList({
     const result = await deleteProject(project.id);
 
     if (!result.ok) {
-      toast.error(
-        result.message ?? "Unable to delete project.",
-      );
+      toast.error(result.message ?? "Unable to delete project.");
       return;
     }
 
-    toast.success(
-      result.message ?? "Project deleted successfully.",
-    );
+    toast.success(result.message ?? "Project deleted successfully.");
 
     if (selectedProject?.id === project.id) {
       setSelectedProject(null);
@@ -422,17 +396,11 @@ export function ProjectList({
     const result = await deleteProjectDocument(project.id);
 
     if (!result.ok) {
-      toast.error(
-        result.message ??
-          "Unable to delete project document.",
-      );
+      toast.error(result.message ?? "Unable to delete project document.");
       return;
     }
 
-    toast.success(
-      result.message ??
-        "Project document deleted successfully.",
-    );
+    toast.success(result.message ?? "Project document deleted successfully.");
 
     if (selectedProject?.id === project.id) {
       setSelectedProject({
@@ -463,11 +431,7 @@ export function ProjectList({
 
     const current = pagination.page;
 
-    const pages: (
-      | number
-      | "ellipsis-left"
-      | "ellipsis-right"
-    )[] = [];
+    const pages: (number | "ellipsis-left" | "ellipsis-right")[] = [];
 
     if (total <= 7) {
       for (let index = 1; index <= total; index += 1) {
@@ -500,17 +464,12 @@ export function ProjectList({
   }, [pagination.page, pagination.totalPages]);
 
   const showingFrom =
-    pagination.total === 0
-      ? 0
-      : (pagination.page - 1) * pagination.limit + 1;
+    pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1;
 
   const showingTo =
     pagination.total === 0
       ? 0
-      : Math.min(
-          pagination.page * pagination.limit,
-          pagination.total,
-        );
+      : Math.min(pagination.page * pagination.limit, pagination.total);
 
   return (
     <div className="space-y-5">
@@ -523,9 +482,7 @@ export function ProjectList({
 
                 <Input
                   value={searchInput}
-                  onChange={(event) =>
-                    setSearchInput(event.target.value)
-                  }
+                  onChange={(event) => setSearchInput(event.target.value)}
                   placeholder="Search projects..."
                   className="pl-9 pr-9"
                 />
@@ -561,9 +518,7 @@ export function ProjectList({
             <div className="flex flex-wrap items-center gap-2">
               <SlidersHorizontal className="size-4 shrink-0 text-muted-foreground" />
 
-              <span className="text-sm font-medium">
-                Filters & sorting
-              </span>
+              <span className="text-sm font-medium">Filters & sorting</span>
 
               {hasActiveFilters && (
                 <Button
@@ -599,25 +554,15 @@ export function ProjectList({
                   </SelectTrigger>
 
                   <SelectContent>
-                    <SelectItem value="all">
-                      All statuses
-                    </SelectItem>
+                    <SelectItem value="all">All statuses</SelectItem>
 
-                    <SelectItem value="active">
-                      Active
-                    </SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
 
-                    <SelectItem value="IN_PROGRESS">
-                      In progress
-                    </SelectItem>
+                    <SelectItem value="IN_PROGRESS">In progress</SelectItem>
 
-                    <SelectItem value="COMPLETED">
-                      Completed
-                    </SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
 
-                    <SelectItem value="ARCHIVED">
-                      Archived
-                    </SelectItem>
+                    <SelectItem value="ARCHIVED">Archived</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -640,23 +585,16 @@ export function ProjectList({
                   <SelectTrigger className="w-full">
                     <SelectValue
                       placeholder={
-                        teamsLoading
-                          ? "Loading teams..."
-                          : "All teams"
+                        teamsLoading ? "Loading teams..." : "All teams"
                       }
                     />
                   </SelectTrigger>
 
                   <SelectContent>
-                    <SelectItem value="all">
-                      All teams
-                    </SelectItem>
+                    <SelectItem value="all">All teams</SelectItem>
 
                     {teams.map((team) => (
-                      <SelectItem
-                        key={team.id}
-                        value={team.id}
-                      >
+                      <SelectItem key={team.id} value={team.id}>
                         {team.name}
                       </SelectItem>
                     ))}
@@ -691,17 +629,11 @@ export function ProjectList({
                   </SelectTrigger>
 
                   <SelectContent>
-                    <SelectItem value="createdAt">
-                      Created date
-                    </SelectItem>
+                    <SelectItem value="createdAt">Created date</SelectItem>
 
-                    <SelectItem value="updatedAt">
-                      Updated date
-                    </SelectItem>
+                    <SelectItem value="updatedAt">Updated date</SelectItem>
 
-                    <SelectItem value="name">
-                      Name
-                    </SelectItem>
+                    <SelectItem value="name">Name</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -716,10 +648,7 @@ export function ProjectList({
                   onValueChange={(value) => {
                     if (value === null) return;
 
-                    if (
-                      value !== "asc" &&
-                      value !== "desc"
-                    ) {
+                    if (value !== "asc" && value !== "desc") {
                       return;
                     }
 
@@ -735,13 +664,9 @@ export function ProjectList({
                   </SelectTrigger>
 
                   <SelectContent>
-                    <SelectItem value="desc">
-                      Descending
-                    </SelectItem>
+                    <SelectItem value="desc">Descending</SelectItem>
 
-                    <SelectItem value="asc">
-                      Ascending
-                    </SelectItem>
+                    <SelectItem value="asc">Ascending</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -771,17 +696,11 @@ export function ProjectList({
                   </SelectTrigger>
 
                   <SelectContent>
-                    <SelectItem value="10">
-                      10 projects
-                    </SelectItem>
+                    <SelectItem value="10">10 projects</SelectItem>
 
-                    <SelectItem value="20">
-                      20 projects
-                    </SelectItem>
+                    <SelectItem value="20">20 projects</SelectItem>
 
-                    <SelectItem value="50">
-                      50 projects
-                    </SelectItem>
+                    <SelectItem value="50">50 projects</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -801,9 +720,7 @@ export function ProjectList({
 
       {loading ? (
         <div className="rounded-lg border p-10 text-center">
-          <p className="text-sm text-muted-foreground">
-            Loading projects...
-          </p>
+          <p className="text-sm text-muted-foreground">Loading projects...</p>
         </div>
       ) : projects.length === 0 ? (
         <div className="rounded-lg border border-dashed p-6 text-center sm:p-10">
@@ -818,11 +735,7 @@ export function ProjectList({
           </p>
 
           {hasActiveFilters && (
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={resetFilters}
-            >
+            <Button variant="outline" className="mt-4" onClick={resetFilters}>
               Clear filters
             </Button>
           )}
@@ -856,8 +769,7 @@ export function ProjectList({
                       </CardTitle>
 
                       <CardDescription className="mt-2 line-clamp-3 break-words">
-                        {project.description ||
-                          "No description"}
+                        {project.description || "No description"}
                       </CardDescription>
                     </div>
 
@@ -873,9 +785,7 @@ export function ProjectList({
                 <CardContent className="mt-auto space-y-4">
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div className="min-w-0">
-                      <p className="text-muted-foreground">
-                        Teams
-                      </p>
+                      <p className="text-muted-foreground">Teams</p>
 
                       <p className="font-medium">
                         {project.teams?.length ?? 0}
@@ -883,9 +793,7 @@ export function ProjectList({
                     </div>
 
                     <div className="min-w-0">
-                      <p className="text-muted-foreground">
-                        Tasks
-                      </p>
+                      <p className="text-muted-foreground">Tasks</p>
 
                       <p className="font-medium">
                         {project.tasks?.length ?? 0}
@@ -922,12 +830,7 @@ export function ProjectList({
                         className="w-full"
                         asChild
                       >
-                        <Link
-                          href={getProjectDetailsPath(
-                            role,
-                            project.id,
-                          )}
-                        >
+                        <Link href={getProjectDetailsPath(role, project.id)}>
                           <ExternalLink className="mr-2 size-4" />
                           View project
                         </Link>
@@ -939,9 +842,7 @@ export function ProjectList({
                         variant="outline"
                         size="sm"
                         className="w-full"
-                        onClick={() =>
-                          openDetails(project)
-                        }
+                        onClick={() => openDetails(project)}
                       >
                         Quick details
                       </Button>
@@ -952,9 +853,7 @@ export function ProjectList({
                         variant="outline"
                         size="sm"
                         className="w-full"
-                        onClick={() =>
-                          openEdit(project)
-                        }
+                        onClick={() => openEdit(project)}
                       >
                         Edit
                       </Button>
@@ -965,9 +864,7 @@ export function ProjectList({
                         variant="destructive"
                         size="sm"
                         className="w-full"
-                        onClick={() =>
-                          void handleDelete(project)
-                        }
+                        onClick={() => void handleDelete(project)}
                       >
                         Delete
                       </Button>
@@ -986,9 +883,7 @@ export function ProjectList({
                   {showingFrom}
                 </span>
                 {" – "}
-                <span className="font-medium text-foreground">
-                  {showingTo}
-                </span>{" "}
+                <span className="font-medium text-foreground">{showingTo}</span>{" "}
                 of{" "}
                 <span className="font-medium text-foreground">
                   {pagination.total}
@@ -1001,14 +896,9 @@ export function ProjectList({
                   <Button
                     variant="outline"
                     size="icon"
-                    disabled={
-                      !pagination.hasPreviousPage ||
-                      loading
-                    }
+                    disabled={!pagination.hasPreviousPage || loading}
                     onClick={() =>
-                      setPage((current) =>
-                        Math.max(1, current - 1),
-                      )
+                      setPage((current) => Math.max(1, current - 1))
                     }
                     aria-label="Previous page"
                   >
@@ -1030,20 +920,15 @@ export function ProjectList({
                       );
                     }
 
-                    const active =
-                      pageNumber === pagination.page;
+                    const active = pageNumber === pagination.page;
 
                     return (
                       <Button
                         key={pageNumber}
-                        variant={
-                          active ? "default" : "outline"
-                        }
+                        variant={active ? "default" : "outline"}
                         size="icon"
                         disabled={loading}
-                        onClick={() =>
-                          setPage(pageNumber)
-                        }
+                        onClick={() => setPage(pageNumber)}
                         aria-label={`Go to page ${pageNumber}`}
                       >
                         {pageNumber}
@@ -1054,13 +939,8 @@ export function ProjectList({
                   <Button
                     variant="outline"
                     size="icon"
-                    disabled={
-                      !pagination.hasNextPage ||
-                      loading
-                    }
-                    onClick={() =>
-                      setPage((current) => current + 1)
-                    }
+                    disabled={!pagination.hasNextPage || loading}
+                    onClick={() => setPage((current) => current + 1)}
                     aria-label="Next page"
                   >
                     <ChevronRight className="size-4" />
@@ -1108,11 +988,7 @@ export function ProjectList({
 
       {/* Create mode */}
       {formMode === "create" && (
-        <ProjectFormDialog
-          open
-          onOpenChange={handleFormClose}
-          mode="create"
-        />
+        <ProjectFormDialog open onOpenChange={handleFormClose} mode="create" />
       )}
 
       {/* Edit mode */}

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { getProjectById } from "@/actions/project.action";
+import { getSprintsByProject, type Sprint } from "@/actions/sprint.action";
 
 import { ProjectDetailControls } from "@/components/projects/project-detail-controls";
 import { SprintList } from "@/components/sprints/sprint-list";
@@ -15,16 +16,29 @@ export default async function ManagerProjectDetailsPage({
 }) {
   const { projectId } = await params;
 
-  const result = await getProjectById(projectId);
+  const [projectResult, sprintResult] = await Promise.all([
+    getProjectById(projectId),
+    getSprintsByProject(projectId, {
+      page: 1,
+      limit: 100,
+      sortBy: "createdAt",
+      sortOrder: "desc",
+    }),
+  ]);
 
-  if (!result.ok || !result.data) {
+  if (!projectResult.ok || !projectResult.data) {
     notFound();
   }
 
-  const project = result.data;
+  const project = projectResult.data;
+
+  const sprints: Sprint[] = sprintResult.ok
+    ? sprintResult.data.sprints.filter((sprint) => sprint.deletedAt === null)
+    : [];
 
   return (
     <div className="space-y-8">
+      {/* Project information */}
       <section className="space-y-4">
         <div className="flex min-w-0 flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
@@ -51,6 +65,7 @@ export default async function ManagerProjectDetailsPage({
         </div>
       </section>
 
+      {/* Sprints */}
       <section className="space-y-4">
         <div>
           <h2 className="text-xl font-semibold sm:text-2xl">Sprints</h2>
@@ -70,18 +85,20 @@ export default async function ManagerProjectDetailsPage({
         />
       </section>
 
+      {/* Tasks */}
       <section className="space-y-4">
         <div>
           <h2 className="text-xl font-semibold sm:text-2xl">Tasks</h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            Track tasks belonging to this project.
+            Create, assign, organize, and track tasks belonging to this project.
           </p>
         </div>
 
         <TaskList
-          role="MANAGER"
           projectId={projectId}
+          role="MANAGER"
+          sprints={sprints}
           canCreate
           canEdit
           canDelete

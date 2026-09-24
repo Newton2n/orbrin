@@ -17,8 +17,7 @@ export function ProjectDetailControls({
   role?: "ADMIN" | "MANAGER" | "MEMBER";
   canManageTeams?: boolean;
 }) {
-  const [teamsOpen, setTeamsOpen] =
-    useState(false);
+  const [teamsOpen, setTeamsOpen] = useState(false);
 
   if (!canManageTeams) {
     return null;
@@ -26,10 +25,7 @@ export function ProjectDetailControls({
 
   return (
     <>
-      <Button
-        variant="outline"
-        onClick={() => setTeamsOpen(true)}
-      >
+      <Button variant="outline" onClick={() => setTeamsOpen(true)}>
         Manage teams
       </Button>
 

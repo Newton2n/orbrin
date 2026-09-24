@@ -1,23 +1,12 @@
 "use client";
 
-import {
-  CalendarDays,
-  Flag,
-} from "lucide-react";
+import { CalendarDays, Flag } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import {
-  getSprints,
-  type Sprint,
-} from "@/actions/sprint.action";
+import { getSprints, type Sprint } from "@/actions/sprint.action";
 
 import { StatusBadge } from "@/components/badge-status";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function formatDate(value?: string | null) {
   if (!value) return "TBD";
@@ -28,11 +17,7 @@ function formatDate(value?: string | null) {
   }).format(new Date(value));
 }
 
-export function SprintOverview({
-  projectId,
-}: {
-  projectId: string;
-}) {
+export function SprintOverview({ projectId }: { projectId: string }) {
   const [items, setItems] = useState<Sprint[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -71,10 +56,7 @@ export function SprintOverview({
   }, [projectId]);
 
   return (
-    <section
-      aria-labelledby="sprints-heading"
-      className="space-y-3"
-    >
+    <section aria-labelledby="sprints-heading" className="space-y-3">
       <div className="flex items-end justify-between gap-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary">
@@ -90,8 +72,7 @@ export function SprintOverview({
         </div>
 
         <span className="text-xs text-muted-foreground">
-          {items.length}{" "}
-          {items.length === 1 ? "sprint" : "sprints"}
+          {items.length} {items.length === 1 ? "sprint" : "sprints"}
         </span>
       </div>
 
@@ -119,9 +100,7 @@ export function SprintOverview({
               <CardHeader className="gap-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <CardTitle className="truncate">
-                      {sprint.name}
-                    </CardTitle>
+                    <CardTitle className="truncate">{sprint.name}</CardTitle>
 
                     <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                       {sprint.goal || "No goal defined"}

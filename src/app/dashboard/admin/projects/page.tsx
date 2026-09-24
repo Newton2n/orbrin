@@ -13,8 +13,7 @@ export default function AdminProjectsPage() {
         </h1>
 
         <p className="mt-2 text-sm text-muted-foreground">
-          Create, manage, assign teams, and track
-          organization projects.
+          Create, manage, assign teams, and track organization projects.
         </p>
       </div>
 

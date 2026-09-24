@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import {
-  getAllProjects,
-  type Project,
-} from "@/actions/project.action";
+import { getAllProjects, type Project } from "@/actions/project.action";
 
 import { Button } from "@/components/ui/button";
 
@@ -25,10 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import {
-  FolderKanban,
-  Loader2,
-} from "lucide-react";
+import { FolderKanban, Loader2 } from "lucide-react";
 
 import { toast } from "sonner";
 
@@ -38,17 +32,13 @@ type SprintProjectDirectoryProps = {
   role: "ADMIN" | "MANAGER" | "MEMBER";
 };
 
-export function SprintProjectDirectory({
-  role,
-}: SprintProjectDirectoryProps) {
+export function SprintProjectDirectory({ role }: SprintProjectDirectoryProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [selectedProject, setSelectedProject] =
-    useState<Project | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
-  const [dialogOpen, setDialogOpen] =
-    useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,17 +59,13 @@ export function SprintProjectDirectory({
         }
 
         if (!result.ok) {
-          toast.error(
-            result.message ?? "Unable to load projects.",
-          );
+          toast.error(result.message ?? "Unable to load projects.");
 
           setProjects([]);
           return;
         }
 
-        setProjects(
-          result.data?.projects ?? [],
-        );
+        setProjects(result.data?.projects ?? []);
       } catch {
         if (!cancelled) {
           toast.error("Unable to load projects.");
@@ -130,9 +116,7 @@ export function SprintProjectDirectory({
       <div className="rounded-xl border border-dashed px-6 py-10 text-center sm:py-14">
         <FolderKanban className="mx-auto size-8 text-muted-foreground" />
 
-        <h3 className="mt-4 font-semibold">
-          No projects found
-        </h3>
+        <h3 className="mt-4 font-semibold">No projects found</h3>
 
         <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
           There are no projects available for your account yet.
@@ -161,8 +145,7 @@ export function SprintProjectDirectory({
                   </CardTitle>
 
                   <CardDescription className="mt-1 line-clamp-2 text-sm">
-                    {project.description ||
-                      "No project description provided."}
+                    {project.description || "No project description provided."}
                   </CardDescription>
                 </div>
               </div>
@@ -181,10 +164,7 @@ export function SprintProjectDirectory({
         ))}
       </div>
 
-      <Dialog
-        open={dialogOpen}
-        onOpenChange={handleDialogChange}
-      >
+      <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
         <DialogContent
           className="
             flex
@@ -221,8 +201,7 @@ export function SprintProjectDirectory({
             "
           >
             <DialogTitle className="truncate text-base sm:text-lg">
-              {selectedProject?.name ??
-                "Project sprints"}
+              {selectedProject?.name ?? "Project sprints"}
             </DialogTitle>
 
             <DialogDescription className="truncate text-xs sm:text-sm">
