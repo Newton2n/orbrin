@@ -1,13 +1,22 @@
+
 "use client";
 
 import { useState } from "react";
 import { toast } from "sonner";
+
 import {
   type Organization,
   updateOrganization,
 } from "@/actions/organization.action";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -43,114 +52,171 @@ export function OrganizationSettingsCard({
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (name.trim().length < 2 || name.trim().length > 100) {
-      toast.error("Organization name must be between 2 and 100 characters.");
+
+    const trimmedName = name.trim();
+    const normalizedSlug = slug.trim().toLowerCase();
+
+    if (trimmedName.length < 2 || trimmedName.length > 100) {
+      toast.error(
+        "Organization name must be between 2 and 100 characters.",
+      );
       return;
     }
+
     if (
-      slug.length < 2 ||
-      slug.length > 100 ||
-      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
+      normalizedSlug.length < 2 ||
+      normalizedSlug.length > 100 ||
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalizedSlug)
     ) {
       toast.error(
         "Use 2-100 lowercase letters, numbers, or hyphens for the slug.",
       );
       return;
     }
+
     setSaving(true);
-    const result = await updateOrganization({ name: name.trim(), slug });
-    setSaving(false);
-    if (!result.success) {
-      toast.error(result.message);
-      return;
+
+    try {
+      const result = await updateOrganization({
+        name: trimmedName,
+        slug: normalizedSlug,
+      });
+
+      if (!result.success) {
+        toast.error(
+          result.message ?? "Unable to update organization.",
+        );
+        return;
+      }
+
+      toast.success(
+        result.message ?? "Organization updated successfully.",
+      );
+
+      setOpen(false);
+      onUpdated?.();
+    } catch (error) {
+      console.error(error);
+
+      toast.error("Something went wrong.", {
+        description: "We couldn't update the organization.",
+      });
+    } finally {
+      setSaving(false);
     }
-    toast.success(result.message);
-    setOpen(false);
-    onUpdated?.();
   }
 
   return (
     <>
-      <Card className="border-border/70 shadow-none">
-        <CardHeader className="flex-row items-center justify-between gap-3">
-          <div>
+      <Card className="h-fit border-border/70 shadow-none">
+        <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <div className="min-w-0">
             <CardTitle>Organization profile</CardTitle>
-            <p className="mt-1 text-xs text-muted-foreground">
-              The public identity used across your workspace.
-            </p>
+
+            <CardDescription className="mt-1">
+              Basic information about your workspace.
+            </CardDescription>
           </div>
+
           {canManageOrganization && (
-            <Button variant="outline" onClick={edit}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={edit}
+              className="shrink-0"
+            >
               Edit organization
             </Button>
           )}
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="text-xs text-muted-foreground">Name</p>
-            <p className="mt-1 font-medium">
-              {organization?.name ?? "Unavailable"}
-            </p>
+
+        <CardContent>
+          <div className="divide-y rounded-xl border">
+            <InfoRow
+              label="Name"
+              value={organization?.name ?? "Unavailable"}
+            />
+
+            <InfoRow
+              label="Slug"
+              value={organization?.slug ?? "Unavailable"}
+              mono
+            />
+
+            {organization?.createdAt && (
+              <InfoRow
+                label="Created"
+                value={formatDate(organization.createdAt)}
+              />
+            )}
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Slug</p>
-            <p className="mt-1 font-medium">
-              {organization?.slug ?? "Unavailable"}
-            </p>
-          </div>
-          {organization?.createdAt && (
-            <div>
-              <p className="text-xs text-muted-foreground">Created</p>
-              <p className="mt-1 font-medium">
-                {new Date(organization.createdAt).toLocaleDateString()}
-              </p>
-            </div>
-          )}
-          {organization?.id && (
-            <div>
-              <p className="text-xs text-muted-foreground">Organization ID</p>
-              <p className="mt-1 truncate font-mono text-xs">
-                {organization.id}
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
+
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Edit organization</DialogTitle>
+
             <DialogDescription>
-              Update the name and URL-safe slug for your organization.
+              Update your organization's name and URL slug.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={(event) => void submit(event)} className="space-y-4">
+
+          <form
+            onSubmit={(event) => void submit(event)}
+            className="space-y-5"
+          >
             <div className="space-y-2">
-              <Label htmlFor="organization-name">Name</Label>
+              <Label htmlFor="organization-name">
+                Organization name
+              </Label>
+
               <Input
                 id="organization-name"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
+                placeholder="Acme Inc."
+                autoComplete="organization"
                 disabled={saving}
+                maxLength={100}
+                className="h-11"
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="organization-slug">Slug</Label>
+              <Label htmlFor="organization-slug">
+                Slug
+              </Label>
+
               <Input
                 id="organization-slug"
                 value={slug}
-                onChange={(event) => setSlug(event.target.value.toLowerCase())}
+                onChange={(event) =>
+                  setSlug(event.target.value.toLowerCase())
+                }
+                placeholder="acme-inc"
                 disabled={saving}
+                maxLength={100}
+                className="h-11"
               />
+
+              <p className="text-xs leading-5 text-muted-foreground">
+                Use lowercase letters, numbers, and hyphens.
+              </p>
             </div>
-            <DialogFooter>
+
+            <DialogFooter className="gap-2 sm:gap-2">
               <Button
                 type="button"
                 variant="outline"
+                disabled={saving}
                 onClick={() => setOpen(false)}
               >
                 Cancel
               </Button>
+
               <Button type="submit" disabled={saving}>
                 {saving ? "Saving..." : "Save changes"}
               </Button>
@@ -161,3 +227,38 @@ export function OrganizationSettingsCard({
     </>
   );
 }
+
+function InfoRow({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-6 px-4 py-3.5">
+      <span className="shrink-0 text-sm text-muted-foreground">
+        {label}
+      </span>
+
+      <span
+        className={`truncate text-right text-sm font-medium ${
+          mono ? "font-mono text-xs" : ""
+        }`}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+

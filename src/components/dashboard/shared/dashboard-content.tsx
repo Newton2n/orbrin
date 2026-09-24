@@ -625,7 +625,7 @@ export const dashboardNavigation = {
       label: "Subscription",
       icon: Target,
     },
-    { href: "/dashboard/admin/settings", label: "Settings", icon: Target },
+
     {
       href: "/dashboard/admin/organization",
       label: "Organization",
