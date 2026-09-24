@@ -146,7 +146,6 @@ function normalizeList<T>(
 }
 
 const teamPaths = [
-  "/dashboard/teams",
   "/dashboard/admin/teams",
   "/dashboard/manager/teams",
   "/dashboard/member/teams",
@@ -158,6 +157,7 @@ function revalidateTeamPaths() {
   }
 }
 
+// Get teams
 export async function getTeams(params: TeamListParams = {}) {
   const query = new URLSearchParams();
 
@@ -184,6 +184,7 @@ export async function getTeams(params: TeamListParams = {}) {
   return success(normalizeList<Team>(result.payload, params));
 }
 
+// Get team by ID
 export async function getTeamById(id: string) {
   const result = await backendRequest<Team>(`/teams/${id}`);
 
@@ -197,6 +198,7 @@ export async function getTeamById(id: string) {
   return success(unwrapPayload<Team>(result.payload));
 }
 
+// Create team
 export async function createTeam(input: {
   name: string;
   description?: string;
@@ -218,6 +220,7 @@ export async function createTeam(input: {
   return success(unwrapPayload<Team>(result.payload), "Team created.");
 }
 
+// Update team
 export async function updateTeam(
   id: string,
   input: {
@@ -242,6 +245,7 @@ export async function updateTeam(
   return success(unwrapPayload<Team>(result.payload), "Team updated.");
 }
 
+// Delete team
 export async function deleteTeam(id: string) {
   const result = await backendRequest<null>(`/teams/${id}`, {
     method: "DELETE",
@@ -259,6 +263,7 @@ export async function deleteTeam(id: string) {
   return success(null, "Team deleted.");
 }
 
+// Team Members
 export async function getTeamMembers(teamId: string) {
   const result = await backendRequest<unknown>(`/teams/${teamId}/members`);
 
@@ -290,6 +295,7 @@ export async function getTeamMembers(teamId: string) {
   return success(members as TeamMember[]);
 }
 
+// Add team member
 export async function addTeamMember(teamId: string, userId: string) {
   const result = await backendRequest<TeamMember>(`/teams/${teamId}/members`, {
     method: "POST",
@@ -310,6 +316,7 @@ export async function addTeamMember(teamId: string, userId: string) {
   return success(unwrapPayload<TeamMember>(result.payload), "Member added.");
 }
 
+// Remove team member
 export async function removeTeamMember(teamId: string, userId: string) {
   const result = await backendRequest<null>(
     `/teams/${teamId}/members/${userId}`,

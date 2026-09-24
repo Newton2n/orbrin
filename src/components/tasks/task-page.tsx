@@ -70,9 +70,9 @@ export function TaskPage({
 
   const [deleting, setDeleting] = useState(false);
 
-  // --------------------------------------------------
+
   // Load tasks
-  // --------------------------------------------------
+
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
@@ -118,9 +118,8 @@ export function TaskPage({
     void loadTasks();
   }, [loadTasks]);
 
-  // --------------------------------------------------
+
   // Task updated
-  // --------------------------------------------------
 
   const handleTaskUpdated = useCallback((updatedTask: Task) => {
     setTasks((current) =>
@@ -144,9 +143,9 @@ export function TaskPage({
     );
   }, []);
 
-  // --------------------------------------------------
+  
   // Open delete confirmation
-  // --------------------------------------------------
+ 
 
   const handleTaskDeleted = useCallback(
     (taskId: string) => {
@@ -161,9 +160,7 @@ export function TaskPage({
     [tasks],
   );
 
-  // --------------------------------------------------
   // Confirm delete
-  // --------------------------------------------------
 
   const handleConfirmDelete = async () => {
     if (!deleteTaskItem) {
@@ -206,9 +203,9 @@ export function TaskPage({
     }
   };
 
-  // --------------------------------------------------
+
   // Page content
-  // --------------------------------------------------
+ 
 
   const pageTitle = mode === "created" ? "My Created Tasks" : "My Tasks";
 
@@ -219,9 +216,7 @@ export function TaskPage({
 
   return (
     <div className="space-y-6">
-      {/* ==================================================
-          Header
-      ================================================== */}
+     
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -252,9 +247,7 @@ export function TaskPage({
         </Button>
       </div>
 
-      {/* ==================================================
-          Error
-      ================================================== */}
+     
 
       {error && (
         <div className="flex items-start gap-3 rounded-xl border border-destructive/20 bg-destructive/5 p-4">
@@ -281,9 +274,7 @@ export function TaskPage({
         </div>
       )}
 
-      {/* ==================================================
-          Loading
-      ================================================== */}
+      
 
       {loading && (
         <div className="flex min-h-[300px] items-center justify-center rounded-xl border bg-card">
@@ -294,9 +285,7 @@ export function TaskPage({
         </div>
       )}
 
-      {/* ==================================================
-          Empty
-      ================================================== */}
+ 
 
       {!loading && !error && tasks.length === 0 && (
         <div className="flex min-h-[300px] flex-col items-center justify-center rounded-xl border bg-card px-6 text-center">
@@ -318,9 +307,7 @@ export function TaskPage({
         </div>
       )}
 
-      {/* ==================================================
-          Tasks
-      ================================================== */}
+    
 
       {!loading && !error && tasks.length > 0 && (
         <>
@@ -349,9 +336,7 @@ export function TaskPage({
         </>
       )}
 
-      {/* ==================================================
-          Task Details
-      ================================================== */}
+    
 
       <TaskDetailSheet
         task={selectedTask}
@@ -367,9 +352,7 @@ export function TaskPage({
         onDeleted={handleTaskDeleted}
       />
 
-      {/* ==================================================
-          Delete Confirmation
-      ================================================== */}
+    
 
       <Dialog
         open={Boolean(deleteTaskItem)}

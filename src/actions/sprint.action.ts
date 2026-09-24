@@ -190,14 +190,6 @@ export async function createSprint(
 }
 
 // GET SPRINTS BY PROJECT
-// GET /sprints/projects/:projectId
-//
-// Example:
-// /sprints/projects/:projectId
-// ?page=1
-// &limit=10
-// &sortBy=createdAt
-// &sortOrder=desc
 
 export async function getSprintsByProject(
   projectId: string,

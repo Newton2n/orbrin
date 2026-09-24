@@ -65,10 +65,9 @@ export type CommentQueryParams = {
 };
 
 const commentPaths = [
-  "/dashboard/task",
-  "/dashboard/admin/task",
-  "/dashboard/manager/task",
-  "/dashboard/member/task",
+  "/dashboard/admin/tasks",
+  "/dashboard/manager/tasks",
+  "/dashboard/member/tasks",
 ];
 
 function commentFailure<T>(message: string, data: T): CommentActionResult<T> {
@@ -122,9 +121,9 @@ function buildCommentQuery(params: CommentQueryParams = {}) {
   return queryString ? `?${queryString}` : "";
 }
 
-/**
- * Get comments for a task
- */
+
+ // Get comments for a task
+
 export async function getCommentsByTask(
   taskId: string,
   params: CommentQueryParams = {},
@@ -172,9 +171,8 @@ export async function getCommentsByTask(
   });
 }
 
-/**
- * Create comment
- */
+ //Create comment
+
 export async function createComment(
   taskId: string,
   input: CreateCommentInput,
@@ -209,9 +207,7 @@ export async function createComment(
   );
 }
 
-/**
- * Update comment
- */
+//  Update comment
 export async function updateComment(
   input: UpdateCommentInput,
 ): Promise<CommentActionResult<Comment | null>> {
@@ -245,9 +241,7 @@ export async function updateComment(
   );
 }
 
-/**
- * Delete comment
- */
+// Delete comment
 export async function deleteComment(
   commentId: string,
 ): Promise<CommentActionResult<Comment | null>> {

@@ -321,9 +321,9 @@ export const createTask = async (
     return taskFailure("Task could not be created.");
   }
 
-  revalidatePath("/dashboard/admin/task");
-  revalidatePath("/dashboard/manager/task");
-  revalidatePath("/dashboard/member/task");
+  revalidatePath("/dashboard/admin/tasks");
+  revalidatePath("/dashboard/manager/tasks");
+  revalidatePath("/dashboard/member/tasks");
 
   return taskSuccess(
     task,
@@ -354,9 +354,9 @@ export const updateTask = async (
     return taskFailure("Task could not be updated.");
   }
 
-  revalidatePath("/dashboard/admin/task");
-  revalidatePath("/dashboard/manager/task");
-  revalidatePath("/dashboard/member/task");
+  revalidatePath("/dashboard/admin/tasks");
+  revalidatePath("/dashboard/manager/tasks");
+  revalidatePath("/dashboard/member/tasks");
 
   return taskSuccess(
     task,
@@ -384,9 +384,9 @@ export const deleteTask = async (
     return taskFailure("Task could not be deleted.");
   }
 
-  revalidatePath("/dashboard/admin/task");
-  revalidatePath("/dashboard/manager/task");
-  revalidatePath("/dashboard/member/task");
+  revalidatePath("/dashboard/admin/tasks");
+  revalidatePath("/dashboard/manager/tasks");
+  revalidatePath("/dashboard/member/tasks");
 
   return taskSuccess(
     task,
