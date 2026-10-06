@@ -1,14 +1,14 @@
 "use client";
 
 import { Eye, MoreHorizontal, Pencil, Search, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
-  getOrganizationMembers,
   type OrganizationMember,
   type OrganizationMemberListParams,
   type OrganizationMembershipStatus,
   type OrganizationRole,
 } from "@/actions/organization.action";
+import { useOrganizationMembers } from "@/hooks/use-bff-queries";
 import { AvatarWithFallback } from "@/components/avatar-with-fallback";
 import { ErrorState } from "@/components/shared/error-state";
 import { Badge } from "@/components/ui/badge";
@@ -51,7 +51,6 @@ export function OrganizationMembersTable({
   canManageMembers: boolean;
   canRemoveMembers: boolean;
 }) {
-  const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [params, setParams] = useState<OrganizationMemberListParams>({
     page: 1,
     limit: 10,
@@ -62,9 +61,6 @@ export function OrganizationMembersTable({
   const [role, setRole] = useState("ALL");
   const [status, setStatus] = useState("ALL");
   const [sort, setSort] = useState<SortValue>("createdAt-desc");
-  const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [detailsId, setDetailsId] = useState<string | null>(null);
   const [roleMember, setRoleMember] = useState<OrganizationMember | null>(null);
   const [statusMember, setStatusMember] = useState<OrganizationMember | null>(
@@ -73,23 +69,11 @@ export function OrganizationMembersTable({
   const [removeMember, setRemoveMember] = useState<OrganizationMember | null>(
     null,
   );
-  async function load() {
-    setLoading(true);
-    const result = await getOrganizationMembers(params);
-    setLoading(false);
-    if (!result.success) {
-      setError(result.message);
-      return;
-    }
-    setError(null);
-    setMembers(result.data.items);
-    setTotalPages(result.data.totalPages);
-  }
-  // Reload when the committed query changes.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: load reads the current query object
-  useEffect(() => {
-    void load();
-  }, [params]);
+  const query = useOrganizationMembers(params);
+  const members = query.data?.items ?? [];
+  const totalPages = query.data?.totalPages ?? 0;
+  const loading = query.isLoading;
+  const error = query.error instanceof Error ? query.error.message : null;
   function applyFilters() {
     const [sortBy, sortOrder] = sort.split("-") as [
       "createdAt" | "updatedAt" | "role",
@@ -107,7 +91,7 @@ export function OrganizationMembersTable({
     });
   }
   function refresh() {
-    void load();
+    void query.refetch();
   }
   const mayEdit = (member: OrganizationMember) =>
     canManageMembers &&
@@ -211,7 +195,7 @@ export function OrganizationMembersTable({
                     <ErrorState
                       compact
                       description={error}
-                      onRetry={() => void load()}
+                      onRetry={() => void query.refetch()}
                     />
                   </TableCell>
                 </TableRow>

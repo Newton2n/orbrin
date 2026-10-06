@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-
-import { getOrganizationMembers } from "@/actions/organization.action";
 
 import {
   addTeamMember,
-  getTeamMembers,
   removeTeamMember,
   type TeamMember,
 } from "@/actions/team.action";
+import { useOrganizationMembers, useTeamMembers } from "@/hooks/use-bff-queries";
 
 import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
@@ -95,57 +93,23 @@ export function TeamMembersDialog({
   teamId,
   canManageMembers,
 }: TeamMembersDialogProps) {
-  const [members, setMembers] = useState<TeamMember[]>([]);
-  const [available, setAvailable] = useState<AvailableMember[]>([]);
   const [selectedUser, setSelectedUser] = useState("");
   const [removeUser, setRemoveUser] = useState<TeamMember | null>(null);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  async function loadMembers() {
-    setLoading(true);
-    setLoadError(null);
-
-    try {
-      const [membersResult, usersResult] = await Promise.all([
-        getTeamMembers(teamId),
-        getOrganizationMembers(),
-      ]);
-
-      if (membersResult.ok) {
-        setMembers(membersResult.data);
-      } else {
-        setLoadError(membersResult.message ?? "Unable to load team members.");
-      }
-
-      if (usersResult.success) {
-        setAvailable(memberList(usersResult.data));
-      } else {
-        setLoadError(
-          usersResult.message ?? "Unable to load organization members.",
-        );
-      }
-
-      if (membersResult.ok && usersResult.success) {
-        setLoadError(null);
-      }
-    } catch (error) {
-      console.error(error);
-
-      setLoadError(
-        error instanceof Error ? error.message : "Unable to load team members.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (open) {
-      void loadMembers();
-    }
-  }, [open, teamId]);
+  const membersQuery = useTeamMembers(teamId);
+  const usersQuery = useOrganizationMembers({});
+  const members = membersQuery.data ?? [];
+  const available = memberList(usersQuery.data?.items ?? []);
+  const loading = membersQuery.isLoading || usersQuery.isLoading;
+  const loadError =
+    membersQuery.error instanceof Error
+      ? membersQuery.error.message
+      : usersQuery.error instanceof Error
+        ? usersQuery.error.message
+        : null;
+  const loadMembers = async () => {
+    await Promise.all([membersQuery.refetch(), usersQuery.refetch()]);
+  };
 
   const unassigned = available.filter(
     (member) =>

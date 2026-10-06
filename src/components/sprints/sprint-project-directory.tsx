@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-import { getAllProjects, type Project } from "@/actions/project.action";
+import type { Project } from "@/actions/project.action";
+import { useProjects } from "@/hooks/use-bff-queries";
 
 import { Button } from "@/components/ui/button";
 
@@ -24,8 +25,6 @@ import {
 
 import { FolderKanban, Loader2 } from "lucide-react";
 
-import { toast } from "sonner";
-
 import { SprintList } from "./sprint-list";
 
 type SprintProjectDirectoryProps = {
@@ -33,57 +32,18 @@ type SprintProjectDirectoryProps = {
 };
 
 export function SprintProjectDirectory({ role }: SprintProjectDirectoryProps) {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadProjects() {
-      try {
-        setLoading(true);
-
-        const result = await getAllProjects({
-          page: 1,
-          limit: 100,
-          sortBy: "updatedAt",
-          sortOrder: "desc",
-        });
-
-        if (cancelled) {
-          return;
-        }
-
-        if (!result.ok) {
-          toast.error(result.message ?? "Unable to load projects.");
-
-          setProjects([]);
-          return;
-        }
-
-        setProjects(result.data?.projects ?? []);
-      } catch {
-        if (!cancelled) {
-          toast.error("Unable to load projects.");
-          setProjects([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadProjects();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const query = useProjects({
+    page: 1,
+    limit: 100,
+    sortBy: "updatedAt",
+    sortOrder: "desc",
+  });
+  const projects = query.data?.projects ?? [];
+  const loading = query.isLoading;
 
   function handleOpen(project: Project) {
     setSelectedProject(project);

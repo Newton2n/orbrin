@@ -1,14 +1,13 @@
 "use client";
 
 import { Users } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 
 import {
-  getTeamMembers,
   type Team,
   type TeamMember,
 } from "@/actions/team.action";
+import { useTeamMembers } from "@/hooks/use-bff-queries";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,57 +56,10 @@ export function TeamDetailsDialog({
   onEdit,
   onDelete,
 }: TeamDetailsDialogProps) {
-  const [members, setMembers] = useState<TeamMember[]>([]);
   const [membersOpen, setMembersOpen] = useState(false);
-  const [loadingMembers, setLoadingMembers] = useState(false);
-
-  useEffect(() => {
-    if (!open || !team) {
-      return;
-    }
-
-    let cancelled = false;
-
-    async function loadMembers() {
-      setLoadingMembers(true);
-
-      try {
-        const result = await getTeamMembers(team?.id as string);
-
-        if (cancelled) {
-          return;
-        }
-
-        if (result.ok) {
-          setMembers(result.data);
-        } else {
-          toast.error(result.message ?? "Unable to load team members.");
-        }
-      } catch (error) {
-        if (cancelled) {
-          return;
-        }
-
-        console.error(error);
-
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Unable to load team members.",
-        );
-      } finally {
-        if (!cancelled) {
-          setLoadingMembers(false);
-        }
-      }
-    }
-
-    void loadMembers();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, team]);
+  const membersQuery = useTeamMembers(open && team ? team.id : "");
+  const members = membersQuery.data ?? [];
+  const loadingMembers = membersQuery.isLoading;
 
   if (!team) {
     return null;

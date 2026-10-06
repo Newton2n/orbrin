@@ -1,15 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 import {
   deleteSprint,
   getSprintById,
-  getSprintsByProject,
   type Sprint,
-  type SprintPagination,
   type SprintStatus,
 } from "@/actions/sprint.action";
+import { useProjectSprints } from "@/hooks/use-bff-queries";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -85,11 +84,6 @@ export function SprintList({
   canDelete = false,
   canViewDetails = true,
 }: SprintListProps) {
-  const [sprints, setSprints] = useState<Sprint[]>([]);
-  const [pagination, setPagination] = useState<SprintPagination | null>(null);
-
-  const [loading, setLoading] = useState(true);
-
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
 
@@ -114,44 +108,18 @@ export function SprintList({
 
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const loadSprints = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      const result = await getSprintsByProject(projectId, {
-        page,
-        limit: PAGE_LIMIT,
-        search: search || undefined,
-        sortBy,
-        sortOrder,
-        status: status === "ALL" ? undefined : status,
-      });
-
-      if (!result.ok) {
-        toast.error(result.message ?? "Unable to load sprints.");
-
-        setSprints([]);
-        setPagination(null);
-        return;
-      }
-
-      setSprints(result.data.sprints ?? []);
-      setPagination(result.data.pagination ?? null);
-    } catch (error) {
-      console.error("Failed to load sprints:", error);
-
-      toast.error("Unable to load sprints.");
-
-      setSprints([]);
-      setPagination(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId, page, search, sortBy, sortOrder, status]);
-
-  useEffect(() => {
-    void loadSprints();
-  }, [loadSprints]);
+  const sprintsQuery = useProjectSprints(projectId, {
+    page,
+    limit: PAGE_LIMIT,
+    search: search || undefined,
+    sortBy,
+    sortOrder,
+    status: status === "ALL" ? undefined : status,
+  });
+  const sprints = sprintsQuery.data?.sprints ?? [];
+  const pagination = sprintsQuery.data?.pagination ?? null;
+  const loading = sprintsQuery.isLoading;
+  const loadSprints = () => void sprintsQuery.refetch();
 
   function handleSearchSubmit() {
     setPage(1);

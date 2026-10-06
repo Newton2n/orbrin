@@ -1,9 +1,10 @@
 "use client";
 
 import { MessageSquare, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
-import { getCommentsByTask, type Comment } from "@/actions/comment.action";
+import { type Comment } from "@/actions/comment.action";
+import { useComments } from "@/hooks/use-bff-queries";
 
 import { CommentForm } from "@/components/comments/comment-form";
 import { CommentItem } from "@/components/comments/comment-item";
@@ -25,42 +26,19 @@ export function CommentList({
   canEditAny,
   canDeleteAny,
 }: CommentListProps) {
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadComments = useCallback(async () => {
-    if (!taskId) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const result = await getCommentsByTask(taskId, {
-        page: 1,
-        limit: 50,
-        sortBy: "createdAt",
-        sortOrder: "asc",
-      });
-
-      if (!result.success) {
-        setComments([]);
-        setError(result.message ?? "Unable to load comments.");
-        return;
-      }
-
-      setComments(result.data.comments);
-    } catch {
-      setComments([]);
-      setError("Unable to load comments.");
-    } finally {
-      setLoading(false);
-    }
-  }, [taskId]);
-
-  useEffect(() => {
-    void loadComments();
-  }, [loadComments]);
+  const queryClient = useQueryClient();
+  const query = useComments(taskId, {
+    page: 1,
+    limit: 50,
+    sortBy: "createdAt",
+    sortOrder: "asc",
+  });
+  const comments = query.data?.comments ?? [];
+  const loading = query.isLoading;
+  const error = query.error instanceof Error ? query.error.message : null;
+  const refresh = () => void query.refetch();
+  const invalidate = () =>
+    void queryClient.invalidateQueries({ queryKey: ["comments", taskId] });
 
   return (
     <div className="space-y-5">
@@ -82,7 +60,7 @@ export function CommentList({
           variant="ghost"
           size="icon"
           className="size-8"
-          onClick={() => void loadComments()}
+          onClick={refresh}
           disabled={loading}
         >
           <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} />
@@ -92,7 +70,7 @@ export function CommentList({
 
       {canComment && (
         <>
-          <CommentForm taskId={taskId} onSuccess={() => void loadComments()} />
+          <CommentForm taskId={taskId} onSuccess={invalidate} />
 
           <Separator />
         </>
@@ -111,7 +89,7 @@ export function CommentList({
             variant="outline"
             size="sm"
             className="mt-3"
-            onClick={() => void loadComments()}
+            onClick={refresh}
           >
             Try again
           </Button>
@@ -138,7 +116,7 @@ export function CommentList({
                 comment={comment}
                 canEdit={isAuthor || canEditAny}
                 canDelete={isAuthor || canDeleteAny}
-                onChanged={() => void loadComments()}
+                onChanged={invalidate}
               />
             );
           })}
