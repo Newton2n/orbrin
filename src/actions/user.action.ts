@@ -9,6 +9,17 @@ import {
   unwrapPayload,
 } from "../lib/server/backend-api";
 
+// user type definition
+export type UserProfile = {
+  id: string;
+  fullName: string;
+  email: string;
+  profileImageUrl?: string | null;
+  role?: string;
+  status?: string;
+  [key: string]: unknown;
+};
+
 export async function getUserProfile() {
   const result = await backendRequest<unknown>("/users/me");
   return result.ok
@@ -32,26 +43,6 @@ export async function updateUserProfile(input: Record<string, unknown>) {
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/profile");
   return actionSuccess(unwrapPayload(result.payload));
-}
-
-export type UserProfile = {
-  id: string;
-  fullName: string;
-  email: string;
-  profileImageUrl?: string | null;
-  role?: string;
-  status?: string;
-  [key: string]: unknown;
-};
-
-export async function getMyProfile() {
-  const result = await backendRequest<UserProfile>("/users/me");
-  return result.ok
-    ? actionSuccess(unwrapPayload<UserProfile>(result.payload))
-    : actionFailure(
-        backendMessage(result.payload, "Unable to fetch profile."),
-        null,
-      );
 }
 
 export async function changePassword(input: {

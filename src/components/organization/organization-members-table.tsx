@@ -1,14 +1,17 @@
+
 "use client";
 
 import { Eye, MoreHorizontal, Pencil, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
-import {
-  type OrganizationMember,
-  type OrganizationMemberListParams,
-  type OrganizationMembershipStatus,
-  type OrganizationRole,
+
+import type {
+  OrganizationMember,
+  OrganizationMemberListParams,
+  OrganizationMembershipStatus,
+  OrganizationRole,
 } from "@/actions/organization.action";
 import { useOrganizationMembers } from "@/hooks/use-bff-queries";
+
 import { AvatarWithFallback } from "@/components/avatar-with-fallback";
 import { ErrorState } from "@/components/shared/error-state";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import { MemberDetailsDialog } from "./member-details-dialog";
 import { MemberRoleDialog } from "./member-role-dialog";
 import { MemberStatusDialog } from "./member-status-dialog";
@@ -40,6 +44,7 @@ type SortValue =
   | "createdAt-asc"
   | "updatedAt-desc"
   | "role-asc";
+
 export function OrganizationMembersTable({
   currentUserRole,
   currentUserMemberId,
@@ -57,46 +62,69 @@ export function OrganizationMembersTable({
     sortBy: "createdAt",
     sortOrder: "desc",
   });
+
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("ALL");
   const [status, setStatus] = useState("ALL");
   const [sort, setSort] = useState<SortValue>("createdAt-desc");
+
   const [detailsId, setDetailsId] = useState<string | null>(null);
-  const [roleMember, setRoleMember] = useState<OrganizationMember | null>(null);
-  const [statusMember, setStatusMember] = useState<OrganizationMember | null>(
+  const [roleMember, setRoleMember] = useState<OrganizationMember | null>(
     null,
   );
-  const [removeMember, setRemoveMember] = useState<OrganizationMember | null>(
-    null,
-  );
+  const [statusMember, setStatusMember] =
+    useState<OrganizationMember | null>(null);
+  const [removeMember, setRemoveMember] =
+    useState<OrganizationMember | null>(null);
+
   const query = useOrganizationMembers(params);
+
   const members = query.data?.items ?? [];
   const totalPages = query.data?.totalPages ?? 0;
+
   const loading = query.isLoading;
-  const error = query.error instanceof Error ? query.error.message : null;
+  const fetching = query.isFetching;
+
+  const error =
+    query.error instanceof Error ? query.error.message : null;
+
   function applyFilters() {
     const [sortBy, sortOrder] = sort.split("-") as [
       "createdAt" | "updatedAt" | "role",
       "asc" | "desc",
     ];
+
     setParams({
       page: 1,
       limit: 10,
       search: search.trim() || undefined,
       role: role === "ALL" ? undefined : (role as OrganizationRole),
       status:
-        status === "ALL" ? undefined : (status as OrganizationMembershipStatus),
+        status === "ALL"
+          ? undefined
+          : (status as OrganizationMembershipStatus),
       sortBy,
       sortOrder,
     });
   }
+
   function refresh() {
     void query.refetch();
   }
+
+  function handleSearchKeyDown(
+    event: React.KeyboardEvent<HTMLInputElement>,
+  ) {
+    if (event.key === "Enter") {
+      applyFilters();
+    }
+  }
+
   const mayEdit = (member: OrganizationMember) =>
     canManageMembers &&
     member.role !== "ADMIN" &&
     member.id !== currentUserMemberId;
+
   return (
     <>
       <Card className="border-border/70 shadow-none">
@@ -104,16 +132,16 @@ export function OrganizationMembersTable({
           <div className="flex flex-col gap-3 lg:flex-row">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+
               <Input
                 className="pl-9"
                 placeholder="Search by name or email"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") applyFilters();
-                }}
+                onKeyDown={handleSearchKeyDown}
               />
             </div>
+
             <Select
               value={role}
               onValueChange={(value) => {
@@ -123,6 +151,7 @@ export function OrganizationMembersTable({
               <SelectTrigger>
                 <SelectValue placeholder="All roles" />
               </SelectTrigger>
+
               <SelectContent>
                 <SelectItem value="ALL">All roles</SelectItem>
                 <SelectItem value="ADMIN">Admin</SelectItem>
@@ -130,13 +159,17 @@ export function OrganizationMembersTable({
                 <SelectItem value="MEMBER">Member</SelectItem>
               </SelectContent>
             </Select>
+
             <Select
               value={status}
-              onValueChange={(value) => setStatus(value ?? "ALL")}
+              onValueChange={(value) => {
+                setStatus(value ?? "ALL");
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="All statuses" />
               </SelectTrigger>
+
               <SelectContent>
                 <SelectItem value="ALL">All statuses</SelectItem>
                 <SelectItem value="ACTIVE">Active</SelectItem>
@@ -144,28 +177,34 @@ export function OrganizationMembersTable({
                 <SelectItem value="SUSPENDED">Suspended</SelectItem>
               </SelectContent>
             </Select>
+
             <Select
               value={sort}
-              onValueChange={(value) =>
-                setSort((value ?? "createdAt-desc") as SortValue)
-              }
+              onValueChange={(value) => {
+                setSort((value ?? "createdAt-desc") as SortValue);
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
+
               <SelectContent>
                 <SelectItem value="createdAt-desc">Newest</SelectItem>
                 <SelectItem value="createdAt-asc">Oldest</SelectItem>
-                <SelectItem value="updatedAt-desc">Recently updated</SelectItem>
+                <SelectItem value="updatedAt-desc">
+                  Recently updated
+                </SelectItem>
                 <SelectItem value="role-asc">Role</SelectItem>
               </SelectContent>
             </Select>
+
             <Button variant="outline" onClick={applyFilters}>
               Apply
             </Button>
           </div>
         </CardContent>
       </Card>
+
       <Card className="border-border/70 shadow-none">
         <CardContent className="p-0">
           <Table>
@@ -179,6 +218,7 @@ export function OrganizationMembersTable({
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {loading ? (
                 <TableRow>
@@ -212,6 +252,7 @@ export function OrganizationMembersTable({
                 members.map((member) => {
                   const user = member.user;
                   const editable = mayEdit(member);
+
                   return (
                     <TableRow
                       key={member.id}
@@ -224,35 +265,45 @@ export function OrganizationMembersTable({
                             name={user?.fullName}
                             imageUrl={user?.profileImageUrl}
                           />
+
                           <div className="min-w-0">
                             <p className="truncate font-medium">
                               {user?.fullName || "Unknown member"}
                             </p>
+
                             <p className="truncate text-muted-foreground">
                               {user?.email || "No email"}
                             </p>
                           </div>
                         </div>
                       </TableCell>
+
                       <TableCell>
                         <Badge variant="outline">{member.role}</Badge>
                       </TableCell>
+
                       <TableCell>
                         <Badge variant="outline">{member.status}</Badge>
                       </TableCell>
+
                       <TableCell>
                         {user?.status ?? "Unknown"}
+
                         {user?.emailVerified ? (
                           <span className="ml-2 text-emerald-600">
                             Verified
                           </span>
                         ) : null}
                       </TableCell>
+
                       <TableCell>
                         {member.createdAt
-                          ? new Date(member.createdAt).toLocaleDateString()
+                          ? new Date(
+                              member.createdAt,
+                            ).toLocaleDateString()
                           : "-"}
                       </TableCell>
+
                       <TableCell>
                         <div className="flex justify-end gap-1">
                           <Button
@@ -265,8 +316,11 @@ export function OrganizationMembersTable({
                             }}
                           >
                             <Eye />
-                            <span className="sr-only">View member</span>
+                            <span className="sr-only">
+                              View member
+                            </span>
                           </Button>
+
                           {editable && (
                             <>
                               <Button
@@ -279,8 +333,11 @@ export function OrganizationMembersTable({
                                 }}
                               >
                                 <Pencil />
-                                <span className="sr-only">Change role</span>
+                                <span className="sr-only">
+                                  Change role
+                                </span>
                               </Button>
+
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -291,10 +348,13 @@ export function OrganizationMembersTable({
                                 }}
                               >
                                 <MoreHorizontal />
-                                <span className="sr-only">Change status</span>
+                                <span className="sr-only">
+                                  Change status
+                                </span>
                               </Button>
                             </>
                           )}
+
                           {canRemoveMembers &&
                             member.role !== "ADMIN" &&
                             member.id !== currentUserMemberId && (
@@ -308,7 +368,9 @@ export function OrganizationMembersTable({
                                 }}
                               >
                                 <Trash2 />
-                                <span className="sr-only">Remove member</span>
+                                <span className="sr-only">
+                                  Remove member
+                                </span>
                               </Button>
                             )}
                         </div>
@@ -319,32 +381,40 @@ export function OrganizationMembersTable({
               )}
             </TableBody>
           </Table>
+
           <div className="flex items-center justify-between border-t px-4 py-3 text-xs text-muted-foreground">
             <span>
               Page {params.page ?? 1} of {Math.max(totalPages, 1)}
             </span>
+
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                disabled={loading || (params.page ?? 1) <= 1}
+                disabled={
+                  fetching || (params.page ?? 1) <= 1
+                }
                 onClick={() =>
-                  setParams((value) => ({
-                    ...value,
-                    page: (value.page ?? 1) - 1,
+                  setParams((current) => ({
+                    ...current,
+                    page: (current.page ?? 1) - 1,
                   }))
                 }
               >
                 Previous
               </Button>
+
               <Button
                 variant="outline"
                 size="sm"
-                disabled={loading || (params.page ?? 1) >= totalPages}
+                disabled={
+                  fetching ||
+                  (params.page ?? 1) >= totalPages
+                }
                 onClick={() =>
-                  setParams((value) => ({
-                    ...value,
-                    page: (value.page ?? 1) + 1,
+                  setParams((current) => ({
+                    ...current,
+                    page: (current.page ?? 1) + 1,
                   }))
                 }
               >
@@ -354,33 +424,46 @@ export function OrganizationMembersTable({
           </div>
         </CardContent>
       </Card>
+
       <MemberDetailsDialog
         open={Boolean(detailsId)}
-        onOpenChange={(open) => !open && setDetailsId(null)}
+        onOpenChange={(open) => {
+          if (!open) setDetailsId(null);
+        }}
         memberId={detailsId}
         currentUserRole={currentUserRole}
         canManageMembers={canManageMembers}
         canRemoveMembers={canRemoveMembers}
         onMemberChanged={refresh}
       />
+
       <MemberRoleDialog
         open={Boolean(roleMember)}
-        onOpenChange={(open) => !open && setRoleMember(null)}
+        onOpenChange={(open) => {
+          if (!open) setRoleMember(null);
+        }}
         member={roleMember}
         onUpdated={refresh}
       />
+
       <MemberStatusDialog
         open={Boolean(statusMember)}
-        onOpenChange={(open) => !open && setStatusMember(null)}
+        onOpenChange={(open) => {
+          if (!open) setStatusMember(null);
+        }}
         member={statusMember}
         onUpdated={refresh}
       />
+
       <RemoveMemberDialog
         open={Boolean(removeMember)}
-        onOpenChange={(open) => !open && setRemoveMember(null)}
+        onOpenChange={(open) => {
+          if (!open) setRemoveMember(null);
+        }}
         member={removeMember}
         onRemoved={refresh}
       />
     </>
   );
 }
+

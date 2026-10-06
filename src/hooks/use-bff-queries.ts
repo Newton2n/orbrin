@@ -12,11 +12,7 @@ import type {
   ProjectListParams,
   ProjectListResponse,
 } from "@/actions/project.action";
-import type {
-  Team,
-  TeamListParams,
-  TeamMember,
-} from "@/actions/team.action";
+import type { Team, TeamListParams, TeamMember } from "@/actions/team.action";
 import type {
   Comment,
   CommentListResponse,
@@ -33,41 +29,58 @@ import type {
   SprintListParams,
 } from "@/actions/sprint.action";
 import { bffGet } from "@/lib/client/bff";
+import { UserProfile } from "@/actions/user.action";
 
 export const queryKeys = {
   teams: (params: TeamListParams = {}) => ["teams", params] as const,
   teamMembers: (teamId: string) => ["team-members", teamId] as const,
+
   projects: (params: ProjectListParams = {}) => ["projects", params] as const,
   project: (projectId: string) => ["projects", "detail", projectId] as const,
-  projectTasks: (
-    projectId: string,
-    params: TaskQueryParams = {},
-  ) => ["tasks", "project", projectId, params] as const,
+
+  projectTasks: (projectId: string, params: TaskQueryParams = {}) =>
+    ["tasks", "project", projectId, params] as const,
+
   sprints: (projectId: string, params: SprintListParams = {}) =>
     ["sprints", "project", projectId, params] as const,
+
   organizationMembers: (params: OrganizationMemberListParams = {}) =>
     ["organization-members", params] as const,
+
   organizationMember: (memberId: string) =>
     ["organization-members", "detail", memberId] as const,
+
   comments: (taskId: string, params: CommentQueryParams = {}) =>
     ["comments", taskId, params] as const,
 };
 
 function queryString(params: Record<string, unknown>) {
-  const search = new URLSearchParams();
+  const searchParams = new URLSearchParams();
+
   for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== "") search.set(key, String(value));
+    if (value !== undefined && value !== "") {
+      searchParams.set(key, String(value));
+    }
   }
-  const value = search.toString();
-  return value ? `?${value}` : "";
+
+  const query = searchParams.toString();
+
+  return query ? `?${query}` : "";
 }
 
 function unwrap<T>(payload: unknown): T {
   if (payload && typeof payload === "object") {
     const source = payload as Record<string, unknown>;
-    if ("data" in source) return source.data as T;
-    if ("result" in source) return source.result as T;
+
+    if ("data" in source) {
+      return source.data as T;
+    }
+
+    if ("result" in source) {
+      return source.result as T;
+    }
   }
+
   return payload as T;
 }
 
@@ -76,10 +89,14 @@ export function useTeams(params: TeamListParams = {}) {
     queryKey: queryKeys.teams(params),
     queryFn: async () => {
       const payload = await bffGet<unknown>(`/teams${queryString(params)}`);
+
       const value = unwrap<unknown>(payload);
-      const source = value && typeof value === "object"
-        ? (value as Record<string, unknown>)
-        : {};
+
+      const source =
+        value && typeof value === "object"
+          ? (value as Record<string, unknown>)
+          : {};
+
       const items = Array.isArray(source.items)
         ? source.items
         : Array.isArray(source.teams)
@@ -87,6 +104,7 @@ export function useTeams(params: TeamListParams = {}) {
           : Array.isArray(value)
             ? value
             : [];
+
       return {
         items: items as Team[],
         total: Number(source.total ?? items.length),
@@ -103,13 +121,16 @@ export function useProjects(params: ProjectListParams = {}) {
     queryKey: queryKeys.projects(params),
     queryFn: async () => {
       const payload = await bffGet<unknown>(`/projects${queryString(params)}`);
-      const source = payload && typeof payload === "object"
-        ? (payload as Record<string, unknown>)
-        : {};
+
+      const source =
+        payload && typeof payload === "object"
+          ? (payload as Record<string, unknown>)
+          : {};
+
       return {
         projects: Array.isArray(source.data)
           ? (source.data as Project[])
-          : unwrap<Project[]>(payload) ?? [],
+          : (unwrap<Project[]>(payload) ?? []),
         pagination: source.pagination as ProjectListResponse["pagination"],
       };
     },
@@ -119,27 +140,32 @@ export function useProjects(params: ProjectListParams = {}) {
 export function useOrganizationMembers(params: OrganizationMemberListParams) {
   return useQuery({
     queryKey: queryKeys.organizationMembers(params),
+
     queryFn: async () => {
-      const payload = await bffGet<unknown>(
-        `/organizations/members${queryString(params)}`,
-      );
-      const value = unwrap<unknown>(payload);
-      const source = value && typeof value === "object"
-        ? (value as Record<string, unknown>)
-        : {};
-      const items = Array.isArray(source.items)
-        ? source.items
-        : Array.isArray(source.members)
-          ? source.members
-          : [];
+      const payload = await bffGet<{
+        data?: OrganizationMember[];
+        pagination?: OrganizationPagination<OrganizationMember>;
+      }>(`/organizations/members${queryString(params)}`);
+
+      const members = Array.isArray(payload.data) ? payload.data : [];
+      const pagination = payload.pagination;
+
       return {
-        items: items as OrganizationMember[],
-        total: Number(source.total ?? items.length),
-        page: Number(source.page ?? params.page ?? 1),
-        limit: Number(source.limit ?? params.limit ?? 10),
-        totalPages: Number(source.totalPages ?? 1),
+        items: members,
+        total: pagination?.total ?? members.length,
+        page: pagination?.page ?? params.page ?? 1,
+        limit: pagination?.limit ?? params.limit ?? 10,
+        totalPages: pagination?.totalPages ?? 1,
       } satisfies OrganizationPagination<OrganizationMember>;
     },
+
+    staleTime: 5 * 60 * 1000,
+
+    refetchOnMount: false,
+
+    refetchOnWindowFocus: false,
+
+    retry: 1,
   });
 }
 
@@ -152,6 +178,7 @@ export function useComments(taskId: string, params: CommentQueryParams = {}) {
         data?: unknown;
         pagination?: CommentListResponse["pagination"];
       }>(`/comments/tasks/${taskId}${queryString(params)}`);
+
       return {
         comments: Array.isArray(payload.data)
           ? (payload.data as Comment[])
@@ -168,12 +195,22 @@ export function useTeamMembers(teamId: string) {
     enabled: Boolean(teamId),
     queryFn: async () => {
       const payload = await bffGet<unknown>(`/teams/${teamId}/members`);
+
       const value = unwrap<unknown>(payload);
-      if (Array.isArray(value)) return value as TeamMember[];
+
+      if (Array.isArray(value)) {
+        return value as TeamMember[];
+      }
+
       if (value && typeof value === "object") {
         const source = value as Record<string, unknown>;
-        return (source.members ?? source.items ?? source.data ?? []) as TeamMember[];
+
+        return (source.members ??
+          source.items ??
+          source.data ??
+          []) as TeamMember[];
       }
+
       return [];
     },
   });
@@ -191,7 +228,9 @@ export function useProjectTasks(
         data?: unknown;
         pagination?: TaskListResponse["pagination"];
       }>(`/tasks/projects/${projectId}${queryString(params)}`);
+
       const tasks = Array.isArray(payload.data) ? (payload.data as Task[]) : [];
+
       return {
         tasks,
         pagination: payload.pagination ?? {
@@ -219,9 +258,11 @@ export function useProjectSprints(
         data?: unknown;
         pagination?: SprintListResponse["pagination"];
       }>(`/sprints/projects/${projectId}${queryString(params)}`);
+
       const sprints = Array.isArray(payload.data)
         ? (payload.data as Sprint[])
         : [];
+
       return {
         sprints,
         pagination: payload.pagination ?? {
@@ -245,5 +286,16 @@ export function useOrganizationMember(memberId: string | null) {
       unwrap<OrganizationMember>(
         await bffGet<unknown>(`/organizations/members/${memberId}`),
       ),
+  });
+}
+
+// User Profile
+export function useUserProfile() {
+  return useQuery({
+    queryKey: ["user-profile"],
+    queryFn: async () => {
+      const payload = await bffGet<unknown>("/users/me");
+      return unwrap<UserProfile>(payload);
+    },
   });
 }
