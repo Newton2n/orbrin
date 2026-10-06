@@ -29,7 +29,7 @@ import type {
   SprintListParams,
 } from "@/actions/sprint.action";
 import { bffGet } from "@/lib/client/bff";
-import { UserProfile } from "@/actions/user.action";
+import type { UserProfile } from "@/actions/user.action";
 
 export const queryKeys = {
   teams: (params: TeamListParams = {}) => ["teams", params] as const,
@@ -37,6 +37,10 @@ export const queryKeys = {
 
   projects: (params: ProjectListParams = {}) => ["projects", params] as const,
   project: (projectId: string) => ["projects", "detail", projectId] as const,
+  sprint: (sprintId: string) => ["sprints", "detail", sprintId] as const,
+  myTasks: (params: TaskQueryParams = {}) => ["tasks", "mine", params] as const,
+  myCreatedTasks: (params: TaskQueryParams = {}) =>
+    ["tasks", "created", params] as const,
 
   projectTasks: (projectId: string, params: TaskQueryParams = {}) =>
     ["tasks", "project", projectId, params] as const,
@@ -134,6 +138,15 @@ export function useProjects(params: ProjectListParams = {}) {
         pagination: source.pagination as ProjectListResponse["pagination"],
       };
     },
+  });
+}
+
+export function useProject(projectId: string) {
+  return useQuery({
+    queryKey: queryKeys.project(projectId),
+    enabled: Boolean(projectId),
+    queryFn: async () =>
+      unwrap<Project>(await bffGet<unknown>(`/projects/${projectId}`)),
   });
 }
 
@@ -276,6 +289,67 @@ export function useProjectSprints(
       } satisfies SprintListResponse;
     },
   });
+}
+
+export function useSprint(sprintId: string) {
+  return useQuery({
+    queryKey: queryKeys.sprint(sprintId),
+    enabled: Boolean(sprintId),
+    queryFn: async () =>
+      unwrap<Sprint>(await bffGet<unknown>(`/sprints/${sprintId}`)),
+  });
+}
+
+function useTaskList(
+  key: readonly unknown[],
+  endpoint: string,
+  params: TaskQueryParams,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: key,
+    enabled: Boolean(endpoint) && enabled,
+    queryFn: async () => {
+      const payload = await bffGet<{
+        data?: unknown;
+        pagination?: TaskListResponse["pagination"];
+      }>(`${endpoint}${queryString(params)}`);
+      const tasks = Array.isArray(payload.data) ? (payload.data as Task[]) : [];
+
+      return {
+        tasks,
+        pagination: payload.pagination ?? {
+          page: params.page ?? 1,
+          limit: params.limit ?? 10,
+          total: tasks.length,
+          totalPages: tasks.length ? 1 : 0,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      } satisfies TaskListResponse;
+    },
+  });
+}
+
+export function useMyTasks(params: TaskQueryParams = {}, enabled = true) {
+  return useTaskList(
+    queryKeys.myTasks(params),
+    "/tasks/my-tasks",
+    params,
+    enabled,
+  );
+}
+
+export function useMyCreatedTasks(
+  params: TaskQueryParams = {},
+  enabled = true,
+) {
+  return useTaskList(
+    queryKeys.myCreatedTasks(params),
+    "/tasks/created-tasks",
+    params,
+    enabled,
+  );
 }
 
 export function useOrganizationMember(memberId: string | null) {

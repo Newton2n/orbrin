@@ -1,14 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   deleteSprint,
-  getSprintById,
   type Sprint,
   type SprintStatus,
 } from "@/actions/sprint.action";
-import { useProjectSprints } from "@/hooks/use-bff-queries";
+import { useProjectSprints, useSprint } from "@/hooks/use-bff-queries";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -78,7 +77,6 @@ const taskStatusLabel: Record<string, string> = {
 
 export function SprintList({
   projectId,
-  role,
   canCreate = false,
   canEdit = false,
   canDelete = false,
@@ -102,6 +100,7 @@ export function SprintList({
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedSprint, setSelectedSprint] = useState<Sprint | null>(null);
+  const sprintQuery = useSprint(selectedSprint?.id ?? "");
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingSprint, setDeletingSprint] = useState<Sprint | null>(null);
@@ -120,6 +119,12 @@ export function SprintList({
   const pagination = sprintsQuery.data?.pagination ?? null;
   const loading = sprintsQuery.isLoading;
   const loadSprints = () => void sprintsQuery.refetch();
+
+  useEffect(() => {
+    if (sprintQuery.data) {
+      setSelectedSprint(sprintQuery.data);
+    }
+  }, [sprintQuery.data]);
 
   function handleSearchSubmit() {
     setPage(1);
@@ -159,26 +164,9 @@ export function SprintList({
     setFormOpen(true);
   }
 
-  async function handleView(sprint: Sprint) {
-    try {
-      setSelectedSprint(sprint);
-      setDetailsOpen(true);
-
-      const result = await getSprintById(sprint.id);
-
-      if (!result.ok) {
-        toast.error(result.message ?? "Unable to load sprint details.");
-        return;
-      }
-
-      if (result.data) {
-        setSelectedSprint(result.data);
-      }
-    } catch (error) {
-      console.error("Failed to load sprint details:", error);
-
-      toast.error("Unable to load sprint details.");
-    }
+  function handleView(sprint: Sprint) {
+    setSelectedSprint(sprint);
+    setDetailsOpen(true);
   }
 
   function handleDeleteClick(sprint: Sprint) {

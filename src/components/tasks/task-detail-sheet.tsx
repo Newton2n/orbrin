@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { toast } from "sonner";
 import { z } from "zod";
 
 import {
@@ -27,22 +26,17 @@ import {
   type TaskStatus,
 } from "@/actions/task.action";
 
-import {
-  getOrganizationMembers,
-  type OrganizationMember,
-} from "@/actions/organization.action";
+import type { OrganizationMember } from "@/actions/organization.action";
 
+import type { Sprint } from "@/actions/sprint.action";
 import {
-  getSprintsByProject,
-  type Sprint,
-} from "@/actions/sprint.action";
+  useOrganizationMembers,
+  useProjectSprints,
+} from "@/hooks/use-bff-queries";
 
 import { CommentList } from "@/components/comments/comment-list";
 
-import {
-  Alert,
-  AlertDescription,
-} from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { Badge } from "@/components/ui/badge";
 
@@ -99,36 +93,21 @@ type AssigneeOption = {
   email: string;
 };
 
-const taskStatusSchema = z.enum([
-  "TODO",
-  "IN_PROGRESS",
-  "DONE",
-]);
+const taskStatusSchema = z.enum(["TODO", "IN_PROGRESS", "DONE"]);
 
-const taskPrioritySchema = z.enum([
-  "LOW",
-  "MEDIUM",
-  "HIGH",
-  "URGENT",
-]);
+const taskPrioritySchema = z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]);
 
 const taskEditSchema = z.object({
   title: z
     .string()
     .trim()
     .min(1, "Task title is required.")
-    .max(
-      200,
-      "Task title must be less than 200 characters.",
-    ),
+    .max(200, "Task title must be less than 200 characters."),
 
   description: z
     .string()
     .trim()
-    .max(
-      5000,
-      "Description must be less than 5000 characters.",
-    ),
+    .max(5000, "Description must be less than 5000 characters."),
 
   status: taskStatusSchema,
 
@@ -141,9 +120,7 @@ const taskEditSchema = z.object({
   sprintId: z.string(),
 });
 
-type TaskEditFormValues = z.infer<
-  typeof taskEditSchema
->;
+type TaskEditFormValues = z.infer<typeof taskEditSchema>;
 
 function statusLabel(status: Task["status"]) {
   switch (status) {
@@ -195,9 +172,7 @@ function getPriorityVariant(
   return "default";
 }
 
-function getDateInputValue(
-  value?: string | null,
-) {
+function getDateInputValue(value?: string | null) {
   if (!value) {
     return "";
   }
@@ -224,24 +199,17 @@ export function TaskDetailSheet({
 }: TaskDetailSheetProps) {
   const [editMode, setEditMode] = useState(false);
 
-  const [assignees, setAssignees] = useState<
-    AssigneeOption[]
-  >([]);
+  const [assignees, setAssignees] = useState<AssigneeOption[]>([]);
 
-  const [sprints, setSprints] = useState<Sprint[]>(
-    [],
-  );
+  const [sprints, setSprints] = useState<Sprint[]>([]);
 
-  const [loadingAssignees, setLoadingAssignees] =
-    useState(false);
+  const [loadingAssignees, setLoadingAssignees] = useState(false);
 
-  const [loadingSprints, setLoadingSprints] =
-    useState(false);
+  const [loadingSprints, setLoadingSprints] = useState(false);
 
   const [deleting, setDeleting] = useState(false);
 
-  const [deleteDialogOpen, setDeleteDialogOpen] =
-    useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const [error, setError] = useState("");
 
@@ -250,10 +218,7 @@ export function TaskDetailSheet({
     handleSubmit,
     reset,
     control,
-    formState: {
-      errors,
-      isSubmitting,
-    },
+    formState: { errors, isSubmitting },
   } = useForm<TaskEditFormValues>({
     resolver: zodResolver(taskEditSchema),
     defaultValues: {
@@ -266,6 +231,17 @@ export function TaskDetailSheet({
       sprintId: "",
     },
   });
+  const membersQuery = useOrganizationMembers({
+    page: 1,
+    limit: 100,
+    status: "ACTIVE",
+  });
+  const sprintsQuery = useProjectSprints(task?.projectId ?? "", {
+    page: 1,
+    limit: 100,
+    sortBy: "createdAt",
+    sortOrder: "desc",
+  });
 
   useEffect(() => {
     if (!task) {
@@ -275,10 +251,7 @@ export function TaskDetailSheet({
     reset({
       title: task.title,
       description: task.description ?? "",
-      status:
-        task.status === "REVIEW"
-          ? "IN_PROGRESS"
-          : task.status,
+      status: task.status === "REVIEW" ? "IN_PROGRESS" : task.status,
       priority: task.priority,
       dueDate: getDateInputValue(task.dueDate),
       assigneeId: task.assigneeId ?? "",
@@ -290,129 +263,56 @@ export function TaskDetailSheet({
   }, [task, reset]);
 
   useEffect(() => {
-    if (!open || !editMode || !task) {
+    if (!open || !editMode) {
       return;
     }
 
-    const loadEditData = async () => {
-      setLoadingAssignees(true);
-      setLoadingSprints(true);
+    const options = (membersQuery.data?.items ?? [])
+      .filter(
+        (member: OrganizationMember) =>
+          member.status === "ACTIVE" && member.user?.status === "ACTIVE",
+      )
+      .map((member: OrganizationMember) => ({
+        id: member.user?.id ?? "",
+        fullName: member.user?.fullName ?? "",
+        email: member.user?.email ?? "",
+      }));
 
-      try {
-        const [
-          memberResult,
-          sprintResult,
-        ] = await Promise.all([
-          getOrganizationMembers({
-            page: 1,
-            limit: 100,
-            status: "ACTIVE",
-          }),
-
-          getSprintsByProject(task.projectId, {
-            page: 1,
-            limit: 100,
-            sortBy: "createdAt",
-            sortOrder: "desc",
-          }),
-        ]);
-
-        if (memberResult.success) {
-          const options =
-            memberResult.data.items
-              .filter(
-                (member: OrganizationMember) =>
-                  member.status === "ACTIVE" &&
-                  member.user?.status === "ACTIVE",
-              )
-              .map(
-                (
-                  member: OrganizationMember,
-                ) => ({
-                  id: member.user!.id,
-                  fullName:
-                    member.user!.fullName,
-                  email:
-                    member.user!.email,
-                }),
-              );
-
-          setAssignees(options);
-        } else {
-          setAssignees([]);
-        }
-
-        if (sprintResult.ok) {
-          setSprints(
-            sprintResult.data.sprints ?? [],
-          );
-        } else {
-          setSprints([]);
-        }
-      } catch (error) {
-        console.error(
-          "Failed to load task edit data:",
-          error,
-        );
-
-        setAssignees([]);
-        setSprints([]);
-      } finally {
-        setLoadingAssignees(false);
-        setLoadingSprints(false);
-      }
-    };
-
-    void loadEditData();
-  }, [open, editMode, task]);
+    setAssignees(options);
+    setSprints(sprintsQuery.data?.sprints ?? []);
+    setLoadingAssignees(membersQuery.isLoading);
+    setLoadingSprints(sprintsQuery.isLoading);
+  }, [
+    open,
+    editMode,
+    membersQuery.data,
+    membersQuery.isLoading,
+    sprintsQuery.data,
+    sprintsQuery.isLoading,
+  ]);
 
   if (!task) {
     return null;
   }
 
   const canComment =
-    role === "ADMIN" ||
-    role === "MANAGER" ||
-    role === "MEMBER";
+    role === "ADMIN" || role === "MANAGER" || role === "MEMBER";
 
-  const canEditAnyComment =
-    role === "ADMIN" ||
-    role === "MANAGER";
+  const canEditAnyComment = role === "ADMIN" || role === "MANAGER";
 
-  const canDeleteAnyComment =
-    role === "ADMIN" ||
-    role === "MANAGER";
+  const canDeleteAnyComment = role === "ADMIN" || role === "MANAGER";
 
-  const selectedAssignee =
-    assignees.find(
-      (assignee) =>
-        assignee.id ===
-        task.assigneeId,
-    );
-
-  const selectedSprint =
-    sprints.find(
-      (sprint) =>
-        sprint.id === task.sprintId,
-    );
+  const selectedSprint = sprints.find((sprint) => sprint.id === task.sprintId);
 
   const handleEditStart = () => {
     reset({
       title: task.title,
-      description:
-        task.description ?? "",
-      status:
-        task.status === "REVIEW"
-          ? "IN_PROGRESS"
-          : task.status,
+      description: task.description ?? "",
+      status: task.status === "REVIEW" ? "IN_PROGRESS" : task.status,
       priority: task.priority,
-      dueDate: getDateInputValue(
-        task.dueDate,
-      ),
-      assigneeId:
-        task.assigneeId ?? "",
-      sprintId:
-        task.sprintId ?? "",
+      dueDate: getDateInputValue(task.dueDate),
+      assigneeId: task.assigneeId ?? "",
+      sprintId: task.sprintId ?? "",
     });
 
     setError("");
@@ -422,56 +322,38 @@ export function TaskDetailSheet({
   const handleCancelEdit = () => {
     reset({
       title: task.title,
-      description:
-        task.description ?? "",
-      status:
-        task.status === "REVIEW"
-          ? "IN_PROGRESS"
-          : task.status,
+      description: task.description ?? "",
+      status: task.status === "REVIEW" ? "IN_PROGRESS" : task.status,
       priority: task.priority,
-      dueDate: getDateInputValue(
-        task.dueDate,
-      ),
-      assigneeId:
-        task.assigneeId ?? "",
-      sprintId:
-        task.sprintId ?? "",
+      dueDate: getDateInputValue(task.dueDate),
+      assigneeId: task.assigneeId ?? "",
+      sprintId: task.sprintId ?? "",
     });
 
     setError("");
     setEditMode(false);
   };
 
-  async function onSubmit(
-    values: TaskEditFormValues,
-  ) {
+  async function onSubmit(values: TaskEditFormValues) {
     setError("");
 
     try {
       const result = await updateTask({
         taskId: task?.id as string,
         title: values.title.trim(),
-        description:
-          values.description.trim(),
+        description: values.description.trim(),
         status: values.status as Extract<
           TaskStatus,
           "TODO" | "IN_PROGRESS" | "DONE"
         >,
-        priority:
-          values.priority as TaskPriority,
-        dueDate:
-          values.dueDate || undefined,
-        assigneeId:
-          values.assigneeId || undefined,
-        sprintId:
-          values.sprintId || undefined,
+        priority: values.priority as TaskPriority,
+        dueDate: values.dueDate || undefined,
+        assigneeId: values.assigneeId || undefined,
+        sprintId: values.sprintId || undefined,
       });
 
       if (!result.ok) {
-        setError(
-          result.message ??
-            "Unable to update task.",
-        );
+        setError(result.message ?? "Unable to update task.");
         return;
       }
 
@@ -484,14 +366,9 @@ export function TaskDetailSheet({
 
       setEditMode(false);
     } catch (error) {
-      console.error(
-        "Failed to update task:",
-        error,
-      );
+      console.error("Failed to update task:", error);
 
-      setError(
-        "Something went wrong while updating the task.",
-      );
+      setError("Something went wrong while updating the task.");
     }
   }
 
@@ -500,14 +377,10 @@ export function TaskDetailSheet({
     setError("");
 
     try {
-      const result =
-        await deleteTask(task.id);
+      const result = await deleteTask(task.id);
 
       if (!result.ok) {
-        setError(
-          result.message ??
-            "Unable to delete task.",
-        );
+        setError(result.message ?? "Unable to delete task.");
         return;
       }
 
@@ -517,14 +390,9 @@ export function TaskDetailSheet({
 
       onOpenChange(false);
     } catch (error) {
-      console.error(
-        "Failed to delete task:",
-        error,
-      );
+      console.error("Failed to delete task:", error);
 
-      setError(
-        "Something went wrong while deleting the task.",
-      );
+      setError("Something went wrong while deleting the task.");
     } finally {
       setDeleting(false);
     }
@@ -535,11 +403,7 @@ export function TaskDetailSheet({
       <Sheet
         open={open}
         onOpenChange={(value) => {
-          if (
-            !value &&
-            editMode &&
-            !isSubmitting
-          ) {
+          if (!value && editMode && !isSubmitting) {
             setEditMode(false);
           }
 
@@ -550,29 +414,18 @@ export function TaskDetailSheet({
           <SheetHeader className="pr-8">
             {editMode ? (
               <>
-                <SheetTitle>
-                  Edit task
-                </SheetTitle>
+                <SheetTitle>Edit task</SheetTitle>
 
                 <SheetDescription>
-                  Update the task details and
-                  save your changes.
+                  Update the task details and save your changes.
                 </SheetDescription>
               </>
             ) : (
               <>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary">
-                    {statusLabel(
-                      task.status,
-                    )}
-                  </Badge>
+                  <Badge variant="secondary">{statusLabel(task.status)}</Badge>
 
-                  <Badge
-                    variant={getPriorityVariant(
-                      task.priority,
-                    )}
-                  >
+                  <Badge variant={getPriorityVariant(task.priority)}>
                     {task.priority}
                   </Badge>
                 </div>
@@ -582,8 +435,7 @@ export function TaskDetailSheet({
                 </SheetTitle>
 
                 <SheetDescription>
-                  Task details and team
-                  discussion.
+                  Task details and team discussion.
                 </SheetDescription>
               </>
             )}
@@ -592,25 +444,15 @@ export function TaskDetailSheet({
           <div className="space-y-6 px-4 pb-8">
             {error && (
               <Alert variant="destructive">
-                <AlertDescription>
-                  {error}
-                </AlertDescription>
+                <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
             {editMode ? (
-              <form
-                onSubmit={handleSubmit(
-                  onSubmit,
-                )}
-                className="space-y-5"
-              >
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 {/* Title */}
                 <div className="space-y-2">
-                  <label
-                    htmlFor="task-title"
-                    className="text-sm font-medium"
-                  >
+                  <label htmlFor="task-title" className="text-sm font-medium">
                     Title
                   </label>
 
@@ -619,17 +461,12 @@ export function TaskDetailSheet({
                     {...register("title")}
                     placeholder="Enter task title"
                     disabled={isSubmitting}
-                    aria-invalid={Boolean(
-                      errors.title,
-                    )}
+                    aria-invalid={Boolean(errors.title)}
                   />
 
                   {errors.title && (
                     <p className="text-sm text-destructive">
-                      {
-                        errors.title
-                          .message
-                      }
+                      {errors.title.message}
                     </p>
                   )}
                 </div>
@@ -645,59 +482,34 @@ export function TaskDetailSheet({
 
                   <Textarea
                     id="task-description"
-                    {...register(
-                      "description",
-                    )}
+                    {...register("description")}
                     placeholder="Describe the task..."
                     rows={6}
                     disabled={isSubmitting}
-                    aria-invalid={Boolean(
-                      errors.description,
-                    )}
+                    aria-invalid={Boolean(errors.description)}
                   />
 
                   {errors.description && (
                     <p className="text-sm text-destructive">
-                      {
-                        errors
-                          .description
-                          .message
-                      }
+                      {errors.description.message}
                     </p>
                   )}
                 </div>
 
                 {/* Sprint */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Sprint
-                  </label>
+                  <label className="text-sm font-medium">Sprint</label>
 
                   <Controller
                     name="sprintId"
                     control={control}
-                    render={({
-                      field,
-                    }) => (
+                    render={({ field }) => (
                       <Select
-                        value={
-                          field.value ||
-                          "NO_SPRINT"
-                        }
-                        onValueChange={(
-                          value,
-                        ) => {
-                          field.onChange(
-                            value ===
-                              "NO_SPRINT"
-                              ? ""
-                              : value,
-                          );
+                        value={field.value || "NO_SPRINT"}
+                        onValueChange={(value) => {
+                          field.onChange(value === "NO_SPRINT" ? "" : value);
                         }}
-                        disabled={
-                          isSubmitting ||
-                          loadingSprints
-                        }
+                        disabled={isSubmitting || loadingSprints}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue
@@ -710,26 +522,13 @@ export function TaskDetailSheet({
                         </SelectTrigger>
 
                         <SelectContent>
-                          <SelectItem value="NO_SPRINT">
-                            No sprint
-                          </SelectItem>
+                          <SelectItem value="NO_SPRINT">No sprint</SelectItem>
 
-                          {sprints.map(
-                            (sprint) => (
-                              <SelectItem
-                                key={
-                                  sprint.id
-                                }
-                                value={
-                                  sprint.id
-                                }
-                              >
-                                {
-                                  sprint.name
-                                }
-                              </SelectItem>
-                            ),
-                          )}
+                          {sprints.map((sprint) => (
+                            <SelectItem key={sprint.id} value={sprint.id}>
+                              {sprint.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     )}
@@ -737,57 +536,33 @@ export function TaskDetailSheet({
 
                   {errors.sprintId && (
                     <p className="text-sm text-destructive">
-                      {
-                        errors
-                          .sprintId
-                          .message
-                      }
+                      {errors.sprintId.message}
                     </p>
                   )}
                 </div>
 
                 {/* Assignee */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Assignee
-                  </label>
+                  <label className="text-sm font-medium">Assignee</label>
 
                   <Controller
                     name="assigneeId"
                     control={control}
-                    render={({
-                      field,
-                    }) => {
-                      const selected =
-                        assignees.find(
-                          (
-                            assignee,
-                          ) =>
-                            assignee.id ===
-                            field.value,
-                        );
+                    render={({ field }) => {
+                      const selected = assignees.find(
+                        (assignee) => assignee.id === field.value,
+                      );
 
                       return (
                         <>
                           <Select
-                            value={
-                              field.value ||
-                              "UNASSIGNED"
-                            }
-                            onValueChange={(
-                              value,
-                            ) => {
+                            value={field.value || "UNASSIGNED"}
+                            onValueChange={(value) => {
                               field.onChange(
-                                value ===
-                                  "UNASSIGNED"
-                                  ? ""
-                                  : value,
+                                value === "UNASSIGNED" ? "" : value,
                               );
                             }}
-                            disabled={
-                              isSubmitting ||
-                              loadingAssignees
-                            }
+                            disabled={isSubmitting || loadingAssignees}
                           >
                             <SelectTrigger className="w-full">
                               <SelectValue
@@ -804,32 +579,20 @@ export function TaskDetailSheet({
                                 Unassigned
                               </SelectItem>
 
-                              {assignees.map(
-                                (
-                                  assignee,
-                                ) => (
-                                  <SelectItem
-                                    key={
-                                      assignee.id
-                                    }
-                                    value={
-                                      assignee.id
-                                    }
-                                  >
-                                    {
-                                      assignee.fullName
-                                    }
-                                  </SelectItem>
-                                ),
-                              )}
+                              {assignees.map((assignee) => (
+                                <SelectItem
+                                  key={assignee.id}
+                                  value={assignee.id}
+                                >
+                                  {assignee.fullName}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
 
                           {selected && (
                             <p className="text-xs text-muted-foreground">
-                              {
-                                selected.email
-                              }
+                              {selected.email}
                             </p>
                           )}
                         </>
@@ -839,63 +602,40 @@ export function TaskDetailSheet({
 
                   {errors.assigneeId && (
                     <p className="text-sm text-destructive">
-                      {
-                        errors
-                          .assigneeId
-                          .message
-                      }
+                      {errors.assigneeId.message}
                     </p>
                   )}
                 </div>
 
                 {/* Status */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Status
-                  </label>
+                  <label className="text-sm font-medium">Status</label>
 
                   <Controller
                     name="status"
                     control={control}
-                    render={({
-                      field,
-                    }) => (
+                    render={({ field }) => (
                       <Select
-                        value={
-                          field.value
-                        }
-                        onValueChange={(
-                          value,
-                        ) => {
-                          if (
-                            value !==
-                            null
-                          ) {
-                            field.onChange(
-                              value,
-                            );
+                        value={field.value}
+                        onValueChange={(value) => {
+                          if (value !== null) {
+                            field.onChange(value);
                           }
                         }}
-                        disabled={
-                          isSubmitting
-                        }
+                        disabled={isSubmitting}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
 
                         <SelectContent>
-                          <SelectItem value="TODO">
-                            To do
-                          </SelectItem>
+                          <SelectItem value="TODO">To do</SelectItem>
 
                           <SelectItem value="IN_PROGRESS">
                             In progress
                           </SelectItem>
 
-                          <SelectItem value="DONE">
-                            Done
-                          </SelectItem>
+                          <SelectItem value="DONE">Done</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
@@ -903,67 +643,40 @@ export function TaskDetailSheet({
 
                   {errors.status && (
                     <p className="text-sm text-destructive">
-                      {
-                        errors
-                          .status
-                          .message
-                      }
+                      {errors.status.message}
                     </p>
                   )}
                 </div>
 
                 {/* Priority */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Priority
-                  </label>
+                  <label className="text-sm font-medium">Priority</label>
 
                   <Controller
                     name="priority"
                     control={control}
-                    render={({
-                      field,
-                    }) => (
+                    render={({ field }) => (
                       <Select
-                        value={
-                          field.value
-                        }
-                        onValueChange={(
-                          value,
-                        ) => {
-                          if (
-                            value !==
-                            null
-                          ) {
-                            field.onChange(
-                              value,
-                            );
+                        value={field.value}
+                        onValueChange={(value) => {
+                          if (value !== null) {
+                            field.onChange(value);
                           }
                         }}
-                        disabled={
-                          isSubmitting
-                        }
+                        disabled={isSubmitting}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
 
                         <SelectContent>
-                          <SelectItem value="LOW">
-                            Low
-                          </SelectItem>
+                          <SelectItem value="LOW">Low</SelectItem>
 
-                          <SelectItem value="MEDIUM">
-                            Medium
-                          </SelectItem>
+                          <SelectItem value="MEDIUM">Medium</SelectItem>
 
-                          <SelectItem value="HIGH">
-                            High
-                          </SelectItem>
+                          <SelectItem value="HIGH">High</SelectItem>
 
-                          <SelectItem value="URGENT">
-                            Urgent
-                          </SelectItem>
+                          <SelectItem value="URGENT">Urgent</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
@@ -971,11 +684,7 @@ export function TaskDetailSheet({
 
                   {errors.priority && (
                     <p className="text-sm text-destructive">
-                      {
-                        errors
-                          .priority
-                          .message
-                      }
+                      {errors.priority.message}
                     </p>
                   )}
                 </div>
@@ -992,22 +701,14 @@ export function TaskDetailSheet({
                   <Input
                     id="task-due-date"
                     type="date"
-                    {...register(
-                      "dueDate",
-                    )}
+                    {...register("dueDate")}
                     disabled={isSubmitting}
-                    aria-invalid={Boolean(
-                      errors.dueDate,
-                    )}
+                    aria-invalid={Boolean(errors.dueDate)}
                   />
 
                   {errors.dueDate && (
                     <p className="text-sm text-destructive">
-                      {
-                        errors
-                          .dueDate
-                          .message
-                      }
+                      {errors.dueDate.message}
                     </p>
                   )}
                 </div>
@@ -1017,22 +718,13 @@ export function TaskDetailSheet({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={
-                      handleCancelEdit
-                    }
-                    disabled={
-                      isSubmitting
-                    }
+                    onClick={handleCancelEdit}
+                    disabled={isSubmitting}
                   >
                     Cancel
                   </Button>
 
-                  <Button
-                    type="submit"
-                    disabled={
-                      isSubmitting
-                    }
-                  >
+                  <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? (
                       <>
                         <Loader2 className="mr-2 size-4 animate-spin" />
@@ -1052,8 +744,7 @@ export function TaskDetailSheet({
                 {/* Description */}
                 <div className="rounded-xl border bg-muted/20 p-4">
                   <p className="whitespace-pre-wrap text-sm leading-6">
-                    {task.description ||
-                      "No description provided."}
+                    {task.description || "No description provided."}
                   </p>
                 </div>
 
@@ -1065,9 +756,7 @@ export function TaskDetailSheet({
                       Priority
                     </div>
 
-                    <p className="mt-1 text-sm font-medium">
-                      {task.priority}
-                    </p>
+                    <p className="mt-1 text-sm font-medium">{task.priority}</p>
                   </div>
 
                   <div className="rounded-xl border p-3">
@@ -1077,9 +766,7 @@ export function TaskDetailSheet({
                     </div>
 
                     <p className="mt-1 text-sm font-medium">
-                      {statusLabel(
-                        task.status,
-                      )}
+                      {statusLabel(task.status)}
                     </p>
                   </div>
 
@@ -1090,9 +777,7 @@ export function TaskDetailSheet({
                     </div>
 
                     <p className="mt-1 text-sm font-medium">
-                      {formatDate(
-                        task.dueDate,
-                      )}
+                      {formatDate(task.dueDate)}
                     </p>
                   </div>
 
@@ -1103,20 +788,13 @@ export function TaskDetailSheet({
                     </div>
 
                     <p className="mt-1 text-sm font-medium">
-                      {task.assignee
-                        ?.fullName ??
-                        (task.assigneeId
-                          ? "Assigned"
-                          : "Unassigned")}
+                      {task.assignee?.fullName ??
+                        (task.assigneeId ? "Assigned" : "Unassigned")}
                     </p>
 
-                    {task.assignee
-                      ?.email && (
+                    {task.assignee?.email && (
                       <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                        {
-                          task.assignee
-                            .email
-                        }
+                        {task.assignee.email}
                       </p>
                     )}
                   </div>
@@ -1129,9 +807,7 @@ export function TaskDetailSheet({
 
                     <p className="mt-1 text-sm font-medium">
                       {selectedSprint?.name ??
-                        (task.sprintId
-                          ? "Assigned to sprint"
-                          : "No sprint")}
+                        (task.sprintId ? "Assigned to sprint" : "No sprint")}
                     </p>
                   </div>
                 </div>
@@ -1144,23 +820,17 @@ export function TaskDetailSheet({
                     </div>
 
                     <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground">
-                        Project
-                      </p>
+                      <p className="text-xs text-muted-foreground">Project</p>
 
                       <p className="truncate text-sm font-medium">
-                        {
-                          task.project
-                            .name
-                        }
+                        {task.project.name}
                       </p>
                     </div>
                   </div>
                 )}
 
                 {/* Actions */}
-                {(canUpdate ||
-                  canDelete) && (
+                {(canUpdate || canDelete) && (
                   <>
                     <Separator />
 
@@ -1170,9 +840,7 @@ export function TaskDetailSheet({
                           type="button"
                           variant="outline"
                           className="flex-1"
-                          onClick={
-                            handleEditStart
-                          }
+                          onClick={handleEditStart}
                         >
                           <Pencil className="mr-2 size-4" />
                           Edit task
@@ -1184,14 +852,8 @@ export function TaskDetailSheet({
                           type="button"
                           variant="destructive"
                           className="flex-1"
-                          onClick={() =>
-                            setDeleteDialogOpen(
-                              true,
-                            )
-                          }
-                          disabled={
-                            deleting
-                          }
+                          onClick={() => setDeleteDialogOpen(true)}
+                          disabled={deleting}
                         >
                           <Trash2 className="mr-2 size-4" />
                           Delete task
@@ -1206,33 +868,18 @@ export function TaskDetailSheet({
                 {/* Comments */}
                 <CommentList
                   taskId={task.id}
-                  currentUserId={
-                    currentUserId
-                  }
+                  currentUserId={currentUserId}
                   canComment={canComment}
-                  canEditAny={
-                    canEditAnyComment
-                  }
-                  canDeleteAny={
-                    canDeleteAnyComment
-                  }
+                  canEditAny={canEditAnyComment}
+                  canDeleteAny={canDeleteAnyComment}
                 />
 
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <CheckCircle2 className="size-3.5" />
-
                   Created{" "}
-                  {new Intl.DateTimeFormat(
-                    "en",
-                    {
-                      dateStyle:
-                        "medium",
-                    },
-                  ).format(
-                    new Date(
-                      task.createdAt,
-                    ),
-                  )}
+                  {new Intl.DateTimeFormat("en", {
+                    dateStyle: "medium",
+                  }).format(new Date(task.createdAt))}
                 </div>
               </>
             )}
@@ -1245,26 +892,20 @@ export function TaskDetailSheet({
         open={deleteDialogOpen}
         onOpenChange={(value) => {
           if (!deleting) {
-            setDeleteDialogOpen(
-              value,
-            );
+            setDeleteDialogOpen(value);
           }
         }}
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>
-              Delete task?
-            </DialogTitle>
+            <DialogTitle>Delete task?</DialogTitle>
 
             <DialogDescription>
-              Are you sure you want to
-              delete{" "}
+              Are you sure you want to delete{" "}
               <span className="font-medium text-foreground">
                 "{task.title}"
               </span>
-              ? This action cannot be
-              undone.
+              ? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
 
@@ -1272,11 +913,7 @@ export function TaskDetailSheet({
             <Button
               type="button"
               variant="outline"
-              onClick={() =>
-                setDeleteDialogOpen(
-                  false,
-                )
-              }
+              onClick={() => setDeleteDialogOpen(false)}
               disabled={deleting}
             >
               Cancel
@@ -1285,9 +922,7 @@ export function TaskDetailSheet({
             <Button
               type="button"
               variant="destructive"
-              onClick={() =>
-                void handleDelete()
-              }
+              onClick={() => void handleDelete()}
               disabled={deleting}
             >
               {deleting ? (
