@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import {
   actionFailure,
   actionSuccess,
+  type ActionResult,
   backendMessage,
   backendRequest,
   unwrapPayload,
@@ -95,37 +96,13 @@ export type ProjectListResponse = {
   pagination: ProjectPagination;
 };
 
-export type ProjectActionResult<T> = {
-  ok: boolean;
-  success: boolean;
-  data: T;
-  message?: string;
-};
+export type ProjectActionResult<T> = ActionResult<T>;
 
 export type TeamAssignment = {
   projectId: string;
   teamId: string;
   assignedAt: string;
 };
-
-//helper functions for project actions
-function projectFailure<T>(message: string, data: T): ProjectActionResult<T> {
-  return {
-    ok: false,
-    success: false,
-    message,
-    data,
-  };
-}
-
-function projectSuccess<T>(data: T, message?: string): ProjectActionResult<T> {
-  return {
-    ok: true,
-    success: true,
-    message,
-    data,
-  };
-}
 
 const projectPaths = [
   "/dashboard/projects",
@@ -166,7 +143,7 @@ export async function getAllProjects(
   }>(endpoint);
 
   if (!result.ok) {
-    return projectFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to fetch projects."),
       {
         projects: [],
@@ -185,7 +162,7 @@ export async function getAllProjects(
   const payload = result.payload;
 
   if (!payload || typeof payload !== "object") {
-    return projectFailure("Invalid project response from server.", {
+    return actionFailure("Invalid project response from server.", {
       projects: [],
       pagination: {
         page: params.page ?? 1,
@@ -198,7 +175,7 @@ export async function getAllProjects(
     });
   }
 
-  return projectSuccess({
+  return actionSuccess({
     projects: Array.isArray(payload.data) ? payload.data : [],
     pagination: payload.pagination ?? {
       page: params.page ?? 1,
@@ -218,13 +195,13 @@ export async function getProjectById(
   projectId: string,
 ): Promise<ProjectActionResult<Project | null>> {
   if (!projectId) {
-    return projectFailure("Project ID is required.", null);
+    return actionFailure("Project ID is required.", null);
   }
 
   const result = await backendRequest<unknown>(`/projects/${projectId}`);
 
   if (!result.ok) {
-    return projectFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to fetch project."),
       null,
     );
@@ -233,10 +210,10 @@ export async function getProjectById(
   const project = unwrapPayload<Project>(result.payload);
 
   if (!project) {
-    return projectFailure("Project not found.", null);
+    return actionFailure("Project not found.", null);
   }
 
-  return projectSuccess(
+  return actionSuccess(
     project,
     backendMessage(result.payload, "Project retrieved successfully."),
   );
@@ -251,18 +228,18 @@ export async function createProject(
   const document = formData.get("document");
 
   if (typeof name !== "string" || !name.trim()) {
-    return projectFailure("Project name is required.", null);
+    return actionFailure("Project name is required.", null);
   }
 
   if (!(document instanceof File) || document.size === 0) {
-    return projectFailure(
+    return actionFailure(
       "A PDF document is required to create a project.",
       null,
     );
   }
 
   if (document.type !== "application/pdf") {
-    return projectFailure("Only PDF documents are allowed.", null);
+    return actionFailure("Only PDF documents are allowed.", null);
   }
 
   const result = await backendRequest<unknown>("/projects", {
@@ -271,7 +248,7 @@ export async function createProject(
   });
 
   if (!result.ok) {
-    return projectFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to create project."),
       null,
     );
@@ -279,7 +256,7 @@ export async function createProject(
 
   revalidateProjectPaths();
 
-  return projectSuccess(
+  return actionSuccess(
     unwrapPayload<Project>(result.payload),
     "Project created successfully.",
   );
@@ -299,7 +276,7 @@ export async function updateProject(
   const { projectId, name, description, status } = input;
 
   if (!projectId) {
-    return projectFailure("Project ID is required.", null);
+    return actionFailure("Project ID is required.", null);
   }
 
   const body: Record<string, string> = {};
@@ -317,7 +294,7 @@ export async function updateProject(
   }
 
   if (Object.keys(body).length === 0) {
-    return projectFailure("At least one project field is required.", null);
+    return actionFailure("At least one project field is required.", null);
   }
 
   const result = await backendRequest<unknown>(`/projects/${projectId}`, {
@@ -326,7 +303,7 @@ export async function updateProject(
   });
 
   if (!result.ok) {
-    return projectFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to update project."),
       null,
     );
@@ -334,7 +311,7 @@ export async function updateProject(
 
   revalidateProjectPaths(projectId);
 
-  return projectSuccess(
+  return actionSuccess(
     unwrapPayload<Project>(result.payload),
     "Project updated successfully.",
   );
@@ -345,7 +322,7 @@ export async function deleteProject(
   projectId: string,
 ): Promise<ProjectActionResult<Project | null>> {
   if (!projectId) {
-    return projectFailure("Project ID is required.", null);
+    return actionFailure("Project ID is required.", null);
   }
 
   const result = await backendRequest<unknown>(`/projects/${projectId}`, {
@@ -353,7 +330,7 @@ export async function deleteProject(
   });
 
   if (!result.ok) {
-    return projectFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to delete project."),
       null,
     );
@@ -361,7 +338,7 @@ export async function deleteProject(
 
   revalidateProjectPaths(projectId);
 
-  return projectSuccess(
+  return actionSuccess(
     unwrapPayload<Project>(result.payload),
     "Project deleted successfully.",
   );
@@ -373,11 +350,11 @@ export async function assignTeamToProject(
   teamId: string,
 ): Promise<ProjectActionResult<TeamAssignment | null>> {
   if (!projectId) {
-    return projectFailure("Project ID is required.", null);
+    return actionFailure("Project ID is required.", null);
   }
 
   if (!teamId) {
-    return projectFailure("Team ID is required.", null);
+    return actionFailure("Team ID is required.", null);
   }
 
   const result = await backendRequest<unknown>(`/projects/${projectId}/teams`, {
@@ -388,7 +365,7 @@ export async function assignTeamToProject(
   });
 
   if (!result.ok) {
-    return projectFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to assign team."),
       null,
     );
@@ -396,7 +373,7 @@ export async function assignTeamToProject(
 
   revalidateProjectPaths(projectId);
 
-  return projectSuccess(
+  return actionSuccess(
     unwrapPayload<TeamAssignment>(result.payload),
     "Team assigned successfully.",
   );
@@ -408,11 +385,11 @@ export async function removeTeamFromProject(
   teamId: string,
 ): Promise<ProjectActionResult<TeamAssignment | null>> {
   if (!projectId) {
-    return projectFailure("Project ID is required.", null);
+    return actionFailure("Project ID is required.", null);
   }
 
   if (!teamId) {
-    return projectFailure("Team ID is required.", null);
+    return actionFailure("Team ID is required.", null);
   }
 
   const result = await backendRequest<unknown>(
@@ -423,7 +400,7 @@ export async function removeTeamFromProject(
   );
 
   if (!result.ok) {
-    return projectFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to remove team from project."),
       null,
     );
@@ -431,7 +408,7 @@ export async function removeTeamFromProject(
 
   revalidateProjectPaths(projectId);
 
-  return projectSuccess(
+  return actionSuccess(
     unwrapPayload<TeamAssignment>(result.payload),
     "Team removed successfully.",
   );
@@ -443,15 +420,15 @@ export async function uploadProjectDocument(
   document: File,
 ): Promise<ProjectActionResult<Project | null>> {
   if (!projectId) {
-    return projectFailure("Project ID is required.", null);
+    return actionFailure("Project ID is required.", null);
   }
 
   if (!(document instanceof File) || document.size === 0) {
-    return projectFailure("A document file is required.", null);
+    return actionFailure("A document file is required.", null);
   }
 
   if (document.type !== "application/pdf") {
-    return projectFailure("Only PDF documents are allowed.", null);
+    return actionFailure("Only PDF documents are allowed.", null);
   }
 
   const formData = new FormData();
@@ -466,7 +443,7 @@ export async function uploadProjectDocument(
   );
 
   if (!result.ok) {
-    return projectFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to upload project document."),
       null,
     );
@@ -474,7 +451,7 @@ export async function uploadProjectDocument(
 
   revalidateProjectPaths(projectId);
 
-  return projectSuccess(
+  return actionSuccess(
     unwrapPayload<Project>(result.payload),
     "Project document uploaded successfully.",
   );
@@ -485,7 +462,7 @@ export async function deleteProjectDocument(
   projectId: string,
 ): Promise<ProjectActionResult<null>> {
   if (!projectId) {
-    return projectFailure("Project ID is required.", null);
+    return actionFailure("Project ID is required.", null);
   }
 
   const result = await backendRequest<null>(`/projects/${projectId}/document`, {
@@ -493,7 +470,7 @@ export async function deleteProjectDocument(
   });
 
   if (!result.ok) {
-    return projectFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to delete project document."),
       null,
     );
@@ -501,7 +478,7 @@ export async function deleteProjectDocument(
 
   revalidateProjectPaths(projectId);
 
-  return projectSuccess(null, "Project document deleted successfully.");
+  return actionSuccess(null, "Project document deleted successfully.");
 }
 
 //get project teams
@@ -511,11 +488,11 @@ export async function getProjectTeams(
   const result = await getProjectById(projectId);
 
   if (!result.ok || !result.data) {
-    return projectFailure(
+    return actionFailure(
       result.message ?? "Unable to fetch project teams.",
       [],
     );
   }
 
-  return projectSuccess(result.data.teams ?? []);
+  return actionSuccess(result.data.teams ?? []);
 }
