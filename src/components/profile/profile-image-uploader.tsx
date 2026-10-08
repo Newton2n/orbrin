@@ -46,10 +46,7 @@ export function ProfileImageUploader({ profile }: { profile: UserProfile }) {
   const [saving, setSaving] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  /*
-   * Clean up the temporary browser URL when it changes
-   * or when the component is removed.
-   */
+ 
   useEffect(() => {
     return () => {
       if (previewUrl) {
@@ -76,10 +73,7 @@ export function ProfileImageUploader({ profile }: { profile: UserProfile }) {
       return;
     }
 
-    /*
-     * Show the image immediately.
-     * This does not upload anything yet.
-     */
+    
     const objectUrl = URL.createObjectURL(file);
 
     setPreviewUrl((previous) => {
@@ -106,9 +100,6 @@ export function ProfileImageUploader({ profile }: { profile: UserProfile }) {
       if (!result.success) {
         toast.error(result.message ?? "Unable to update picture.");
 
-        /*
-         * Upload failed, so remove the temporary preview.
-         */
         setPreviewUrl((current) => {
           if (current === objectUrl) {
             URL.revokeObjectURL(current);
@@ -125,18 +116,11 @@ export function ProfileImageUploader({ profile }: { profile: UserProfile }) {
       toast.success(result.message ?? "Profile picture updated.");
       await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
 
-      /*
-       * Refresh the server component so profile.profileImageUrl
-       * contains the newly uploaded image URL.
-       */
       router.refresh();
 
-      /*
-       * Keep the local preview until the refreshed server image
-       * is displayed.
-       */
+      
     } catch (error) {
-      console.error(error);
+     
 
       toast.error("Something went wrong.");
 
@@ -183,7 +167,7 @@ export function ProfileImageUploader({ profile }: { profile: UserProfile }) {
 
       router.refresh();
     } catch (error) {
-      console.error(error);
+      
 
       toast.error("Something went wrong.");
     } finally {
@@ -206,7 +190,6 @@ export function ProfileImageUploader({ profile }: { profile: UserProfile }) {
       </CardHeader>
 
       <CardContent className="space-y-5">
-        {/* Preview */}
         <div className="flex flex-col items-center gap-4 sm:flex-row">
           <div className="relative size-28 shrink-0 overflow-hidden rounded-full border bg-muted sm:size-32">
             {imageSource ? (
@@ -252,7 +235,6 @@ export function ProfileImageUploader({ profile }: { profile: UserProfile }) {
           </div>
         </div>
 
-        {/* Upload controls */}
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" disabled={saving} asChild>

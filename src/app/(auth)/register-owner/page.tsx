@@ -144,7 +144,6 @@ export default function RegisterOwnerPage() {
 
   return (
     <div className="w-full max-w-md">
-      {/* Header */}
       <div className="mb-6 text-center">
         <Link
           href="/login"

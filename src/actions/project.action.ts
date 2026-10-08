@@ -45,7 +45,6 @@ export type Project = {
   createdAt: string;
   updatedAt: string;
 
-  // Returned by project list / project details
   teams?: ProjectTeam[];
   tasks?: ProjectTask[];
 };
@@ -121,7 +120,6 @@ function revalidateProjectPaths(projectId?: string) {
   }
 }
 
-//get all projects
 export async function getAllProjects(
   params: ProjectListParams = {},
 ): Promise<ProjectActionResult<ProjectListResponse>> {
@@ -189,7 +187,6 @@ export async function getAllProjects(
 }
 
 
-// create project
 
 export async function getProjectById(
   projectId: string,
@@ -219,7 +216,6 @@ export async function getProjectById(
   );
 }
 
-//create project
 export async function createProject(
   formData: FormData,
 ): Promise<ProjectActionResult<Project | null>> {
@@ -269,7 +265,6 @@ export type UpdateProjectInput = {
   status?: string;
 };
 
-//update project
 export async function updateProject(
   input: UpdateProjectInput,
 ): Promise<ProjectActionResult<Project | null>> {
@@ -317,7 +312,6 @@ export async function updateProject(
   );
 }
 
-//delete project
 export async function deleteProject(
   projectId: string,
 ): Promise<ProjectActionResult<Project | null>> {
@@ -344,7 +338,6 @@ export async function deleteProject(
   );
 }
 
-//assign team to project
 export async function assignTeamToProject(
   projectId: string,
   teamId: string,
@@ -379,7 +372,6 @@ export async function assignTeamToProject(
   );
 }
 
-//remove team from project
 export async function removeTeamFromProject(
   projectId: string,
   teamId: string,
@@ -414,7 +406,6 @@ export async function removeTeamFromProject(
   );
 }
 
-//upload project document
 export async function uploadProjectDocument(
   projectId: string,
   document: File,
@@ -457,7 +448,6 @@ export async function uploadProjectDocument(
   );
 }
 
-//delete project document
 export async function deleteProjectDocument(
   projectId: string,
 ): Promise<ProjectActionResult<null>> {
@@ -481,7 +471,6 @@ export async function deleteProjectDocument(
   return actionSuccess(null, "Project document deleted successfully.");
 }
 
-//get project teams
 export async function getProjectTeams(
   projectId: string,
 ): Promise<ProjectActionResult<ProjectTeam[]>> {

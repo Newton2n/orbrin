@@ -24,7 +24,6 @@ export default async function FeaturesPage() {
   return (
     <PublicLayout isAuthenticated={isAuthenticated}>
       <main className="mx-auto max-w-7xl px-5 py-20 lg:px-8 lg:py-28">
-        {/* --- HEADER INTRO --- */}
         <div className="mx-auto max-w-3xl text-center">
           <p className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-3.5 py-1 text-xs font-medium text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
             The Complete Workspace System
@@ -38,7 +37,6 @@ export default async function FeaturesPage() {
           </p>
         </div>
 
-        {/* --- CORE FEATURE GRID --- */}
         <div className="mt-20">
           <SectionIntro
             eyebrow="Architectural Capabilities"
@@ -50,9 +48,7 @@ export default async function FeaturesPage() {
           </div>
         </div>
 
-        {/* --- DETAILED WORKFLOW BREAKDOWN (Teams, Projects, Tasks, Sprints, Kanban) --- */}
         <div className="mt-32 space-y-24">
-          {/* 1. Teams & Projects Integration */}
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
             <div>
               <div className="inline-flex items-center gap-2 rounded-lg bg-zinc-100 p-2 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100">
@@ -78,7 +74,6 @@ export default async function FeaturesPage() {
               </ul>
             </div>
 
-            {/* Visual Mockup Card */}
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50/50 p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
               <div className="flex items-center justify-between border-b border-zinc-200 pb-4 dark:border-zinc-800">
                 <div className="flex items-center gap-3">
@@ -119,9 +114,7 @@ export default async function FeaturesPage() {
             </div>
           </div>
 
-          {/* 2. Tasks, Assignments & Comments */}
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-            {/* Visual Mockup Card */}
             <div className="order-2 lg:order-1 rounded-2xl border border-zinc-200 bg-zinc-50/50 p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -173,7 +166,6 @@ export default async function FeaturesPage() {
             </div>
           </div>
 
-          {/* 3. Sprints & Kanban Board Execution */}
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
             <div>
               <div className="inline-flex items-center gap-2 rounded-lg bg-zinc-100 p-2 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100">
@@ -202,7 +194,6 @@ export default async function FeaturesPage() {
               </ul>
             </div>
 
-            {/* Kanban Preview Box */}
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50/50 p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
                 <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
@@ -236,7 +227,6 @@ export default async function FeaturesPage() {
           </div>
         </div>
 
-        {/* --- WORKFLOW RHYTHM SECTION --- */}
         <div className="mt-32">
           <SectionIntro
             eyebrow="Operating Rhythm"
@@ -248,7 +238,6 @@ export default async function FeaturesPage() {
           </div>
         </div>
 
-        {/* --- BOTTOM CALL TO ACTION --- */}
         <div className="mt-28 rounded-3xl border border-zinc-200 bg-zinc-900 px-8 py-16 text-white text-center shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
           <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
             Ready to bring absolute clarity to your team?

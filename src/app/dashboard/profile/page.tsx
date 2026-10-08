@@ -27,7 +27,6 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-8">
-      {/* Page header */}
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">
           Profile settings
@@ -38,19 +37,14 @@ export default function ProfilePage() {
         </p>
       </header>
 
-      {/* Profile */}
       <section className="space-y-6">
-        {/* Profile picture */}
         <ProfileImageUploader profile={profile} />
 
-        {/* Profile information */}
         <ProfileForm profile={profile} />
       </section>
 
-      {/* Security */}
       <ChangePasswordForm />
 
-      {/* Danger zone */}
       <section className="border-t pt-6">
         <div className="mb-4">
           <h2 className="text-sm font-semibold">Danger zone</h2>

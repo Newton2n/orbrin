@@ -25,7 +25,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import type { AuthUser } from "@/features/auth/types/auth.types";
 
-// Empty arrays ready for your real data
 const projects: any[] = [];
 const activities: any[] = [];
 const tasks: any[] = [];

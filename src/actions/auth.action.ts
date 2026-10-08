@@ -69,7 +69,6 @@ export async function getNewAccessToken() {
 
     const result = await res.json();
 
-    // If backend returns a new access token, save it automatically
     if (res.ok && result?.data?.accessToken) {
       const options = sessionCookieOptions();
       cookieStore.set("accessToken", result.data.accessToken, options);
@@ -97,12 +96,10 @@ export async function hasValidAccessToken(): Promise<boolean> {
     return true;
   }
 
-  // Access token is missing or expired, try refreshing via refreshToken
   const refreshResult = await getNewAccessToken();
   return refreshResult.success === true;
 }
 
-// Login function
 export async function login(input: unknown) {
   const parsed = loginSchema.safeParse(input);
   if (!parsed.success) return actionFailure("Invalid login details.", null);
@@ -123,7 +120,6 @@ export async function login(input: unknown) {
   return actionSuccess<LoginResponse>(payload, "Welcome back.");
 }
 
-// Register owner function
 export async function registerOwner(input: unknown) {
   const parsed = registerOwnerSchema.safeParse(input);
   if (!parsed.success)
@@ -146,7 +142,6 @@ export async function registerOwner(input: unknown) {
   );
 }
 
-// Register member function
 export async function registerMember(input: unknown) {
   const parsed = registerMemberSchema.safeParse(input);
   if (!parsed.success)
@@ -195,7 +190,6 @@ export async function googleLogin(input: unknown) {
   return actionSuccess(payload, "Welcome back.");
 }
 
-// Get current user function
 export async function getCurrentUser() {
   if (!(await hasValidAccessToken()))
     return actionFailure("You are not authenticated.", null);
@@ -209,7 +203,6 @@ export async function getCurrentUser() {
   return actionSuccess(unwrapPayload<AuthUser>(result.payload));
 }
 
-// Logout function
 export async function logout() {
   const cookieStore = await cookies();
   cookieStore.delete("accessToken");
@@ -217,7 +210,6 @@ export async function logout() {
   redirect("/login");
 }
 
-// Send verification email function
 export async function sendVerificationEmail(email: string) {
   const result = await backendRequest("/auth/send-verification-email", {
     method: "POST",
@@ -231,7 +223,6 @@ export async function sendVerificationEmail(email: string) {
       );
 }
 
-// Verify email function
 export async function verifyEmail(input: unknown) {
   const parsed = verifyEmailSchema.safeParse(input);
   if (!parsed.success)
@@ -251,7 +242,6 @@ export async function verifyEmail(input: unknown) {
       );
 }
 
-// Forgot password function
 export async function forgotPassword(email: string) {
   const result = await backendRequest("/users/forgot-password", {
     method: "POST",
@@ -265,7 +255,6 @@ export async function forgotPassword(email: string) {
       );
 }
 
-// Reset password function
 export async function resetPassword(input: unknown) {
   const parsed = resetSchema.safeParse(input);
   if (!parsed.success)

@@ -102,8 +102,7 @@ export function TeamFormDialog(props: TeamFormDialogProps) {
 
       onOpenChange(false);
     } catch (error) {
-      console.error("Team form error:", error);
-
+      
       toast.error(
         mode === "create"
           ? "Unable to create team."

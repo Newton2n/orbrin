@@ -51,7 +51,7 @@ export function OrganizationLogoUploader({
 
       onUpdated?.();
     } catch (error) {
-      console.error(error);
+      
 
       toast.error("Something went wrong.", {
         description: "We couldn't update the organization logo.",
@@ -80,7 +80,7 @@ export function OrganizationLogoUploader({
 
       onUpdated?.();
     } catch (error) {
-      console.error(error);
+      
 
       toast.error("Something went wrong.", {
         description: "We couldn't remove the organization logo.",

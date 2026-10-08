@@ -38,7 +38,6 @@ export default async function ManagerProjectDetailsPage({
 
   return (
     <div className="space-y-8">
-      {/* Project information */}
       <section className="space-y-4">
         <div className="flex min-w-0 flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
@@ -65,7 +64,6 @@ export default async function ManagerProjectDetailsPage({
         </div>
       </section>
 
-      {/* Sprints */}
       <section className="space-y-4">
         <div>
           <h2 className="text-xl font-semibold sm:text-2xl">Sprints</h2>
@@ -85,7 +83,6 @@ export default async function ManagerProjectDetailsPage({
         />
       </section>
 
-      {/* Tasks */}
       <section className="space-y-4">
         <div>
           <h2 className="text-xl font-semibold sm:text-2xl">Tasks</h2>

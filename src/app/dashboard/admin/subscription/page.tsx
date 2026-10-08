@@ -51,7 +51,6 @@ export default async function AdminSubscriptionPage({
 
   return (
     <div className="space-y-6">
-      {/* Page header */}
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
           Billing
@@ -66,7 +65,6 @@ export default async function AdminSubscriptionPage({
         </p>
       </div>
 
-      {/* Current subscription */}
       {subscription ? (
         <ActiveSubscription subscription={subscription} />
       ) : (
@@ -113,7 +111,6 @@ function ActiveSubscription({
       </CardHeader>
 
       <CardContent className="space-y-5">
-        {/* Plan */}
         <div className="rounded-xl border bg-muted/20 p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -136,7 +133,6 @@ function ActiveSubscription({
           </div>
         </div>
 
-        {/* Dates */}
         <div className="grid gap-3 sm:grid-cols-2">
           <InfoItem
             icon={CalendarDays}
@@ -151,7 +147,6 @@ function ActiveSubscription({
           />
         </div>
 
-        {/* Status */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-5">
           <div>
             <p className="text-sm font-medium">

@@ -100,7 +100,6 @@ function buildCommentQuery(params: CommentQueryParams = {}) {
 }
 
 
- // Get comments for a task
 
 export async function getCommentsByTask(
   taskId: string,
@@ -149,7 +148,6 @@ export async function getCommentsByTask(
   });
 }
 
- //Create comment
 
 export async function createComment(
   taskId: string,
@@ -185,7 +183,6 @@ export async function createComment(
   );
 }
 
-//  Update comment
 export async function updateComment(
   input: UpdateCommentInput,
 ): Promise<CommentActionResult<Comment | null>> {
@@ -219,7 +216,6 @@ export async function updateComment(
   );
 }
 
-// Delete comment
 export async function deleteComment(
   commentId: string,
 ): Promise<CommentActionResult<Comment | null>> {

@@ -139,8 +139,7 @@ export function TeamMembersDialog({
 
       await loadMembers();
     } catch (error) {
-      console.error(error);
-
+     
       toast.error(
         error instanceof Error ? error.message : "Unable to add member.",
       );
@@ -170,8 +169,7 @@ export function TeamMembersDialog({
 
       await loadMembers();
     } catch (error) {
-      console.error(error);
-
+     
       toast.error(
         error instanceof Error ? error.message : "Unable to remove member.",
       );

@@ -139,7 +139,6 @@ function revalidateTeamPaths() {
   }
 }
 
-// Get teams
 export async function getTeams(params: TeamListParams = {}) {
   const query = new URLSearchParams();
 
@@ -166,7 +165,6 @@ export async function getTeams(params: TeamListParams = {}) {
   return actionSuccess(normalizeList<Team>(result.payload, params));
 }
 
-// Get team by ID
 export async function getTeamById(id: string) {
   const result = await backendRequest<Team>(`/teams/${id}`);
 
@@ -180,7 +178,6 @@ export async function getTeamById(id: string) {
   return actionSuccess(unwrapPayload<Team>(result.payload));
 }
 
-// Create team
 export async function createTeam(input: {
   name: string;
   description?: string;
@@ -202,7 +199,6 @@ export async function createTeam(input: {
   return actionSuccess(unwrapPayload<Team>(result.payload), "Team created.");
 }
 
-// Update team
 export async function updateTeam(
   id: string,
   input: {
@@ -227,7 +223,6 @@ export async function updateTeam(
   return actionSuccess(unwrapPayload<Team>(result.payload), "Team updated.");
 }
 
-// Delete team
 export async function deleteTeam(id: string) {
   const result = await backendRequest<null>(`/teams/${id}`, {
     method: "DELETE",
@@ -245,7 +240,6 @@ export async function deleteTeam(id: string) {
   return actionSuccess(null, "Team deleted.");
 }
 
-// Team Members
 export async function getTeamMembers(teamId: string) {
   const result = await backendRequest<unknown>(`/teams/${teamId}/members`);
 
@@ -277,7 +271,6 @@ export async function getTeamMembers(teamId: string) {
   return actionSuccess(members as TeamMember[]);
 }
 
-// Add team member
 export async function addTeamMember(teamId: string, userId: string) {
   const result = await backendRequest<TeamMember>(`/teams/${teamId}/members`, {
     method: "POST",
@@ -298,7 +291,6 @@ export async function addTeamMember(teamId: string, userId: string) {
   return actionSuccess(unwrapPayload<TeamMember>(result.payload), "Member added.");
 }
 
-// Remove team member
 export async function removeTeamMember(teamId: string, userId: string) {
   const result = await backendRequest<null>(
     `/teams/${teamId}/members/${userId}`,

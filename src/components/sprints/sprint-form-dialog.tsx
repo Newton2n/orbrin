@@ -232,10 +232,7 @@ export function SprintFormDialog({
 
       onOpenChange(false);
     } catch (error) {
-      console.error(
-        "Sprint form error:",
-        error,
-      );
+     
 
       toast.error(
         editing

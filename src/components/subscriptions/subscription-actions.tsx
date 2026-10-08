@@ -41,8 +41,7 @@ export function SubscriptionActions({
 
       window.location.href = result.data.url;
     } catch (error) {
-      console.error(error);
-
+    
       toast.error("Unable to start checkout.", {
         description: "Please try again.",
       });

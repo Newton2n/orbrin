@@ -53,7 +53,6 @@ export function SprintDetailsDialog({
             </DialogHeader>
 
             <div className="space-y-6">
-              {/* Status */}
               <div className="flex flex-wrap items-center gap-3">
                 <SprintStatusBadge status={sprint.status} />
 
@@ -64,7 +63,6 @@ export function SprintDetailsDialog({
 
               <Separator />
 
-              {/* Goal */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Target className="size-4 text-muted-foreground" />
@@ -76,7 +74,6 @@ export function SprintDetailsDialog({
                 </p>
               </div>
 
-              {/* Timeline */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-lg border p-4">
                   <div className="flex items-center gap-2 text-sm font-medium">
@@ -101,7 +98,6 @@ export function SprintDetailsDialog({
                 </div>
               </div>
 
-              {/* Tasks */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="size-4 text-muted-foreground" />
@@ -136,7 +132,6 @@ export function SprintDetailsDialog({
 
               <Separator />
 
-              {/* Metadata */}
               <div className="grid gap-4 text-sm sm:grid-cols-2">
                 <div>
                   <p className="text-xs text-muted-foreground">Created</p>

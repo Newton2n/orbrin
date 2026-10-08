@@ -366,8 +366,7 @@ export function TaskDetailSheet({
 
       setEditMode(false);
     } catch (error) {
-      console.error("Failed to update task:", error);
-
+     
       setError("Something went wrong while updating the task.");
     }
   }
@@ -390,8 +389,7 @@ export function TaskDetailSheet({
 
       onOpenChange(false);
     } catch (error) {
-      console.error("Failed to delete task:", error);
-
+     
       setError("Something went wrong while deleting the task.");
     } finally {
       setDeleting(false);
@@ -450,7 +448,6 @@ export function TaskDetailSheet({
 
             {editMode ? (
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                {/* Title */}
                 <div className="space-y-2">
                   <label htmlFor="task-title" className="text-sm font-medium">
                     Title
@@ -471,7 +468,6 @@ export function TaskDetailSheet({
                   )}
                 </div>
 
-                {/* Description */}
                 <div className="space-y-2">
                   <label
                     htmlFor="task-description"
@@ -496,7 +492,6 @@ export function TaskDetailSheet({
                   )}
                 </div>
 
-                {/* Sprint */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Sprint</label>
 
@@ -541,7 +536,6 @@ export function TaskDetailSheet({
                   )}
                 </div>
 
-                {/* Assignee */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Assignee</label>
 
@@ -607,7 +601,6 @@ export function TaskDetailSheet({
                   )}
                 </div>
 
-                {/* Status */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Status</label>
 
@@ -648,7 +641,6 @@ export function TaskDetailSheet({
                   )}
                 </div>
 
-                {/* Priority */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Priority</label>
 
@@ -689,7 +681,6 @@ export function TaskDetailSheet({
                   )}
                 </div>
 
-                {/* Due date */}
                 <div className="space-y-2">
                   <label
                     htmlFor="task-due-date"
@@ -713,7 +704,6 @@ export function TaskDetailSheet({
                   )}
                 </div>
 
-                {/* Edit actions */}
                 <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
                   <Button
                     type="button"
@@ -741,14 +731,12 @@ export function TaskDetailSheet({
               </form>
             ) : (
               <>
-                {/* Description */}
                 <div className="rounded-xl border bg-muted/20 p-4">
                   <p className="whitespace-pre-wrap text-sm leading-6">
                     {task.description || "No description provided."}
                   </p>
                 </div>
 
-                {/* Information */}
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border p-3">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -812,7 +800,6 @@ export function TaskDetailSheet({
                   </div>
                 </div>
 
-                {/* Project */}
                 {task.project && (
                   <div className="flex items-center gap-3 rounded-xl border p-4">
                     <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -829,7 +816,6 @@ export function TaskDetailSheet({
                   </div>
                 )}
 
-                {/* Actions */}
                 {(canUpdate || canDelete) && (
                   <>
                     <Separator />
@@ -865,7 +851,6 @@ export function TaskDetailSheet({
 
                 <Separator />
 
-                {/* Comments */}
                 <CommentList
                   taskId={task.id}
                   currentUserId={currentUserId}
@@ -887,7 +872,6 @@ export function TaskDetailSheet({
         </SheetContent>
       </Sheet>
 
-      {/* Delete confirmation */}
       <Dialog
         open={deleteDialogOpen}
         onOpenChange={(value) => {

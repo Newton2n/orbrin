@@ -79,7 +79,7 @@ export function CommentItem({
       toast.success("Comment deleted.");
       onChanged();
     } catch (error) {
-      console.error("Failed to delete comment:", error);
+      
       toast.error("Unable to delete comment.");
     } finally {
       setDeleting(false);

@@ -9,7 +9,6 @@ import {
   unwrapPayload,
 } from "../lib/server/backend-api";
 
-// user type definition
 export type UserProfile = {
   id: string;
   fullName: string;

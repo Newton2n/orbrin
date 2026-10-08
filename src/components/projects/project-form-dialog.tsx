@@ -157,8 +157,6 @@ export function ProjectFormDialog(
       return;
     }
 
-    // Reset the form whenever the dialog opens
-    // or a different project is selected.
     const currentStatus =
       project?.status;
 
@@ -191,7 +189,6 @@ export function ProjectFormDialog(
   async function handleSubmit(
     values: ProjectFormValues,
   ) {
-    // Upload mode only needs the selected PDF.
     if (mode === "upload") {
       if (!project) {
         return;
@@ -238,10 +235,7 @@ export function ProjectFormDialog(
 
         onOpenChange(false);
       } catch (error) {
-        console.error(
-          "Upload project document error:",
-          error,
-        );
+        
 
         toast.error(
           "Something went wrong.",
@@ -251,7 +245,6 @@ export function ProjectFormDialog(
       return;
     }
 
-    // Create a new project.
     if (mode === "create") {
       const formData = new FormData();
 
@@ -305,10 +298,7 @@ export function ProjectFormDialog(
 
         onOpenChange(false);
       } catch (error) {
-        console.error(
-          "Create project error:",
-          error,
-        );
+        
 
         toast.error(
           "Something went wrong.",
@@ -318,7 +308,6 @@ export function ProjectFormDialog(
       return;
     }
 
-    // Update the existing project.
     if (mode === "edit") {
       if (!project) {
         return;
@@ -349,10 +338,7 @@ export function ProjectFormDialog(
 
         onOpenChange(false);
       } catch (error) {
-        console.error(
-          "Update project error:",
-          error,
-        );
+        
 
         toast.error(
           "Something went wrong.",
@@ -375,7 +361,6 @@ export function ProjectFormDialog(
     <Dialog
       open={open}
       onOpenChange={(value) => {
-        // Don't allow the dialog to close while saving.
         if (!isSubmitting) {
           onOpenChange(value);
         }

@@ -96,7 +96,7 @@ export function CommentForm({
 
       onSuccess();
     } catch (error) {
-      console.error(error);
+      
 
       toast.error("Something went wrong.");
     } finally {

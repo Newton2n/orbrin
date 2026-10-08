@@ -81,7 +81,7 @@ export function ChangePasswordForm() {
 
       reset();
     } catch (error) {
-      console.error(error);
+      
 
       toast.error("Something went wrong.");
     }

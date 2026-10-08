@@ -899,12 +899,10 @@ export function ProjectList({
         }}
       />
 
-      {/* Create mode */}
       {formMode === "create" && (
         <ProjectFormDialog open onOpenChange={handleFormClose} mode="create" />
       )}
 
-      {/* Edit mode */}
       {formMode === "edit" && formProject && (
         <ProjectFormDialog
           open
@@ -914,7 +912,6 @@ export function ProjectList({
         />
       )}
 
-      {/* Upload mode */}
       {formMode === "upload" && formProject && (
         <ProjectFormDialog
           open

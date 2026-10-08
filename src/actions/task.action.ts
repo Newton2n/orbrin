@@ -145,7 +145,6 @@ const buildQueryString = (params?: TaskQueryParams) => {
   return query ? `?${query}` : "";
 };
 
-// Get project tasks
 export const getTasksByProject = async (
   projectId: string,
   params?: TaskQueryParams,
@@ -195,7 +194,6 @@ export const getTasksByProject = async (
   );
 };
 
-// Get assigned tasks
 export const getMyTasks = async (
   params?: TaskQueryParams,
 ): Promise<TaskActionResult<TaskListResponse>> => {
@@ -248,7 +246,6 @@ export const getMyTasks = async (
   );
 };
 
-// Get created tasks
 export const getMyCreatedTasks = async (
   params?: TaskQueryParams,
 ): Promise<TaskActionResult<TaskListResponse>> => {
@@ -301,7 +298,6 @@ export const getMyCreatedTasks = async (
   );
 };
 
-// Get one task
 export const getTaskById = async (
   taskId: string,
 ): Promise<TaskActionResult<Task>> => {
@@ -323,7 +319,6 @@ export const getTaskById = async (
   return actionSuccess(task);
 };
 
-// Create task
 export const createTask = async (
   projectId: string,
   input: CreateTaskInput,
@@ -355,7 +350,6 @@ export const createTask = async (
   );
 };
 
-// Update task
 export const updateTask = async (
   input: UpdateTaskInput,
 ): Promise<TaskActionResult<Task>> => {
@@ -388,7 +382,6 @@ export const updateTask = async (
   );
 };
 
-// Delete task
 export const deleteTask = async (
   taskId: string,
 ): Promise<TaskActionResult<Task>> => {

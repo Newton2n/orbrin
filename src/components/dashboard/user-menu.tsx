@@ -46,7 +46,6 @@ export function UserMenu({ user, role }: { user: AuthUser; role: Role }) {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-64">
-        {/* User information */}
         <div className="px-2 py-2">
           <div className="flex items-center gap-3">
             <Avatar className="size-10 shrink-0">

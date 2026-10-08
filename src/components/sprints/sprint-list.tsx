@@ -194,8 +194,7 @@ export function SprintList({
 
       await loadSprints();
     } catch (error) {
-      console.error("Failed to delete sprint:", error);
-
+     
       toast.error("Unable to delete sprint.");
     } finally {
       setDeleteLoading(false);
@@ -219,7 +218,6 @@ export function SprintList({
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h2 className="text-lg font-semibold">Sprints</h2>
@@ -238,7 +236,6 @@ export function SprintList({
         ) : null}
       </div>
 
-      {/* Filters */}
       <Card>
         <CardContent className="p-3 sm:p-4">
           <div className="flex flex-col gap-3 lg:flex-row">
@@ -309,7 +306,6 @@ export function SprintList({
         </CardContent>
       </Card>
 
-      {/* Loading */}
       {loading ? (
         <div className="flex min-h-48 items-center justify-center rounded-xl border">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -319,7 +315,6 @@ export function SprintList({
         </div>
       ) : null}
 
-      {/* Empty */}
       {!loading && sprints.length === 0 ? (
         <div className="rounded-xl border border-dashed px-6 py-12 text-center">
           <Target className="mx-auto size-8 text-muted-foreground" />
@@ -341,7 +336,6 @@ export function SprintList({
         </div>
       ) : null}
 
-      {/* Desktop */}
       {!loading && sprints.length > 0 ? (
         <div className="hidden overflow-hidden rounded-xl border md:block">
           <div className="overflow-x-auto">
@@ -449,7 +443,6 @@ export function SprintList({
         </div>
       ) : null}
 
-      {/* Mobile */}
       {!loading && sprints.length > 0 ? (
         <div className="grid gap-3 md:hidden">
           {sprints.map((sprint) => {
@@ -537,7 +530,6 @@ export function SprintList({
         </div>
       ) : null}
 
-      {/* Pagination */}
       {!loading && pagination && pagination.totalPages > 1 ? (
         <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">

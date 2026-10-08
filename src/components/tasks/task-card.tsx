@@ -69,9 +69,7 @@ export function TaskCard({
     setDeleting(true);
 
     try {
-      // This should be the exact database task ID.
-      console.log("Deleting task with ID:", task.id);
-
+     
       const result = await deleteTask(task.id);
 
       if (!result.success) {
@@ -85,7 +83,7 @@ export function TaskCard({
 
       onDeleted(task.id);
     } catch (error) {
-      console.error("Delete task error:", error);
+      
       toast.error("Unable to delete task.");
     } finally {
       setDeleting(false);

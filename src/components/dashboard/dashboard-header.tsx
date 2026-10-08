@@ -65,9 +65,7 @@ export function DashboardHeader({
   return (
     <header className="sticky top-0 z-40 flex min-h-16 w-full items-center border-b border-border bg-background/90 backdrop-blur">
       <div className="flex w-full min-w-0 items-center justify-between gap-2 px-3 sm:gap-3 sm:px-6">
-        {/* Left section */}
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-          {/* Mobile menu */}
           <Sheet>
             <SheetTrigger
               className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground md:hidden"
@@ -98,7 +96,6 @@ export function DashboardHeader({
             </SheetContent>
           </Sheet>
 
-          {/* Home */}
           <Button
             variant="ghost"
             size="sm"
@@ -111,7 +108,6 @@ export function DashboardHeader({
             </Link>
           </Button>
 
-          {/* Breadcrumb */}
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground sm:gap-2">
               <span className="hidden max-w-[180px] truncate sm:inline">
@@ -131,9 +127,7 @@ export function DashboardHeader({
           </div>
         </div>
 
-        {/* Right section */}
         <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
-          {/* Desktop search */}
           <Button
             variant="outline"
             size="sm"
@@ -147,7 +141,6 @@ export function DashboardHeader({
             </kbd>
           </Button>
 
-          {/* Mobile / tablet search */}
           <Button
             variant="ghost"
             size="icon"
@@ -158,7 +151,6 @@ export function DashboardHeader({
             <CommandIcon className="size-5" />
           </Button>
 
-          {/* Notifications */}
           <Button
             variant="ghost"
             size="icon"
@@ -177,19 +169,16 @@ export function DashboardHeader({
             </Link>
           </Button>
 
-          {/* Theme */}
           <div className="shrink-0">
             <ThemeToggle />
           </div>
 
-          {/* User menu */}
           <div className="shrink-0">
             <UserMenu user={user} role={role} />
           </div>
         </div>
       </div>
 
-      {/* Command dialog */}
       <CommandDialog
         open={commandOpen}
         onOpenChange={setCommandOpen}

@@ -364,7 +364,6 @@ export function useOrganizationMember(memberId: string | null) {
   });
 }
 
-// User Profile
 export function useUserProfile() {
   return useQuery({
     queryKey: ["user-profile"],

@@ -34,7 +34,7 @@ export async function proxy(request: NextRequest) {
     : null;
 
   if (!decodedAccessToken?.success && decodedRefreshToken?.success) {
-    //access token has expired but refresh token is valid, get new access token from backend
+    // Refresh the access token when the refresh token is still valid
     const result = await getNewAccessToken();
     if (result.success) {
       const newAccessToken = result.data.accessToken;
@@ -56,7 +56,7 @@ export async function proxy(request: NextRequest) {
   let userRole = null;
 
   if (!decodedAccessToken?.success) {
-    //token has expired or is invalid, clear the cookies
+    // Clear cookies when the token is expired or invalid
     cookieStore.delete("accessToken");
   }
 
@@ -64,7 +64,7 @@ export async function proxy(request: NextRequest) {
     userRole = (decodedAccessToken.data as JwtPayload).role;
   }
 
-  //   user is logged in and trying to access login or register page, redirect to dashboard or root home page
+  // Redirect authenticated users away from login and registration pages
   if (accessToken && AUTH_ROUTES.includes(pathname)) {
     if (userRole === "ADMIN") {
       return NextResponse.redirect(new URL("/dashboard/admin", request.url));
@@ -85,7 +85,7 @@ export async function proxy(request: NextRequest) {
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
 
-  // Authenticated Pages Protection : Authorization is not handled yet
+  // Protect authenticated pages
   if (!accessToken && !isPublicRoute && !isAuthRoute) {
     const loginUrl = new URL("/login", request.url);
 
@@ -94,7 +94,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Authorization : Role based access control
+  // Apply role-based access control
   if (pathname.startsWith("/dashboard/member") && userRole !== "MEMBER") {
     return NextResponse.redirect(new URL("/not-found", request.url));
   } else if (pathname.startsWith("/dashboard/admin") && userRole !== "ADMIN") {

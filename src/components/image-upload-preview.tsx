@@ -125,7 +125,6 @@ export function ImageUploadPreview({
   return (
     <>
       <div className="space-y-4">
-        {/* Image preview */}
         <div className="relative overflow-hidden rounded-2xl border bg-muted/20">
           <div className="flex min-h-64 items-center justify-center p-6 sm:min-h-72">
             {hasImage ? (
@@ -174,7 +173,6 @@ export function ImageUploadPreview({
             )}
           </div>
 
-          {/* Bottom actions */}
           <div className="flex items-center justify-between border-t bg-background/80 px-4 py-3">
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">
@@ -234,7 +232,6 @@ export function ImageUploadPreview({
         </p>
       </div>
 
-      {/* Full image preview */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-3xl overflow-hidden p-0">
           <DialogHeader className="sr-only">

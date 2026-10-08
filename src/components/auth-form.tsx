@@ -485,7 +485,6 @@ export function AuthForm({
 
   return (
     <div className="w-full max-w-md">
-      {/* Header */}
       <div className="mb-6 text-center">
         <Link
           href="/login"
@@ -622,7 +621,6 @@ export function AuthForm({
             </form>
           </Form>
 
-          {/* Demo accounts */}
           {mode === "login" && (
             <div className="mt-5 rounded-xl border border-zinc-200 bg-zinc-50/70 p-3 dark:border-zinc-800 dark:bg-zinc-950/50">
               <div className="mb-3">
@@ -673,7 +671,6 @@ export function AuthForm({
             </div>
           )}
 
-          {/* Google */}
           {showGoogle && (
             <>
               <div className="my-5 flex items-center gap-3">
@@ -696,7 +693,6 @@ export function AuthForm({
             </>
           )}
 
-          {/* Navigation */}
           <div className="mt-6 text-center">
             {mode === "login" && (
               <p className="text-sm text-zinc-500 dark:text-zinc-400">

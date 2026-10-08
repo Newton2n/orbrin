@@ -2,8 +2,8 @@
 
 import { useTransition } from "react";
 import { LogOut } from "lucide-react";
-import { toast } from "sonner"; // Or your preferred toast library
-import { logout } from "../actions/auth.action"; // Your server action
+import { toast } from "sonner";
+import { logout } from "../actions/auth.action";
 import { Button } from "./ui/button";
 
 interface LogoutButtonProps {

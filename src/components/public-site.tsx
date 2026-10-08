@@ -101,10 +101,8 @@ export function PublicHeader({ isAuthenticated = false }: PublicHeaderProps) {
           <span className="truncate">ORBRIN</span>
         </Link>
 
-        {/* Desktop Navigation Links */}
         <PublicNav />
 
-        {/* Desktop Navigation Actions */}
         <div className="hidden items-center gap-2 md:flex">
           <ThemeToggle />
           {isAuthenticated ? (
@@ -130,7 +128,6 @@ export function PublicHeader({ isAuthenticated = false }: PublicHeaderProps) {
           )}
         </div>
 
-        {/* Mobile Navigation Sheet */}
         <Sheet>
           <SheetTrigger
             render={
@@ -151,7 +148,6 @@ export function PublicHeader({ isAuthenticated = false }: PublicHeaderProps) {
                 </SheetTitle>
               </div>
 
-              {/* Mobile Navigation Links with Active Status */}
               <PublicNav isMobile />
 
               <Separator className="my-3 dark:bg-zinc-800" />
@@ -181,7 +177,6 @@ export function PublicHeader({ isAuthenticated = false }: PublicHeaderProps) {
               </div>
             </div>
 
-            {/* Mobile Theme Options Footer inside Sheet */}
             <div className="border-t border-zinc-200 pt-4 dark:border-zinc-800">
               <p className="mb-2 text-xs font-medium text-zinc-400 dark:text-zinc-500">
                 Theme preference

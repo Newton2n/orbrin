@@ -37,7 +37,6 @@ export default async function MemberProjectDetailsPage({
 
   return (
     <div className="space-y-8">
-      {/* Project information */}
       <section className="space-y-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
@@ -67,7 +66,6 @@ export default async function MemberProjectDetailsPage({
         </div>
       </section>
 
-      {/* Sprints */}
       <section className="space-y-4">
         <div>
           <h2 className="text-xl font-semibold sm:text-2xl">Sprints</h2>
@@ -80,7 +78,6 @@ export default async function MemberProjectDetailsPage({
         <SprintList projectId={projectId} role="MEMBER" canViewDetails />
       </section>
 
-      {/* Tasks */}
       <section className="space-y-4">
         <div>
           <h2 className="text-xl font-semibold sm:text-2xl">Tasks</h2>

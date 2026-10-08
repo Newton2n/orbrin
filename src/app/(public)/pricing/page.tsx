@@ -28,10 +28,8 @@ export default async function PricingPage() {
           </p>
         </div>
 
-        {/* Added mt-6 to provide breathing room for the absolute badge */}
         <div className="mt-16 mx-auto max-w-sm">
           <Card className="relative overflow-visible mt-4 border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            {/* Centered absolute badge */}
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 rounded-full bg-zinc-900 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white shadow-md dark:bg-zinc-100 dark:text-zinc-900">
               <Sparkles className="size-3" /> Pro Workspace
             </div>

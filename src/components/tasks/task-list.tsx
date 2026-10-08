@@ -291,8 +291,7 @@ export function TaskList({
 
       await loadTasks();
     } catch (error) {
-      console.error("Failed to create task:", error);
-
+      
       toast.error("Unable to create task.");
     }
   }
@@ -670,7 +669,6 @@ export function TaskList({
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onCreateTask)} className="space-y-5">
-            {/* Title */}
             <div className="space-y-2">
               <label
                 htmlFor="create-task-title"
@@ -694,7 +692,6 @@ export function TaskList({
               )}
             </div>
 
-            {/* Description */}
             <div className="space-y-2">
               <label
                 htmlFor="create-task-description"
@@ -719,7 +716,6 @@ export function TaskList({
               )}
             </div>
 
-            {/* Sprint */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Sprint</label>
 
@@ -764,7 +760,6 @@ export function TaskList({
               )}
             </div>
 
-            {/* Assignee */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Assignee</label>
 
@@ -809,7 +804,6 @@ export function TaskList({
               )}
             </div>
 
-            {/* Status */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
 
@@ -848,7 +842,6 @@ export function TaskList({
               )}
             </div>
 
-            {/* Priority */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Priority</label>
 
@@ -887,7 +880,6 @@ export function TaskList({
               )}
             </div>
 
-            {/* Due date */}
             <div className="space-y-2">
               <label
                 htmlFor="create-task-due-date"

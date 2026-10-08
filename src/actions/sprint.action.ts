@@ -25,7 +25,6 @@ export type Sprint = {
   createdAt: string;
   updatedAt: string;
 
-  // Returned by sprint list / sprint details
   tasks?: SprintTask[];
 };
 
@@ -109,7 +108,6 @@ function revalidateSprintPaths(projectId?: string) {
   }
 }
 
-//create sprint
 export async function createSprint(
   input: CreateSprintInput,
 ): Promise<SprintActionResult<Sprint | null>> {
@@ -166,7 +164,6 @@ export async function createSprint(
   );
 }
 
-// GET SPRINTS BY PROJECT
 
 export async function getSprintsByProject(
   projectId: string,
@@ -260,7 +257,6 @@ export async function getSprintsByProject(
   });
 }
 
-//get sprints
 export async function getSprints(
   projectId: string,
   params: SprintListParams = {},
@@ -268,7 +264,6 @@ export async function getSprints(
   return getSprintsByProject(projectId, params);
 }
 
-// GET SPRINT BY ID
 export async function getSprintById(
   sprintId: string,
 ): Promise<SprintActionResult<Sprint | null>> {
@@ -288,7 +283,6 @@ export async function getSprintById(
   return actionSuccess(unwrapPayload<Sprint>(result.payload));
 }
 
-// UPDATE SPRINT
 export async function updateSprint(
   input: UpdateSprintInput,
 ): Promise<SprintActionResult<Sprint | null>> {
@@ -344,7 +338,6 @@ export async function updateSprint(
   );
 }
 
-// DELETE SPRINT
 
 export async function deleteSprint(
   sprintId: string,

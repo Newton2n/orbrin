@@ -24,9 +24,7 @@ export default async function Home() {
   return (
     <PublicLayout isAuthenticated={isAuthenticated}>
       <main className="overflow-hidden">
-        {/* --- HERO SECTION --- */}
         <section className="relative mx-auto max-w-7xl px-5 pb-20 pt-16 sm:pt-24 lg:px-8 lg:pb-32 lg:pt-32">
-          {/* Subtle background glow/ambient lighting effect */}
           <div className="absolute left-1/2 top-1/3 -z-10 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl lg:h-[450px] lg:w-[450px]" />
 
           <div className="mx-auto max-w-3xl text-center">
@@ -68,7 +66,6 @@ export default async function Home() {
               </Button>
             </div>
 
-            {/* Quick mini-perks under CTA */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-zinc-500 dark:text-zinc-400">
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="size-4 text-emerald-500" /> No credit
@@ -90,7 +87,6 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* --- TRUST BANNER --- */}
         <section className="border-y border-zinc-200 bg-zinc-50/50 py-10 dark:border-zinc-800 dark:bg-zinc-900/20">
           <div className="mx-auto max-w-7xl px-5 text-center lg:px-8">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
@@ -115,7 +111,6 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* --- SHARED SYSTEM FEATURES --- */}
         <section className="border-b border-zinc-200/80 bg-white py-20 dark:border-zinc-800 dark:bg-zinc-950 lg:py-28">
           <div className="mx-auto max-w-7xl px-5 lg:px-8">
             <SectionIntro
@@ -129,7 +124,6 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* --- WORKFLOW STEPS --- */}
         <section className="mx-auto max-w-7xl px-5 py-20 lg:px-8 lg:py-28">
           <SectionIntro
             eyebrow="A better rhythm"
@@ -141,7 +135,6 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* --- VALUE PROPOSITION BENTO / METRICS SECTION --- */}
         <section className="border-y border-zinc-200 bg-zinc-50/60 py-20 dark:border-zinc-800 dark:bg-zinc-900/40 lg:py-28">
           <div className="mx-auto max-w-7xl px-5 lg:px-8">
             <div className="grid gap-8 lg:grid-cols-3">
@@ -187,7 +180,6 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* --- BOTTOM CTA BANNER --- */}
         <section className="mx-5 my-20 rounded-3xl bg-zinc-900 px-6 py-16 text-white sm:px-12 lg:mx-auto lg:max-w-7xl dark:bg-zinc-100 dark:text-zinc-900">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">

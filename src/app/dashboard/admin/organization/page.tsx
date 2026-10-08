@@ -12,7 +12,7 @@ export default function AdminSettingsPage() {
 
 async function AdminOrganizationSettings() {
   const result = await getMyOrganization();
-  console.log("Organization result:", result);
+  
   if (!result.success)
     return (
       <ErrorState

@@ -96,7 +96,7 @@ export function OrganizationSettingsCard({
       setOpen(false);
       onUpdated?.();
     } catch (error) {
-      console.error(error);
+      
 
       toast.error("Something went wrong.", {
         description: "We couldn't update the organization.",

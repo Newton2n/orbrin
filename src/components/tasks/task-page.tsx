@@ -60,7 +60,6 @@ export function TaskPage({
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  // Delete confirmation modal
   const [deleteTaskItem, setDeleteTaskItem] = useState<Task | null>(null);
 
   const [deleting, setDeleting] = useState(false);
@@ -86,7 +85,6 @@ export function TaskPage({
     }
   }, [taskQuery.data, taskQuery.error, taskQuery.isLoading]);
 
-  // Task updated
 
   const handleTaskUpdated = useCallback(
     (updatedTask: Task) => {
@@ -104,7 +102,6 @@ export function TaskPage({
     [queryClient],
   );
 
-  // Open delete confirmation
 
   const handleTaskDeleted = useCallback(
     (taskId: string) => {
@@ -119,7 +116,6 @@ export function TaskPage({
     [tasks],
   );
 
-  // Confirm delete
 
   const handleConfirmDelete = async () => {
     if (!deleteTaskItem) {
@@ -137,24 +133,19 @@ export function TaskPage({
         return;
       }
 
-      // Remove task from current list
       await queryClient.invalidateQueries({ queryKey: ["tasks"] });
 
-      // Close task detail
       setSelectedTask(null);
 
-      // Close delete dialog
       setDeleteTaskItem(null);
     } catch (error) {
-      console.error("Failed to delete task:", error);
-
+     
       setError("Something went wrong while deleting the task.");
     } finally {
       setDeleting(false);
     }
   };
 
-  // Page content
 
   const pageTitle = mode === "created" ? "My Created Tasks" : "My Tasks";
 
@@ -262,7 +253,6 @@ export function TaskPage({
             ))}
           </div>
 
-          {/* Pagination information */}
           <div className="flex items-center justify-between border-t pt-4 text-sm text-muted-foreground">
             <span>
               {pagination.total} {pagination.total === 1 ? "task" : "tasks"}
