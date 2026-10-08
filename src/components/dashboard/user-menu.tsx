@@ -1,16 +1,11 @@
 "use client";
 
 import { ChevronDown, LogOut, Settings } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { logout } from "@/actions/auth.action";
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import {
   DropdownMenu,
@@ -20,23 +15,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import type {
-  AuthUser,
-  Role,
-} from "@/features/auth/types/auth.types";
+import type { AuthUser, Role } from "@/features/auth/types/auth.types";
 
-import {
-  UserInitials,
-  UserRoleLabel,
-} from "./shared/dashboard-content";
+import { UserInitials, UserRoleLabel } from "./shared/dashboard-content";
 
-export function UserMenu({
-  user,
-  role,
-}: {
-  user: AuthUser;
-  role: Role;
-}) {
+export function UserMenu({ user, role }: { user: AuthUser; role: Role }) {
   const router = useRouter();
 
   const label = user.fullName || user.email || "Account";
@@ -44,7 +27,7 @@ export function UserMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="flex h-10 items-center gap-2 rounded-md px-2 text-sm font-medium text-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex size-10 items-center justify-center rounded-md outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Open account menu"
       >
         <Avatar className="size-8">
@@ -60,21 +43,9 @@ export function UserMenu({
             <UserInitials user={user} />
           </AvatarFallback>
         </Avatar>
-
-        <span className="hidden max-w-32 truncate sm:inline">
-          {label}
-        </span>
-
-        <ChevronDown
-          className="size-3.5 text-muted-foreground"
-          aria-hidden="true"
-        />
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent
-        align="end"
-        className="w-64"
-      >
+      <DropdownMenuContent align="end" className="w-64">
         {/* User information */}
         <div className="px-2 py-2">
           <div className="flex items-center gap-3">
@@ -93,9 +64,7 @@ export function UserMenu({
             </Avatar>
 
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium">
-                {label}
-              </p>
+              <p className="truncate text-sm font-medium">{label}</p>
 
               <UserRoleLabel role={role} />
 
@@ -108,15 +77,23 @@ export function UserMenu({
 
         <DropdownMenuSeparator />
 
+        {role === "ADMIN" && (
+          <DropdownMenuItem
+            onClick={() =>
+              router.push(`/dashboard/${role.toLowerCase()}/organization`)
+            }
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Organization Settings</span>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem
           onClick={() =>
-            router.push(
-              `/dashboard/${role.toLowerCase()}/settings`,
-            )
+            router.push(`/dashboard/profile`)
           }
         >
-          <Settings />
-          Profile & settings
+          <Settings className="mr-2 h-4 w-4" />
+          <span>Profile & settings</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem
@@ -125,8 +102,8 @@ export function UserMenu({
           }}
           className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
         >
-          <LogOut />
-          Sign out
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Sign out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
