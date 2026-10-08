@@ -2,7 +2,7 @@
 "use client";
 
 import { Eye, MoreHorizontal, Pencil, Search, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type {
   OrganizationMember,
@@ -88,6 +88,25 @@ export function OrganizationMembersTable({
   const error =
     query.error instanceof Error ? query.error.message : null;
 
+  useEffect(() => {
+    const nextSearch = search.trim() || undefined;
+    const timer = window.setTimeout(() => {
+      setParams((current) => {
+        if (current.search === nextSearch && current.page === 1) {
+          return current;
+        }
+
+        return {
+          ...current,
+          page: 1,
+          search: nextSearch,
+        };
+      });
+    }, 550);
+
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
   function applyFilters() {
     const [sortBy, sortOrder] = sort.split("-") as [
       "createdAt" | "updatedAt" | "role",
@@ -112,14 +131,6 @@ export function OrganizationMembersTable({
     void query.refetch();
   }
 
-  function handleSearchKeyDown(
-    event: React.KeyboardEvent<HTMLInputElement>,
-  ) {
-    if (event.key === "Enter") {
-      applyFilters();
-    }
-  }
-
   const mayEdit = (member: OrganizationMember) =>
     canManageMembers &&
     member.role !== "ADMIN" &&
@@ -138,7 +149,6 @@ export function OrganizationMembersTable({
                 placeholder="Search by name or email"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                onKeyDown={handleSearchKeyDown}
               />
             </div>
 
@@ -466,4 +476,3 @@ export function OrganizationMembersTable({
     </>
   );
 }
-

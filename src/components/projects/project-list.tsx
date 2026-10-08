@@ -216,7 +216,7 @@ export function ProjectList({
     const timer = window.setTimeout(() => {
       setSearch(searchInput.trim());
       setPage(1);
-    }, 350);
+    }, 550);
 
     return () => {
       window.clearTimeout(timer);

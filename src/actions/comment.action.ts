@@ -101,52 +101,52 @@ function buildCommentQuery(params: CommentQueryParams = {}) {
 
 
 
-export async function getCommentsByTask(
-  taskId: string,
-  params: CommentQueryParams = {},
-): Promise<CommentActionResult<CommentListResponse>> {
-  if (!taskId) {
-    return actionFailure("Task ID is required.", {
-      comments: [],
-      pagination: getDefaultPagination(params),
-    });
-  }
+// export async function getCommentsByTask(
+//   taskId: string,
+//   params: CommentQueryParams = {},
+// ): Promise<CommentActionResult<CommentListResponse>> {
+//   if (!taskId) {
+//     return actionFailure("Task ID is required.", {
+//       comments: [],
+//       pagination: getDefaultPagination(params),
+//     });
+//   }
 
-  const query = buildCommentQuery(params);
+//   const query = buildCommentQuery(params);
 
-  const result = await backendRequest<unknown>(
-    `/comments/tasks/${taskId}${query}`,
-  );
+//   const result = await backendRequest<unknown>(
+//     `/comments/tasks/${taskId}${query}`,
+//   );
 
-  if (!result.ok) {
-    return actionFailure(
-      backendMessage(result.payload, "Unable to fetch comments."),
-      {
-        comments: [],
-        pagination: getDefaultPagination(params),
-      },
-    );
-  }
+//   if (!result.ok) {
+//     return actionFailure(
+//       backendMessage(result.payload, "Unable to fetch comments."),
+//       {
+//         comments: [],
+//         pagination: getDefaultPagination(params),
+//       },
+//     );
+//   }
 
-  const payload = result.payload;
+//   const payload = result.payload;
 
-  if (!payload || typeof payload !== "object") {
-    return actionFailure("Invalid comment response from server.", {
-      comments: [],
-      pagination: getDefaultPagination(params),
-    });
-  }
+//   if (!payload || typeof payload !== "object") {
+//     return actionFailure("Invalid comment response from server.", {
+//       comments: [],
+//       pagination: getDefaultPagination(params),
+//     });
+//   }
 
-  const response = payload as {
-    data?: unknown;
-    pagination?: CommentPagination;
-  };
+//   const response = payload as {
+//     data?: unknown;
+//     pagination?: CommentPagination;
+//   };
 
-  return actionSuccess({
-    comments: Array.isArray(response.data) ? (response.data as Comment[]) : [],
-    pagination: response.pagination ?? getDefaultPagination(params),
-  });
-}
+//   return actionSuccess({
+//     comments: Array.isArray(response.data) ? (response.data as Comment[]) : [],
+//     pagination: response.pagination ?? getDefaultPagination(params),
+//   });
+// }
 
 
 export async function createComment(

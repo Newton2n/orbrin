@@ -121,15 +121,19 @@ export function SprintList({
   const loadSprints = () => void sprintsQuery.refetch();
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setPage(1);
+      setSearch(searchInput.trim());
+    }, 550);
+
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
+  useEffect(() => {
     if (sprintQuery.data) {
       setSelectedSprint(sprintQuery.data);
     }
   }, [sprintQuery.data]);
-
-  function handleSearchSubmit() {
-    setPage(1);
-    setSearch(searchInput.trim());
-  }
 
   function handleStatusChange(
     value: "PLANNING" | "ACTIVE" | "COMPLETED" | "ALL" | null,
@@ -246,19 +250,10 @@ export function SprintList({
                 <Input
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      handleSearchSubmit();
-                    }
-                  }}
                   placeholder="Search sprints..."
                   className="pl-9"
                 />
               </div>
-
-              <Button variant="secondary" onClick={handleSearchSubmit}>
-                Search
-              </Button>
             </div>
 
             <Select value={status} onValueChange={handleStatusChange}>

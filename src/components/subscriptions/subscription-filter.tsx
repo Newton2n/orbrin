@@ -87,7 +87,7 @@ export function SubscriptionFilters() {
       updateFilters({
         search: trimmedSearch || null,
       });
-    }, 400);
+    }, 550);
 
     return () => {
       window.clearTimeout(timeout);

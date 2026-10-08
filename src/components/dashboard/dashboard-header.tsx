@@ -151,24 +151,6 @@ export function DashboardHeader({
             <CommandIcon className="size-5" />
           </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-9 shrink-0 text-muted-foreground"
-            aria-label="Notifications"
-            asChild
-          >
-            <Link
-              href={
-                role === "MEMBER"
-                  ? "/dashboard/member/tasks"
-                  : `/dashboard/${role.toLowerCase()}/activity`
-              }
-            >
-              <Bell className="size-5" />
-            </Link>
-          </Button>
-
           <div className="shrink-0">
             <ThemeToggle />
           </div>

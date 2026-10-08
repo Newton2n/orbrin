@@ -230,10 +230,14 @@ export function TaskList({
     setLoadingOptions(membersQuery.isLoading);
   }, [taskQuery.isLoading, membersQuery.isLoading]);
 
-  function handleSearch() {
-    setPage(1);
-    setSearch(searchInput.trim());
-  }
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setPage(1);
+      setSearch(searchInput.trim());
+    }, 550);
+
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
 
   function resetCreateForm() {
     reset({
@@ -361,19 +365,10 @@ export function TaskList({
                 <Input
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      handleSearch();
-                    }
-                  }}
                   placeholder="Search tasks..."
                   className="pl-9"
                 />
               </div>
-
-              <Button type="button" variant="secondary" onClick={handleSearch}>
-                Search
-              </Button>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

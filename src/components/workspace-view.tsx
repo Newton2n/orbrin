@@ -14,7 +14,7 @@ import {
   Search,
   Users,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -171,7 +171,17 @@ function PageHeader({
 }
 
 function ProjectRows() {
+  const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setQuery(searchInput);
+    }, 550);
+
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
   const filtered = useMemo(
     () =>
       projects.filter((project) =>
@@ -188,8 +198,8 @@ function ProjectRows() {
           <Input
             className="pl-9"
             placeholder="Search projects"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
           />
         </div>
       </CardHeader>

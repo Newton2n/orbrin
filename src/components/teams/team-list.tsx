@@ -2,7 +2,7 @@
 
 import { Eye, Pencil, Plus, Trash2, Users } from "lucide-react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { toast } from "sonner";
 
@@ -72,6 +72,7 @@ export function TeamList({
   const [page, setPage] = useState(1);
 
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
 
   const [sortBy, setSortBy] = useState<TeamListParams["sortBy"]>("createdAt");
 
@@ -96,6 +97,15 @@ export function TeamList({
   const loading = query.isLoading;
   const error = query.error instanceof Error ? query.error.message : undefined;
   const loadTeams = () => void query.refetch();
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1);
+    }, 550);
+
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -130,10 +140,9 @@ export function TeamList({
           <Input
             className="md:max-w-sm"
             placeholder="Search teams"
-            value={search}
+            value={searchInput}
             onChange={(event) => {
-              setSearch(event.target.value);
-              setPage(1);
+              setSearchInput(event.target.value);
             }}
           />
 

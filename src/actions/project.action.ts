@@ -120,71 +120,7 @@ function revalidateProjectPaths(projectId?: string) {
   }
 }
 
-export async function getAllProjects(
-  params: ProjectListParams = {},
-): Promise<ProjectActionResult<ProjectListResponse>> {
-  const query = new URLSearchParams();
 
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== "") {
-      query.set(key, String(value));
-    }
-  }
-
-  const endpoint = `/projects${query.toString() ? `?${query}` : ""}`;
-
-  const result = await backendRequest<{
-    success: boolean;
-    message: string;
-    data: Project[];
-    pagination: ProjectPagination;
-  }>(endpoint);
-
-  if (!result.ok) {
-    return actionFailure(
-      backendMessage(result.payload, "Unable to fetch projects."),
-      {
-        projects: [],
-        pagination: {
-          page: params.page ?? 1,
-          limit: params.limit ?? 10,
-          total: 0,
-          totalPages: 0,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      },
-    );
-  }
-
-  const payload = result.payload;
-
-  if (!payload || typeof payload !== "object") {
-    return actionFailure("Invalid project response from server.", {
-      projects: [],
-      pagination: {
-        page: params.page ?? 1,
-        limit: params.limit ?? 10,
-        total: 0,
-        totalPages: 0,
-        hasNextPage: false,
-        hasPreviousPage: false,
-      },
-    });
-  }
-
-  return actionSuccess({
-    projects: Array.isArray(payload.data) ? payload.data : [],
-    pagination: payload.pagination ?? {
-      page: params.page ?? 1,
-      limit: params.limit ?? 10,
-      total: 0,
-      totalPages: 0,
-      hasNextPage: false,
-      hasPreviousPage: false,
-    },
-  });
-}
 
 
 

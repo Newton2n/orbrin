@@ -14,7 +14,6 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { InviteMembersDialog } from "@/components/dashboard/invite-members-dialog";
 import { ProjectTable } from "@/components/dashboard/project-table";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -336,7 +335,7 @@ export const dashboardNavigation = {
     { href: "/dashboard/manager/members", label: "Members", icon: Users },
     { href: "/dashboard/manager/tasks", label: "Tasks", icon: ListTodo },
     { href: "/dashboard/manager/sprints", label: "Sprints", icon: Target },
-    { href: "/dashboard/manager/activity", label: "Activity", icon: Clock3 },
+    
     {
       href: "/dashboard/profile",
       label: "User Profile",

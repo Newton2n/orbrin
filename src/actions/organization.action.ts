@@ -137,24 +137,24 @@ export async function getMyOrganization(): Promise<
 
 export const getOrganization = getMyOrganization;
 
-export async function getOrganizationMembers(
-  params: OrganizationMemberListParams = {},
-): Promise<ActionResult<PaginatedResponse<OrganizationMember>>> {
-  const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== "") query.set(key, String(value));
-  }
-  const endpoint = query.size
-    ? `/organizations/members?${query.toString()}`
-    : "/organizations/members";
-  const result = await backendRequest<unknown>(endpoint);
-  return result.ok
-    ? actionSuccess(normalizeMembers(result.payload))
-    : actionFailure(
-        backendMessage(result.payload, "Unable to fetch members."),
-        { items: [], total: 0, page: 1, limit: 10, totalPages: 0 },
-      );
-}
+// export async function getOrganizationMembers(
+//   params: OrganizationMemberListParams = {},
+// ): Promise<ActionResult<PaginatedResponse<OrganizationMember>>> {
+//   const query = new URLSearchParams();
+//   for (const [key, value] of Object.entries(params)) {
+//     if (value !== undefined && value !== "") query.set(key, String(value));
+//   }
+//   const endpoint = query.size
+//     ? `/organizations/members?${query.toString()}`
+//     : "/organizations/members";
+//   const result = await backendRequest<unknown>(endpoint);
+//   return result.ok
+//     ? actionSuccess(normalizeMembers(result.payload))
+//     : actionFailure(
+//         backendMessage(result.payload, "Unable to fetch members."),
+//         { items: [], total: 0, page: 1, limit: 10, totalPages: 0 },
+//       );
+// }
 
 export async function updateOrganization(input: {
   name?: string;
@@ -189,19 +189,19 @@ export async function deleteOrganization(): Promise<ActionResult<null>> {
   return actionSuccess(null, "Organization deleted.");
 }
 
-export async function getOrganizationMemberById(
-  memberId: string,
-): Promise<ActionResult<OrganizationMember | null>> {
-  const result = await backendRequest<unknown>(
-    `/organizations/members/${memberId}`,
-  );
-  return result.ok
-    ? actionSuccess(unwrapPayload<OrganizationMember | null>(result.payload))
-    : actionFailure(
-        backendMessage(result.payload, "Unable to fetch member."),
-        null,
-      );
-}
+// export async function getOrganizationMemberById(
+//   memberId: string,
+// ): Promise<ActionResult<OrganizationMember | null>> {
+//   const result = await backendRequest<unknown>(
+//     `/organizations/members/${memberId}`,
+//   );
+//   return result.ok
+//     ? actionSuccess(unwrapPayload<OrganizationMember | null>(result.payload))
+//     : actionFailure(
+//         backendMessage(result.payload, "Unable to fetch member."),
+//         null,
+//       );
+// }
 
 export async function updateOrganizationMemberRole(
   memberId: string,
