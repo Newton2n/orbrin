@@ -1,4 +1,5 @@
 import {
+  AlertCircle,
   ArrowUpRight,
   CalendarDays,
   CheckCircle2,
@@ -28,7 +29,12 @@ export default async function AdminSubscriptionPage({
 }) {
   const params = await searchParams;
 
-  const validStatuses = ["PENDING", "COMPLETED", "FAILED", "REFUNDED"] as const;
+  const validStatuses = [
+    "PENDING",
+    "COMPLETED",
+    "FAILED",
+    "REFUNDED",
+  ] as const;
 
   const status = validStatuses.includes(
     params.status as (typeof validStatuses)[number],
@@ -75,7 +81,6 @@ export default async function AdminSubscriptionPage({
         />
       )}
 
-   
       {subscription ? (
         <PaymentHistory payments={subscription.payments} />
       ) : null}
@@ -83,16 +88,25 @@ export default async function AdminSubscriptionPage({
   );
 }
 
-
 function ActiveSubscription({
   subscription,
 }: {
   subscription: SubscriptionHistory;
 }) {
-  const isActive = subscription.status === "ACTIVE";
+  const hasEnded =
+    subscription.currentPeriodEnd !== null &&
+    new Date(subscription.currentPeriodEnd) < new Date();
+
+  const isActive = subscription.status === "ACTIVE" && !hasEnded;
 
   return (
-    <Card className="border-border/70 shadow-none">
+    <Card
+      className={
+        hasEnded
+          ? "border-red-500/40 bg-red-50/30 shadow-none dark:border-red-500/30 dark:bg-red-950/10"
+          : "border-border/70 shadow-none"
+      }
+    >
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div>
           <CardTitle>Current subscription</CardTitle>
@@ -104,17 +118,36 @@ function ActiveSubscription({
 
         <Badge
           variant={isActive ? "default" : "secondary"}
-          className="shrink-0"
+          className={
+            hasEnded
+              ? "border-red-500/30 bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
+              : "shrink-0"
+          }
         >
-          {formatStatus(subscription.status)}
+          {hasEnded ? (
+            <>
+              <AlertCircle className="mr-1 size-3.5" />
+              Expired
+            </>
+          ) : (
+            formatStatus(subscription.status)
+          )}
         </Badge>
       </CardHeader>
 
       <CardContent className="space-y-5">
-        <div className="rounded-xl border bg-muted/20 p-5">
+        <div
+          className={
+            hasEnded
+              ? "rounded-xl border border-red-500/30 bg-red-100/40 p-5 dark:border-red-500/20 dark:bg-red-950/20"
+              : "rounded-xl border bg-muted/20 p-5"
+          }
+        >
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Plan</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Plan
+              </p>
 
               <h2 className="mt-1 text-xl font-semibold">
                 {formatPlanName(subscription.planName)}
@@ -127,8 +160,18 @@ function ActiveSubscription({
               </div>
             </div>
 
-            <div className="rounded-lg border bg-background p-3">
-              <Receipt className="size-5 text-muted-foreground" />
+            <div
+              className={
+                hasEnded
+                  ? "rounded-lg border border-red-500/30 bg-red-100 p-3 dark:border-red-500/20 dark:bg-red-950/30"
+                  : "rounded-lg border bg-background p-3"
+              }
+            >
+              {hasEnded ? (
+                <AlertCircle className="size-5 text-red-600 dark:text-red-400" />
+              ) : (
+                <Receipt className="size-5 text-muted-foreground" />
+              )}
             </div>
           </div>
         </div>
@@ -144,21 +187,38 @@ function ActiveSubscription({
             icon={CalendarDays}
             label={isActive ? "Renews" : "Ended"}
             value={formatDate(subscription.currentPeriodEnd)}
+            expired={hasEnded}
           />
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-5">
+        <div
+          className={
+            hasEnded
+              ? "flex flex-wrap items-center justify-between gap-3 border-t border-red-500/20 pt-5"
+              : "flex flex-wrap items-center justify-between gap-3 border-t pt-5"
+          }
+        >
           <div>
-            <p className="text-sm font-medium">
+            <p
+              className={
+                hasEnded
+                  ? "text-sm font-medium text-red-700 dark:text-red-400"
+                  : "text-sm font-medium"
+              }
+            >
               {isActive
                 ? "Your subscription is active."
-                : "Your subscription is not currently active."}
+                : hasEnded
+                  ? "Your subscription has expired."
+                  : "Your subscription is not currently active."}
             </p>
 
             <p className="mt-1 text-xs text-muted-foreground">
               {isActive
                 ? "Your organization can continue using the current subscription."
-                : "Start a new subscription to continue billing."}
+                : hasEnded
+                  ? "Renew your subscription to continue using subscription features."
+                  : "Start a new subscription to continue billing."}
             </p>
           </div>
 
@@ -168,7 +228,6 @@ function ActiveSubscription({
     </Card>
   );
 }
-
 
 function NoSubscription({ message }: { message: string }) {
   return (
@@ -190,7 +249,6 @@ function NoSubscription({ message }: { message: string }) {
   );
 }
 
-
 function PaymentHistory({
   payments,
 }: {
@@ -211,7 +269,6 @@ function PaymentHistory({
           <Receipt className="size-5 shrink-0 text-muted-foreground" />
         </div>
 
-        
         <SubscriptionFilters />
       </CardHeader>
 
@@ -226,7 +283,6 @@ function PaymentHistory({
   );
 }
 
-
 function EmptyPaymentResults() {
   return (
     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed px-6 py-12 text-center">
@@ -237,8 +293,8 @@ function EmptyPaymentResults() {
       <h3 className="mt-4 text-sm font-semibold">No payments found</h3>
 
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-        No payment matches your current search or status filter. Try a different
-        search.
+        No payment matches your current search or status filter. Try a
+        different search.
       </p>
     </div>
   );
@@ -261,7 +317,6 @@ function SearchIcon() {
   );
 }
 
-
 function PaymentTable({
   payments,
 }: {
@@ -273,13 +328,9 @@ function PaymentTable({
         <thead className="border-b text-left text-xs text-muted-foreground">
           <tr>
             <th className="pb-3 font-medium">Date</th>
-
             <th className="pb-3 font-medium">Amount</th>
-
             <th className="pb-3 font-medium">Status</th>
-
             <th className="pb-3 font-medium">Payment ID</th>
-
             <th className="pb-3 text-right font-medium">Invoice</th>
           </tr>
         </thead>
@@ -324,31 +375,57 @@ function PaymentTable({
   );
 }
 
-
 function InfoItem({
   icon: Icon,
   label,
   value,
+  expired = false,
 }: {
   icon: typeof CalendarDays;
   label: string;
   value: string;
+  expired?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-lg border p-4">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted">
-        <Icon className="size-4 text-muted-foreground" />
+    <div
+      className={
+        expired
+          ? "flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-50/40 p-4 dark:border-red-500/20 dark:bg-red-950/10"
+          : "flex items-center gap-3 rounded-lg border p-4"
+      }
+    >
+      <div
+        className={
+          expired
+            ? "flex size-9 shrink-0 items-center justify-center rounded-md bg-red-100 dark:bg-red-950/30"
+            : "flex size-9 shrink-0 items-center justify-center rounded-md bg-muted"
+        }
+      >
+        <Icon
+          className={
+            expired
+              ? "size-4 text-red-600 dark:text-red-400"
+              : "size-4 text-muted-foreground"
+          }
+        />
       </div>
 
       <div className="min-w-0">
         <p className="text-xs text-muted-foreground">{label}</p>
 
-        <p className="mt-1 truncate text-sm font-medium">{value}</p>
+        <p
+          className={
+            expired
+              ? "mt-1 truncate text-sm font-medium text-red-700 dark:text-red-400"
+              : "mt-1 truncate text-sm font-medium"
+          }
+        >
+          {value}
+        </p>
       </div>
     </div>
   );
 }
-
 
 function PaymentStatusBadge({ status }: { status: string }) {
   if (status === "COMPLETED") {
@@ -362,7 +439,6 @@ function PaymentStatusBadge({ status }: { status: string }) {
 
   return <Badge variant="outline">{formatStatus(status)}</Badge>;
 }
-
 
 function formatPlanName(value: string) {
   return value.replace("Orbrin Base One Month", "Orbrin Base");
