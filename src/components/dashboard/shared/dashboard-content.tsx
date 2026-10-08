@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
+import { InviteMembersDialog } from "@/components/dashboard/invite-members-dialog";
 import { ProjectTable } from "@/components/dashboard/project-table";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { TaskList } from "@/components/dashboard/task-list";
@@ -87,7 +88,9 @@ function PageIntro({
 }
 
 export function AdminDashboard({ user }: { user: AuthUser }) {
+  const organizationId = user.memberships[0]?.organizationId;
   const firstName = (user.fullName || "there").split(" ")[0];
+
   return (
     <div className="flex flex-col gap-7">
       <PageIntro
@@ -108,22 +111,28 @@ export function AdminDashboard({ user }: { user: AuthUser }) {
           <CardHeader>
             <SectionHeading title="Quick actions" />
           </CardHeader>
+
           <CardContent className="grid gap-3 sm:grid-cols-2">
+            <InviteMembersDialog organizationId={organizationId} />
+
             <Button variant="outline" className="justify-start" asChild>
               <Link href="/dashboard/admin/members">
-                <Users data-icon="inline-start" /> Invite members
+                <Users data-icon="inline-start" /> Manage members
               </Link>
             </Button>
+
             <Button variant="outline" className="justify-start" asChild>
               <Link href="/dashboard/admin/teams">
                 <Target data-icon="inline-start" /> Create a team
               </Link>
             </Button>
+
             <Button variant="outline" className="justify-start" asChild>
               <Link href="/dashboard/admin/projects">
                 <FolderKanban data-icon="inline-start" /> Start a project
               </Link>
             </Button>
+
             <Button variant="outline" className="justify-start" asChild>
               <Link href="/dashboard/admin/organization">
                 <Sparkles data-icon="inline-start" /> Organization settings

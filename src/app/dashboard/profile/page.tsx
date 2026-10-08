@@ -7,12 +7,13 @@ import { DeleteAccountDialog } from "@/components/profile/delete-account-dialog"
 import { ProfileForm } from "@/components/profile/profile-form";
 import { ProfileImageUploader } from "@/components/profile/profile-image-uploader";
 import { ErrorState } from "@/components/shared/error-state";
+import { ProfileSkeleton } from "@/components/shared/skeletons";
 
 export default function ProfilePage() {
   const { data: profile, isLoading, isError } = useUserProfile();
 
   if (isLoading) {
-    return <div>Loading profile...</div>;
+    return <ProfileSkeleton />;
   }
 
   if (isError || !profile) {
