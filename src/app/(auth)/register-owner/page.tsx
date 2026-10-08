@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import type { z } from "zod";
 
 import { registerOwner } from "../../../actions/auth.action";
+import Logo from "../../../components/shared/logo";
 import { Button } from "../../../components/ui/button";
 import {
   Card,
@@ -147,11 +148,10 @@ export default function RegisterOwnerPage() {
       <div className="mb-6 text-center">
         <Link
           href="/login"
+          aria-label="Sign in"
           className="mb-6 inline-flex items-center gap-2"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-900 text-sm font-semibold text-white dark:bg-white dark:text-zinc-900">
-            O
-          </span>
+          <Logo className="h-8 w-auto dark:invert" />
 
           <span className="text-lg font-semibold">
             Orbrin
@@ -365,4 +365,3 @@ export default function RegisterOwnerPage() {
     </div>
   );
 }
-

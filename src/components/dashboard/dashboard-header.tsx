@@ -26,6 +26,7 @@ import {
 
 import type { AuthUser, Role } from "@/features/auth/types/auth.types";
 import { NavLinks } from "./nav-links";
+import Logo from "../shared/logo";
 import { dashboardNavigation } from "./shared/dashboard-content";
 import { UserMenu } from "./user-menu";
 
@@ -82,8 +83,8 @@ export function DashboardHeader({
               <SheetTitle className="sr-only">Workspace navigation</SheetTitle>
 
               <div className="flex h-16 shrink-0 items-center gap-3 border-b border-border px-5">
-                <div className="grid size-8 shrink-0 place-items-center rounded-md bg-sidebar-primary font-bold text-sidebar-primary-foreground">
-                  O
+                <div className="flex size-8 shrink-0 items-center justify-center">
+                  <Logo className="h-7 w-auto dark:invert" />
                 </div>
 
                 <span className="font-heading text-lg font-semibold">

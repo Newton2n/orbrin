@@ -1,4 +1,6 @@
 "use client";
+import Logo from "../components/shared/logo";
+
 export default function GlobalError({
   reset,
 }: {
@@ -25,7 +27,9 @@ export default function GlobalError({
           }}
         >
           <div>
-            <p style={{ opacity: 0.7 }}>Orbrin</p>
+            <Logo
+              style={{ width: "57px", height: "40px", filter: "invert(1)" }}
+            />
             <h1>Something went wrong</h1>
             <p style={{ opacity: 0.7 }}>
               Please try again or return to a safe page.

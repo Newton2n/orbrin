@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import type { Role } from "@/features/auth/types/auth.types";
 import { cn } from "@/utils/utils";
 import { NavLinks } from "./nav-links";
+import Logo from "../shared/logo";
 
 export function DashboardSidebar({
   role,
@@ -26,8 +27,8 @@ export function DashboardSidebar({
       aria-label="Workspace navigation"
     >
       <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-5">
-        <div className="grid size-8 shrink-0 place-items-center rounded-md bg-sidebar-primary font-heading font-bold text-sidebar-primary-foreground">
-          O
+        <div className="flex size-8 shrink-0 items-center justify-center">
+          <Logo className="h-7 w-auto dark:invert" />
         </div>
         {!collapsed && (
           <span className="font-heading text-lg font-semibold tracking-tight">

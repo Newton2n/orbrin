@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "../../components/theme-toggle";
+import Logo from "../../components/shared/logo";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -14,10 +15,8 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-6 sm:px-6 lg:px-8">
         {/* Top bar */}
         <div className="flex items-center justify-between py-2">
-          <Link href="/" className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
-              O
-            </span>
+          <Link href="/" aria-label="Home" className="flex items-center gap-2.5">
+            <Logo className="h-8 w-auto dark:invert" />
             <span className="text-sm font-medium text-foreground">Orbrin</span>
           </Link>
           <ThemeToggle />

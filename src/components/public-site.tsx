@@ -20,6 +20,7 @@ import { Card, CardContent } from "./ui/card";
 import { Separator } from "./ui/separator";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "./ui/sheet";
 import { LogoutButton } from "./logout-button";
+import Logo from "./shared/logo";
 
 const links = [
   { href: "/", label: "Home" },
@@ -93,12 +94,11 @@ export function PublicHeader({ isAuthenticated = false }: PublicHeaderProps) {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
         <Link
           href="/"
-          className="flex items-center gap-2 text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
+          aria-label="Home"
+          className="flex min-w-0 items-center gap-2 text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
         >
-          <span className="grid size-8 place-items-center rounded-lg bg-zinc-900 text-sm font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
-            O
-          </span>{" "}
-          ORBRIN
+          <Logo className="h-7 w-auto shrink-0 dark:invert" />
+          <span className="truncate">ORBRIN</span>
         </Link>
 
         {/* Desktop Navigation Links */}
@@ -204,8 +204,10 @@ export function PublicFooter() {
         <div className="lg:col-span-2">
           <Link
             href="/"
-            className="font-heading text-lg font-semibold text-zinc-900 dark:text-zinc-50"
+            aria-label="Home"
+            className="flex items-center gap-2 font-heading text-lg font-semibold text-zinc-900 dark:text-zinc-50"
           >
+            <Logo className="h-7 w-auto dark:invert" />
             ORBRIN
           </Link>
           <p className="mt-3 max-w-xs text-sm leading-6 text-zinc-500 dark:text-zinc-400">
@@ -273,9 +275,7 @@ export function ProductPreview() {
       <div className="grid min-h-72 sm:grid-cols-[150px_1fr]">
         <div className="hidden border-r border-zinc-200 bg-zinc-50/50 p-4 text-zinc-600 sm:block dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-400">
           <div className="mb-8 flex items-center gap-2 text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-            <span className="grid size-5 place-items-center rounded bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
-              O
-            </span>{" "}
+            <Logo className="h-5 w-auto shrink-0 dark:invert" />
             ORBRIN
           </div>
           <div className="flex flex-col gap-3 text-xs text-zinc-500">
