@@ -213,8 +213,6 @@ export async function getSprintsByProject(
     pagination: SprintPagination;
   }>(endpoint);
 
-  console.log("getSprintsByProject result:", result);
-
   if (!result.ok) {
     return actionFailure(
       backendMessage(result.payload, "Unable to fetch sprints."),

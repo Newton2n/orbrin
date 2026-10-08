@@ -88,9 +88,10 @@ function unwrap<T>(payload: unknown): T {
   return payload as T;
 }
 
-export function useTeams(params: TeamListParams = {}) {
+export function useTeams(params: TeamListParams = {}, enabled = true) {
   return useQuery({
     queryKey: queryKeys.teams(params),
+    enabled,
     queryFn: async () => {
       const payload = await bffGet<unknown>(`/teams${queryString(params)}`);
 
@@ -150,9 +151,13 @@ export function useProject(projectId: string) {
   });
 }
 
-export function useOrganizationMembers(params: OrganizationMemberListParams) {
+export function useOrganizationMembers(
+  params: OrganizationMemberListParams,
+  enabled = true,
+) {
   return useQuery({
     queryKey: queryKeys.organizationMembers(params),
+    enabled,
 
     queryFn: async () => {
       const payload = await bffGet<{
@@ -171,10 +176,6 @@ export function useOrganizationMembers(params: OrganizationMemberListParams) {
         totalPages: pagination?.totalPages ?? 1,
       } satisfies OrganizationPagination<OrganizationMember>;
     },
-
-    staleTime: 5 * 60 * 1000,
-
-    refetchOnMount: false,
 
     refetchOnWindowFocus: false,
 

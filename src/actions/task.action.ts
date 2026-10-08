@@ -157,6 +157,17 @@ export const getTasksByProject = async (
   if (!result.ok) {
     return actionFailure(
       backendMessage(result.payload, "Unable to load project tasks."),
+      {
+        tasks: [],
+        pagination: {
+          page: params?.page ?? 1,
+          limit: params?.limit ?? 10,
+          total: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      },
     );
   }
 
@@ -195,6 +206,17 @@ export const getMyTasks = async (
   if (!result.ok) {
     return actionFailure(
       backendMessage(result.payload, "Unable to load your assigned tasks."),
+      {
+        tasks: [],
+        pagination: {
+          page: params?.page ?? 1,
+          limit: params?.limit ?? 10,
+          total: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      },
     );
   }
 
@@ -237,6 +259,17 @@ export const getMyCreatedTasks = async (
   if (!result.ok) {
     return actionFailure(
       backendMessage(result.payload, "Unable to load your created tasks."),
+      {
+        tasks: [],
+        pagination: {
+          page: params?.page ?? 1,
+          limit: params?.limit ?? 10,
+          total: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      },
     );
   }
 
@@ -275,13 +308,16 @@ export const getTaskById = async (
   const result = await backendRequest<unknown>(`/tasks/${taskId}`);
 
   if (!result.ok) {
-    return actionFailure(backendMessage(result.payload, "Unable to load task."));
+    return actionFailure<Task>(
+      backendMessage(result.payload, "Unable to load task."),
+      null,
+    );
   }
 
   const task = unwrapPayload<Task>(result.payload);
 
   if (!task) {
-    return actionFailure("Task was not found.");
+    return actionFailure<Task>("Task was not found.", null);
   }
 
   return actionSuccess(task);

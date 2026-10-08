@@ -50,7 +50,7 @@ export function ProjectTeamsDialog({
 
   const [saving, setSaving] = useState(false);
   const projectQuery = useProject(open ? project.id : "");
-  const teamsQuery = useTeams();
+  const teamsQuery = useTeams({ limit: 100 }, open);
   const currentProject = projectQuery.data ?? project;
   const allTeams = (teamsQuery.data?.items ?? []) as Team[];
   const loading = projectQuery.isLoading || teamsQuery.isLoading;

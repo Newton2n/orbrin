@@ -100,7 +100,7 @@ export function SprintList({
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedSprint, setSelectedSprint] = useState<Sprint | null>(null);
-  const sprintQuery = useSprint(selectedSprint?.id ?? "");
+  const sprintQuery = useSprint(detailsOpen ? (selectedSprint?.id ?? "") : "");
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingSprint, setDeletingSprint] = useState<Sprint | null>(null);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import {
   AlertCircle,
@@ -54,11 +55,6 @@ export function TaskPage({
   canUpdate = true,
   canDelete = false,
 }: TaskPageProps) {
-  const [tasks, setTasks] = useState<Task[]>([]);
-
-  const [pagination, setPagination] =
-    useState<TaskPagination>(initialPagination);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -78,38 +74,35 @@ export function TaskPage({
   const createdQuery = useMyCreatedTasks(queryParams, mode === "created");
   const assignedQuery = useMyTasks(queryParams, mode === "assigned");
   const taskQuery = mode === "created" ? createdQuery : assignedQuery;
+  const queryClient = useQueryClient();
+  const tasks = taskQuery.data?.tasks ?? [];
+  const pagination = taskQuery.data?.pagination ?? initialPagination;
   const loadTasks = () => taskQuery.refetch();
 
   useEffect(() => {
     setLoading(taskQuery.isLoading);
-    setTasks(taskQuery.data?.tasks ?? []);
-    setPagination(taskQuery.data?.pagination ?? initialPagination);
-    setError(taskQuery.error?.message ?? "");
+    if (taskQuery.error) {
+      setError(taskQuery.error.message);
+    }
   }, [taskQuery.data, taskQuery.error, taskQuery.isLoading]);
 
   // Task updated
 
-  const handleTaskUpdated = useCallback((updatedTask: Task) => {
-    setTasks((current) =>
-      current.map((task) =>
-        task.id === updatedTask.id
+  const handleTaskUpdated = useCallback(
+    (updatedTask: Task) => {
+      void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+
+      setSelectedTask((current) =>
+        current?.id === updatedTask.id
           ? {
-              ...task,
+              ...current,
               ...updatedTask,
             }
-          : task,
-      ),
-    );
-
-    setSelectedTask((current) =>
-      current?.id === updatedTask.id
-        ? {
-            ...current,
-            ...updatedTask,
-          }
-        : current,
-    );
-  }, []);
+          : current,
+      );
+    },
+    [queryClient],
+  );
 
   // Open delete confirmation
 
@@ -145,15 +138,7 @@ export function TaskPage({
       }
 
       // Remove task from current list
-      setTasks((current) =>
-        current.filter((task) => task.id !== deleteTaskItem.id),
-      );
-
-      // Update total
-      setPagination((current) => ({
-        ...current,
-        total: Math.max(0, current.total - 1),
-      }));
+      await queryClient.invalidateQueries({ queryKey: ["tasks"] });
 
       // Close task detail
       setSelectedTask(null);

@@ -168,7 +168,7 @@ export function DashboardHeader({
             <Link
               href={
                 role === "MEMBER"
-                  ? "/dashboard/member/notifications"
+                  ? "/dashboard/member/tasks"
                   : `/dashboard/${role.toLowerCase()}/activity`
               }
             >

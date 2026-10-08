@@ -225,11 +225,6 @@ export function MemberDashboard({ user }: { user: AuthUser }) {
                 <Target data-icon="inline-start" /> Current sprint
               </Link>
             </Button>
-            <Button variant="outline" className="justify-start" asChild>
-              <Link href="/dashboard/member/notifications">
-                <Clock3 data-icon="inline-start" /> Check notifications
-              </Link>
-            </Button>
           </CardContent>
         </Card>
       </div>
@@ -350,7 +345,7 @@ export const dashboardNavigation = {
     },
     { href: "/dashboard/member/teams", label: "Teams", icon: Users },
     { href: "/dashboard/member/sprints", label: "Sprints", icon: Target },
-    
+
     {
       href: "/dashboard/profile",
       label: "User Profile",

@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -12,9 +13,9 @@ import {
   type TaskStatus,
 } from "@/actions/task.action";
 
-import { type OrganizationMember } from "@/actions/organization.action";
+import type { OrganizationMember } from "@/actions/organization.action";
 
-import { type Sprint } from "@/actions/sprint.action";
+import type { Sprint } from "@/actions/sprint.action";
 
 import { TaskDetailSheet } from "@/components/tasks/task-detail-sheet";
 import { TaskCard } from "@/components/tasks/task-card";
@@ -151,17 +152,6 @@ export function TaskList({
 
   const [assigneeFilter, setAssigneeFilter] = useState("ALL");
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-
-  const [pagination, setPagination] = useState<{
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
-  } | null>(null);
-
   const [assignees, setAssignees] = useState<AssigneeOption[]>([]);
 
   const [loading, setLoading] = useState(true);
@@ -207,6 +197,9 @@ export function TaskList({
     sortBy: "createdAt",
     sortOrder: "desc",
   });
+  const queryClient = useQueryClient();
+  const tasks = taskQuery.data?.tasks ?? [];
+  const pagination = taskQuery.data?.pagination ?? null;
   const membersQuery = useOrganizationMembers({
     page: 1,
     limit: 100,
@@ -215,8 +208,6 @@ export function TaskList({
   const loadTasks = () => taskQuery.refetch();
 
   useEffect(() => {
-    setTasks(taskQuery.data?.tasks ?? []);
-    setPagination(taskQuery.data?.pagination ?? null);
     setError(taskQuery.error?.message ?? null);
   }, [taskQuery.data, taskQuery.error]);
 
@@ -306,28 +297,21 @@ export function TaskList({
     }
   }
 
-  const handleUpdated = useCallback((updatedTask: Task) => {
-    setTasks((current) =>
-      current.map((task) => (task.id === updatedTask.id ? updatedTask : task)),
-    );
+  const handleUpdated = useCallback(
+    (updatedTask: Task) => {
+      void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      setSelectedTask(updatedTask);
+    },
+    [queryClient],
+  );
 
-    setSelectedTask(updatedTask);
-  }, []);
-
-  const handleDeleted = useCallback((taskId: string) => {
-    setTasks((current) => current.filter((task) => task.id !== taskId));
-
-    setPagination((current) =>
-      current
-        ? {
-            ...current,
-            total: Math.max(0, current.total - 1),
-          }
-        : current,
-    );
-
-    setSelectedTask((current) => (current?.id === taskId ? null : current));
-  }, []);
+  const handleDeleted = useCallback(
+    (taskId: string) => {
+      void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      setSelectedTask((current) => (current?.id === taskId ? null : current));
+    },
+    [queryClient],
+  );
 
   const groupedTasks = useMemo(() => {
     return createStatuses.map((taskStatus) => ({

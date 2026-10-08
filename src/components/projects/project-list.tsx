@@ -9,6 +9,7 @@ import {
   type Project,
 } from "@/actions/project.action";
 import { useProjects, useTeams } from "@/hooks/use-bff-queries";
+import { ErrorState } from "@/components/shared/error-state";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -628,6 +629,12 @@ export function ProjectList({
         <div className="rounded-lg border p-10 text-center">
           <p className="text-sm text-muted-foreground">Loading projects...</p>
         </div>
+      ) : projectsQuery.isError ? (
+        <ErrorState
+          title="Projects unavailable"
+          error={projectsQuery.error}
+          onRetry={() => void projectsQuery.refetch()}
+        />
       ) : projects.length === 0 ? (
         <div className="rounded-lg border border-dashed p-6 text-center sm:p-10">
           <p className="font-medium">No projects found</p>
