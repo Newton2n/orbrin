@@ -4,12 +4,15 @@
 import { Eye, MoreHorizontal, Pencil, Search, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+//type imports
 import type {
   OrganizationMember,
   OrganizationMemberListParams,
   OrganizationMembershipStatus,
   OrganizationRole,
 } from "@/actions/organization.action";
+
+//hook imports
 import { useOrganizationMembers } from "@/hooks/use-bff-queries";
 
 import { AvatarWithFallback } from "@/components/avatar-with-fallback";
