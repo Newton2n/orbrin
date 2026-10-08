@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { ImageIcon, Loader2, Trash2, Upload } from "lucide-react";
@@ -40,6 +41,7 @@ const profileImageSchema = z.object({
 
 export function ProfileImageUploader({ profile }: { profile: UserProfile }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [saving, setSaving] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -121,6 +123,7 @@ export function ProfileImageUploader({ profile }: { profile: UserProfile }) {
       }
 
       toast.success(result.message ?? "Profile picture updated.");
+      await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
 
       /*
        * Refresh the server component so profile.profileImageUrl
@@ -176,6 +179,7 @@ export function ProfileImageUploader({ profile }: { profile: UserProfile }) {
       });
 
       toast.success(result.message ?? "Profile picture deleted.");
+      await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
 
       router.refresh();
     } catch (error) {

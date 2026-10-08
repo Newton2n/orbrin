@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-
-import { getOrganizationMembers } from "@/actions/organization.action";
 
 import {
   addTeamMember,
-  getTeamMembers,
   removeTeamMember,
   type TeamMember,
 } from "@/actions/team.action";
+import type { OrganizationMember } from "@/actions/organization.action";
+import {
+  useOrganizationMembers,
+  useTeamMembers,
+} from "@/hooks/use-bff-queries";
 
 import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
@@ -41,21 +43,11 @@ type TeamMembersDialogProps = {
   canManageMembers: boolean;
 };
 
-type AvailableMember = TeamMember;
-
-function memberList(value: unknown): AvailableMember[] {
-  if (Array.isArray(value)) {
-    return value as AvailableMember[];
-  }
-
-  if (value && typeof value === "object") {
-    const source = value as Record<string, unknown>;
-
-    return memberList(source.members ?? source.items ?? source.data);
-  }
-
-  return [];
-}
+type AvailableMember = {
+  id: string;
+  fullName: string;
+  email: string;
+};
 
 function getInitials(member: TeamMember) {
   return (
@@ -95,61 +87,35 @@ export function TeamMembersDialog({
   teamId,
   canManageMembers,
 }: TeamMembersDialogProps) {
-  const [members, setMembers] = useState<TeamMember[]>([]);
-  const [available, setAvailable] = useState<AvailableMember[]>([]);
   const [selectedUser, setSelectedUser] = useState("");
   const [removeUser, setRemoveUser] = useState<TeamMember | null>(null);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  async function loadMembers() {
-    setLoading(true);
-    setLoadError(null);
-
-    try {
-      const [membersResult, usersResult] = await Promise.all([
-        getTeamMembers(teamId),
-        getOrganizationMembers(),
-      ]);
-
-      if (membersResult.ok) {
-        setMembers(membersResult.data);
-      } else {
-        setLoadError(membersResult.message ?? "Unable to load team members.");
-      }
-
-      if (usersResult.success) {
-        setAvailable(memberList(usersResult.data));
-      } else {
-        setLoadError(
-          usersResult.message ?? "Unable to load organization members.",
-        );
-      }
-
-      if (membersResult.ok && usersResult.success) {
-        setLoadError(null);
-      }
-    } catch (error) {
-      console.error(error);
-
-      setLoadError(
-        error instanceof Error ? error.message : "Unable to load team members.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (open) {
-      void loadMembers();
-    }
-  }, [open, teamId]);
+  const membersQuery = useTeamMembers(open ? teamId : "");
+  const usersQuery = useOrganizationMembers(
+    { page: 1, limit: 100, status: "ACTIVE" },
+    open,
+  );
+  const members = membersQuery.data ?? [];
+  const available: AvailableMember[] = (usersQuery.data?.items ?? [])
+    .filter((member) => member.user?.status === "ACTIVE")
+    .map((member) => ({
+      id: member.user?.id ?? "",
+      fullName: member.user?.fullName ?? "",
+      email: member.user?.email ?? "",
+    }));
+  const loading = membersQuery.isLoading || usersQuery.isLoading;
+  const loadError =
+    membersQuery.error instanceof Error
+      ? membersQuery.error.message
+      : usersQuery.error instanceof Error
+        ? usersQuery.error.message
+        : null;
+  const loadMembers = async () => {
+    await Promise.all([membersQuery.refetch(), usersQuery.refetch()]);
+  };
 
   const unassigned = available.filter(
-    (member) =>
-      !members.some((teamMember) => teamMember.user.id === member.user.id),
+    (member) => !members.some((teamMember) => teamMember.user.id === member.id),
   );
 
   async function handleAdd() {
@@ -340,27 +306,29 @@ export function TeamMembersDialog({
                             <SelectContent className="max-h-80">
                               {unassigned.map((member) => (
                                 <SelectItem
-                                  key={member.user.id}
-                                  value={member.user.id}
+                                  key={member.id}
+                                  value={member.id}
                                   className="py-3"
                                 >
                                   <div className="flex min-w-0 cursor-pointer items-start gap-3">
-                                    <MemberAvatar member={member} small />
+                                    <div className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-[10px] font-medium text-primary">
+                                      {member.fullName
+                                        .trim()
+                                        .split(/\s+/)
+                                        .map((part) => part[0])
+                                        .join("")
+                                        .slice(0, 2)
+                                        .toUpperCase() || "U"}
+                                    </div>
 
                                     <div className="min-w-0 flex-1">
                                       <p className="truncate text-sm font-medium">
-                                        {member.user.fullName}
+                                        {member.fullName}
                                       </p>
 
                                       <p className="truncate text-xs text-muted-foreground">
-                                        {member.user.email}
+                                        {member.email}
                                       </p>
-
-                                      {member.role && (
-                                        <span className="mt-1 inline-flex rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
-                                          {member.role}
-                                        </span>
-                                      )}
                                     </div>
                                   </div>
                                 </SelectItem>

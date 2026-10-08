@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import {
   actionFailure,
   actionSuccess,
+  type ActionResult,
   backendMessage,
   backendRequest,
   unwrapPayload,
@@ -40,12 +41,7 @@ export type CommentListResponse = {
   pagination: CommentPagination;
 };
 
-export type CommentActionResult<T> = {
-  ok: boolean;
-  success: boolean;
-  data: T;
-  message?: string;
-};
+export type CommentActionResult<T> = ActionResult<T>;
 
 export type CreateCommentInput = {
   content: string;
@@ -69,24 +65,6 @@ const commentPaths = [
   "/dashboard/manager/tasks",
   "/dashboard/member/tasks",
 ];
-
-function commentFailure<T>(message: string, data: T): CommentActionResult<T> {
-  return {
-    ok: false,
-    success: false,
-    message,
-    data,
-  };
-}
-
-function commentSuccess<T>(data: T, message?: string): CommentActionResult<T> {
-  return {
-    ok: true,
-    success: true,
-    message,
-    data,
-  };
-}
 
 function revalidateCommentPaths() {
   for (const path of commentPaths) {
@@ -129,7 +107,7 @@ export async function getCommentsByTask(
   params: CommentQueryParams = {},
 ): Promise<CommentActionResult<CommentListResponse>> {
   if (!taskId) {
-    return commentFailure("Task ID is required.", {
+    return actionFailure("Task ID is required.", {
       comments: [],
       pagination: getDefaultPagination(params),
     });
@@ -142,7 +120,7 @@ export async function getCommentsByTask(
   );
 
   if (!result.ok) {
-    return commentFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to fetch comments."),
       {
         comments: [],
@@ -154,7 +132,7 @@ export async function getCommentsByTask(
   const payload = result.payload;
 
   if (!payload || typeof payload !== "object") {
-    return commentFailure("Invalid comment response from server.", {
+    return actionFailure("Invalid comment response from server.", {
       comments: [],
       pagination: getDefaultPagination(params),
     });
@@ -165,7 +143,7 @@ export async function getCommentsByTask(
     pagination?: CommentPagination;
   };
 
-  return commentSuccess({
+  return actionSuccess({
     comments: Array.isArray(response.data) ? (response.data as Comment[]) : [],
     pagination: response.pagination ?? getDefaultPagination(params),
   });
@@ -178,11 +156,11 @@ export async function createComment(
   input: CreateCommentInput,
 ): Promise<CommentActionResult<Comment | null>> {
   if (!taskId) {
-    return commentFailure("Task ID is required.", null);
+    return actionFailure("Task ID is required.", null);
   }
 
   if (!input.content?.trim()) {
-    return commentFailure("Comment content is required.", null);
+    return actionFailure("Comment content is required.", null);
   }
 
   const result = await backendRequest<unknown>(`/comments/tasks/${taskId}`, {
@@ -193,7 +171,7 @@ export async function createComment(
   });
 
   if (!result.ok) {
-    return commentFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to create comment."),
       null,
     );
@@ -201,7 +179,7 @@ export async function createComment(
 
   revalidateCommentPaths();
 
-  return commentSuccess(
+  return actionSuccess(
     unwrapPayload<Comment>(result.payload),
     "Comment added successfully.",
   );
@@ -212,11 +190,11 @@ export async function updateComment(
   input: UpdateCommentInput,
 ): Promise<CommentActionResult<Comment | null>> {
   if (!input.commentId) {
-    return commentFailure("Comment ID is required.", null);
+    return actionFailure("Comment ID is required.", null);
   }
 
   if (!input.content?.trim()) {
-    return commentFailure("Comment content is required.", null);
+    return actionFailure("Comment content is required.", null);
   }
 
   const result = await backendRequest<unknown>(`/comments/${input.commentId}`, {
@@ -227,7 +205,7 @@ export async function updateComment(
   });
 
   if (!result.ok) {
-    return commentFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to update comment."),
       null,
     );
@@ -235,7 +213,7 @@ export async function updateComment(
 
   revalidateCommentPaths();
 
-  return commentSuccess(
+  return actionSuccess(
     unwrapPayload<Comment>(result.payload),
     "Comment updated successfully.",
   );
@@ -246,7 +224,7 @@ export async function deleteComment(
   commentId: string,
 ): Promise<CommentActionResult<Comment | null>> {
   if (!commentId) {
-    return commentFailure("Comment ID is required.", null);
+    return actionFailure("Comment ID is required.", null);
   }
 
   const result = await backendRequest<unknown>(`/comments/${commentId}`, {
@@ -254,7 +232,7 @@ export async function deleteComment(
   });
 
   if (!result.ok) {
-    return commentFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to delete comment."),
       null,
     );
@@ -262,7 +240,7 @@ export async function deleteComment(
 
   revalidateCommentPaths();
 
-  return commentSuccess(
+  return actionSuccess(
     unwrapPayload<Comment>(result.payload),
     "Comment deleted successfully.",
   );

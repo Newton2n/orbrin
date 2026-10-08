@@ -1,9 +1,7 @@
 "use client";
 
 import { CalendarDays, Flag } from "lucide-react";
-import { useEffect, useState } from "react";
-
-import { getSprints, type Sprint } from "@/actions/sprint.action";
+import { useProjectSprints } from "@/hooks/use-bff-queries";
 
 import { StatusBadge } from "@/components/badge-status";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,42 +16,14 @@ function formatDate(value?: string | null) {
 }
 
 export function SprintOverview({ projectId }: { projectId: string }) {
-  const [items, setItems] = useState<Sprint[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!projectId) return;
-
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-
-      const result = await getSprints(projectId, {
-        page: 1,
-        limit: 5,
-        sortBy: "createdAt",
-        sortOrder: "desc",
-      });
-
-      if (!cancelled) {
-        if (result.success) {
-          // SprintListResponse contains `sprints`, not `items`
-          setItems(result.data.sprints);
-        } else {
-          setItems([]);
-        }
-
-        setLoading(false);
-      }
-    }
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId]);
+  const query = useProjectSprints(projectId, {
+    page: 1,
+    limit: 5,
+    sortBy: "createdAt",
+    sortOrder: "desc",
+  });
+  const items = query.data?.sprints ?? [];
+  const loading = query.isLoading;
 
   return (
     <section aria-labelledby="sprints-heading" className="space-y-3">

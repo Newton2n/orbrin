@@ -1,16 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   assignTeamToProject,
-  getProjectById,
   removeTeamFromProject,
   type Project,
   type Team,
 } from "@/actions/project.action";
-
-import { getTeams } from "@/actions/team.action";
 
 import { Button } from "@/components/ui/button";
 
@@ -32,6 +29,7 @@ import {
 } from "@/components/ui/select";
 
 import { toast } from "sonner";
+import { useProject, useTeams } from "@/hooks/use-bff-queries";
 
 type ProjectTeamsDialogProps = {
   open: boolean;
@@ -41,30 +39,6 @@ type ProjectTeamsDialogProps = {
   canManageTeams: boolean;
 };
 
-function normalizeTeams(value: unknown): Team[] {
-  if (Array.isArray(value)) {
-    return value as Team[];
-  }
-
-  if (value && typeof value === "object") {
-    const source = value as Record<string, unknown>;
-
-    if (Array.isArray(source.data)) {
-      return source.data as Team[];
-    }
-
-    if (Array.isArray(source.teams)) {
-      return source.teams as Team[];
-    }
-
-    if (Array.isArray(source.items)) {
-      return source.items as Team[];
-    }
-  }
-
-  return [];
-}
-
 export function ProjectTeamsDialog({
   open,
   onOpenChange,
@@ -72,55 +46,22 @@ export function ProjectTeamsDialog({
   role,
   canManageTeams,
 }: ProjectTeamsDialogProps) {
-  const [currentProject, setCurrentProject] = useState<Project>(project);
-
-  const [allTeams, setAllTeams] = useState<Team[]>([]);
-
   const [selectedTeam, setSelectedTeam] = useState("");
 
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const projectQuery = useProject(open ? project.id : "");
+  const teamsQuery = useTeams({ limit: 100 }, open);
+  const currentProject = projectQuery.data ?? project;
+  const allTeams = (teamsQuery.data?.items ?? []) as Team[];
+  const loading = projectQuery.isLoading || teamsQuery.isLoading;
 
   useEffect(() => {
-    setCurrentProject(project);
+    setSelectedTeam("");
   }, [project]);
 
-  const loadTeams = useCallback(async () => {
-    setLoading(true);
-
-    try {
-      const [projectResult, teamsResult] = await Promise.all([
-        getProjectById(project.id),
-        getTeams(),
-      ]);
-
-      if (!projectResult.ok) {
-        toast.error(projectResult.message ?? "Unable to load project teams.");
-        return;
-      }
-
-      if (projectResult.data) {
-        setCurrentProject(projectResult.data);
-      }
-
-      if (!teamsResult.success) {
-        toast.error(teamsResult.message ?? "Unable to load teams.");
-        return;
-      }
-
-      setAllTeams(normalizeTeams(teamsResult.data));
-    } catch {
-      toast.error("Unable to load teams.");
-    } finally {
-      setLoading(false);
-    }
-  }, [project.id]);
-
-  useEffect(() => {
-    if (open) {
-      void loadTeams();
-    }
-  }, [open, loadTeams]);
+  async function loadTeams() {
+    await Promise.all([projectQuery.refetch(), teamsQuery.refetch()]);
+  }
 
   const assignedTeamIds = useMemo(
     () => new Set((currentProject.teams ?? []).map((team) => team.teamId)),

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import {
   actionFailure,
   actionSuccess,
+  type ActionResult,
   backendMessage,
   backendRequest,
   unwrapPayload,
@@ -59,12 +60,7 @@ export type TaskListResponse = {
   pagination: TaskPagination;
 };
 
-export type TaskActionResult<T> = {
-  ok: boolean;
-  success: boolean;
-  data: T;
-  message?: string;
-};
+export type TaskActionResult<T> = ActionResult<T>;
 
 export type CreateTaskInput = {
   title: string;
@@ -99,14 +95,6 @@ export type TaskQueryParams = {
   sprintId?: string;
   sortBy?: "title" | "createdAt" | "updatedAt";
   sortOrder?: "asc" | "desc";
-};
-
-const taskFailure = <T = never>(message: string): TaskActionResult<T> => {
-  return actionFailure(message, undefined) as TaskActionResult<T>;
-};
-
-const taskSuccess = <T>(data: T, message?: string): TaskActionResult<T> => {
-  return actionSuccess(data, message) as TaskActionResult<T>;
 };
 
 const buildQueryString = (params?: TaskQueryParams) => {
@@ -167,8 +155,19 @@ export const getTasksByProject = async (
   const result = await backendRequest<unknown>(endpoint);
 
   if (!result.ok) {
-    return taskFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to load project tasks."),
+      {
+        tasks: [],
+        pagination: {
+          page: params?.page ?? 1,
+          limit: params?.limit ?? 10,
+          total: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      },
     );
   }
 
@@ -180,7 +179,7 @@ export const getTasksByProject = async (
 
   const tasks = Array.isArray(payload.data) ? (payload.data as Task[]) : [];
 
-  return taskSuccess(
+  return actionSuccess(
     {
       tasks,
       pagination: payload.pagination ?? {
@@ -205,8 +204,19 @@ export const getMyTasks = async (
   const result = await backendRequest<unknown>(endpoint);
 
   if (!result.ok) {
-    return taskFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to load your assigned tasks."),
+      {
+        tasks: [],
+        pagination: {
+          page: params?.page ?? 1,
+          limit: params?.limit ?? 10,
+          total: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      },
     );
   }
 
@@ -229,7 +239,7 @@ export const getMyTasks = async (
     hasPreviousPage: false,
   };
 
-  return taskSuccess(
+  return actionSuccess(
     {
       tasks,
       pagination,
@@ -247,8 +257,19 @@ export const getMyCreatedTasks = async (
   const result = await backendRequest<unknown>(endpoint);
 
   if (!result.ok) {
-    return taskFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to load your created tasks."),
+      {
+        tasks: [],
+        pagination: {
+          page: params?.page ?? 1,
+          limit: params?.limit ?? 10,
+          total: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      },
     );
   }
 
@@ -271,7 +292,7 @@ export const getMyCreatedTasks = async (
     hasPreviousPage: false,
   };
 
-  return taskSuccess(
+  return actionSuccess(
     {
       tasks,
       pagination,
@@ -287,16 +308,19 @@ export const getTaskById = async (
   const result = await backendRequest<unknown>(`/tasks/${taskId}`);
 
   if (!result.ok) {
-    return taskFailure(backendMessage(result.payload, "Unable to load task."));
+    return actionFailure<Task>(
+      backendMessage(result.payload, "Unable to load task."),
+      null,
+    );
   }
 
   const task = unwrapPayload<Task>(result.payload);
 
   if (!task) {
-    return taskFailure("Task was not found.");
+    return actionFailure<Task>("Task was not found.", null);
   }
 
-  return taskSuccess(task);
+  return actionSuccess(task);
 };
 
 // Create task
@@ -310,7 +334,7 @@ export const createTask = async (
   });
 
   if (!result.ok) {
-    return taskFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to create task."),
     );
   }
@@ -318,14 +342,14 @@ export const createTask = async (
   const task = unwrapPayload<Task>(result.payload);
 
   if (!task) {
-    return taskFailure("Task could not be created.");
+    return actionFailure("Task could not be created.");
   }
 
   revalidatePath("/dashboard/admin/tasks");
   revalidatePath("/dashboard/manager/tasks");
   revalidatePath("/dashboard/member/tasks");
 
-  return taskSuccess(
+  return actionSuccess(
     task,
     backendMessage(result.payload, "Task created successfully."),
   );
@@ -343,7 +367,7 @@ export const updateTask = async (
   });
 
   if (!result.ok) {
-    return taskFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to update task."),
     );
   }
@@ -351,14 +375,14 @@ export const updateTask = async (
   const task = unwrapPayload<Task>(result.payload);
 
   if (!task) {
-    return taskFailure("Task could not be updated.");
+    return actionFailure("Task could not be updated.");
   }
 
   revalidatePath("/dashboard/admin/tasks");
   revalidatePath("/dashboard/manager/tasks");
   revalidatePath("/dashboard/member/tasks");
 
-  return taskSuccess(
+  return actionSuccess(
     task,
     backendMessage(result.payload, "Task updated successfully."),
   );
@@ -373,7 +397,7 @@ export const deleteTask = async (
   });
 
   if (!result.ok) {
-    return taskFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to delete task."),
     );
   }
@@ -381,14 +405,14 @@ export const deleteTask = async (
   const task = unwrapPayload<Task>(result.payload);
 
   if (!task) {
-    return taskFailure("Task could not be deleted.");
+    return actionFailure("Task could not be deleted.");
   }
 
   revalidatePath("/dashboard/admin/tasks");
   revalidatePath("/dashboard/manager/tasks");
   revalidatePath("/dashboard/member/tasks");
 
-  return taskSuccess(
+  return actionSuccess(
     task,
     backendMessage(result.payload, "Task deleted successfully."),
   );

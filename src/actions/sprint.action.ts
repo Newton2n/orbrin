@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import {
   actionFailure,
   actionSuccess,
+  type ActionResult,
   backendMessage,
   backendRequest,
   unwrapPayload,
@@ -67,12 +68,7 @@ export type SprintListResponse = {
   pagination: SprintPagination;
 };
 
-export type SprintActionResult<T> = {
-  ok: boolean;
-  success: boolean;
-  data: T;
-  message?: string;
-};
+export type SprintActionResult<T> = ActionResult<T>;
 
 export type CreateSprintInput = {
   projectId: string;
@@ -91,25 +87,6 @@ export type UpdateSprintInput = {
   startDate?: string;
   endDate?: string;
 };
-
-//helpers for SprintActionResult
-function sprintFailure<T>(message: string, data: T): SprintActionResult<T> {
-  return {
-    ok: false,
-    success: false,
-    message,
-    data,
-  };
-}
-
-function sprintSuccess<T>(data: T, message?: string): SprintActionResult<T> {
-  return {
-    ok: true,
-    success: true,
-    message,
-    data,
-  };
-}
 
 const sprintPaths = [
   "/dashboard/sprints",
@@ -139,11 +116,11 @@ export async function createSprint(
   const { projectId, name, goal, status, startDate, endDate } = input;
 
   if (!projectId) {
-    return sprintFailure("Project ID is required.", null);
+    return actionFailure("Project ID is required.", null);
   }
 
   if (!name?.trim()) {
-    return sprintFailure("Sprint name is required.", null);
+    return actionFailure("Sprint name is required.", null);
   }
 
   const body: Record<string, unknown> = {
@@ -175,7 +152,7 @@ export async function createSprint(
   );
 
   if (!result.ok) {
-    return sprintFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to create sprint."),
       null,
     );
@@ -183,7 +160,7 @@ export async function createSprint(
 
   revalidateSprintPaths(projectId);
 
-  return sprintSuccess(
+  return actionSuccess(
     unwrapPayload<Sprint>(result.payload),
     "Sprint created successfully.",
   );
@@ -196,7 +173,7 @@ export async function getSprintsByProject(
   params: SprintListParams = {},
 ): Promise<SprintActionResult<SprintListResponse>> {
   if (!projectId) {
-    return sprintFailure("Project ID is required.", {
+    return actionFailure("Project ID is required.", {
       sprints: [],
       pagination: {
         page: params.page ?? 1,
@@ -236,10 +213,8 @@ export async function getSprintsByProject(
     pagination: SprintPagination;
   }>(endpoint);
 
-  console.log("getSprintsByProject result:", result);
-
   if (!result.ok) {
-    return sprintFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to fetch sprints."),
       {
         sprints: [],
@@ -258,7 +233,7 @@ export async function getSprintsByProject(
   const payload = result.payload;
 
   if (!payload || typeof payload !== "object") {
-    return sprintFailure("Invalid sprint response from server.", {
+    return actionFailure("Invalid sprint response from server.", {
       sprints: [],
       pagination: {
         page: params.page ?? 1,
@@ -271,7 +246,7 @@ export async function getSprintsByProject(
     });
   }
 
-  return sprintSuccess({
+  return actionSuccess({
     sprints: Array.isArray(payload.data) ? payload.data : [],
 
     pagination: payload.pagination ?? {
@@ -298,19 +273,19 @@ export async function getSprintById(
   sprintId: string,
 ): Promise<SprintActionResult<Sprint | null>> {
   if (!sprintId) {
-    return sprintFailure("Sprint ID is required.", null);
+    return actionFailure("Sprint ID is required.", null);
   }
 
   const result = await backendRequest<unknown>(`/sprints/${sprintId}`);
 
   if (!result.ok) {
-    return sprintFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to fetch sprint."),
       null,
     );
   }
 
-  return sprintSuccess(unwrapPayload<Sprint>(result.payload));
+  return actionSuccess(unwrapPayload<Sprint>(result.payload));
 }
 
 // UPDATE SPRINT
@@ -320,7 +295,7 @@ export async function updateSprint(
   const { sprintId, name, goal, status, startDate, endDate } = input;
 
   if (!sprintId) {
-    return sprintFailure("Sprint ID is required.", null);
+    return actionFailure("Sprint ID is required.", null);
   }
 
   const body: Record<string, unknown> = {};
@@ -346,7 +321,7 @@ export async function updateSprint(
   }
 
   if (Object.keys(body).length === 0) {
-    return sprintFailure("At least one sprint field is required.", null);
+    return actionFailure("At least one sprint field is required.", null);
   }
 
   const result = await backendRequest<unknown>(`/sprints/${sprintId}`, {
@@ -355,7 +330,7 @@ export async function updateSprint(
   });
 
   if (!result.ok) {
-    return sprintFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to update sprint."),
       null,
     );
@@ -363,7 +338,7 @@ export async function updateSprint(
 
   revalidateSprintPaths();
 
-  return sprintSuccess(
+  return actionSuccess(
     unwrapPayload<Sprint>(result.payload),
     "Sprint updated successfully.",
   );
@@ -375,7 +350,7 @@ export async function deleteSprint(
   sprintId: string,
 ): Promise<SprintActionResult<Sprint | null>> {
   if (!sprintId) {
-    return sprintFailure("Sprint ID is required.", null);
+    return actionFailure("Sprint ID is required.", null);
   }
 
   const result = await backendRequest<unknown>(`/sprints/${sprintId}`, {
@@ -383,7 +358,7 @@ export async function deleteSprint(
   });
 
   if (!result.ok) {
-    return sprintFailure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to delete sprint."),
       null,
     );
@@ -391,7 +366,7 @@ export async function deleteSprint(
 
   revalidateSprintPaths();
 
-  return sprintSuccess(
+  return actionSuccess(
     unwrapPayload<Sprint>(result.payload),
     "Sprint deleted successfully.",
   );

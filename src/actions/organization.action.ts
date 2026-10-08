@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import {
   actionFailure,
   actionSuccess,
+  type ActionResult,
   backendMessage,
   backendRequest,
   unwrapPayload,
@@ -62,12 +63,6 @@ export type PaginatedResponse<T> = {
   page: number;
   limit: number;
   totalPages: number;
-};
-
-export type ActionResult<T> = {
-  success: boolean;
-  message: string;
-  data: T;
 };
 
 function revalidateOrganizationPaths() {

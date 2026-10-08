@@ -1,6 +1,6 @@
-
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -8,10 +8,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import {
-  type UserProfile,
-  updateUserProfile,
-} from "@/actions/user.action";
+import { type UserProfile, updateUserProfile } from "@/actions/user.action";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -39,17 +36,14 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ profile }: ProfileFormProps) {
+  const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
 
   const {
     register,
     handleSubmit,
     reset,
-    formState: {
-      errors,
-      isSubmitting,
-      isDirty,
-    },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -92,9 +86,8 @@ export function ProfileForm({ profile }: ProfileFormProps) {
         return;
       }
 
-      toast.success(
-        result.message ?? "Profile updated successfully.",
-      );
+      toast.success(result.message ?? "Profile updated successfully.");
+      await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
 
       reset({
         fullName,
@@ -175,16 +168,12 @@ export function ProfileForm({ profile }: ProfileFormProps) {
           <div className="flex flex-wrap gap-x-6 gap-y-2 border-t pt-4 text-sm">
             <div>
               <span className="text-muted-foreground">Role</span>
-              <p className="mt-0.5 font-medium">
-                {profile.role ?? "Member"}
-              </p>
+              <p className="mt-0.5 font-medium">{profile.role ?? "Member"}</p>
             </div>
 
             <div>
               <span className="text-muted-foreground">Status</span>
-              <p className="mt-0.5 font-medium">
-                {profile.status ?? "Active"}
-              </p>
+              <p className="mt-0.5 font-medium">{profile.status ?? "Active"}</p>
             </div>
           </div>
 
@@ -201,10 +190,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
                 Cancel
               </Button>
 
-              <Button
-                type="submit"
-                disabled={isSubmitting || !isDirty}
-              >
+              <Button type="submit" disabled={isSubmitting || !isDirty}>
                 {isSubmitting ? "Saving..." : "Save changes"}
               </Button>
             </div>
@@ -214,4 +200,3 @@ export function ProfileForm({ profile }: ProfileFormProps) {
     </Card>
   );
 }
-

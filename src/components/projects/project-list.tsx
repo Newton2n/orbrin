@@ -6,10 +6,10 @@ import Link from "next/link";
 import {
   deleteProject,
   deleteProjectDocument,
-  getAllProjects,
   type Project,
 } from "@/actions/project.action";
-import { getTeams } from "@/actions/team.action";
+import { useProjects, useTeams } from "@/hooks/use-bff-queries";
+import { ErrorState } from "@/components/shared/error-state";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -171,12 +171,6 @@ export function ProjectList({
   canManageTeams = false,
   canViewDetails = true,
 }: ProjectListProps) {
-  const [projects, setProjects] = useState<Project[]>([]);
-
-  const [pagination, setPagination] = useState<Pagination>(DEFAULT_PAGINATION);
-
-  const [loading, setLoading] = useState(true);
-
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
@@ -191,9 +185,6 @@ export function ProjectList({
   );
 
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-
-  const [teams, setTeams] = useState<TeamOption[]>([]);
-  const [teamsLoading, setTeamsLoading] = useState(false);
 
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
@@ -217,42 +208,9 @@ export function ProjectList({
     };
   }
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadTeams() {
-      setTeamsLoading(true);
-
-      try {
-        const result = await getTeams();
-
-        if (cancelled) return;
-
-        if (!result.success) {
-          toast.error(result.message ?? "Unable to load teams.");
-          setTeams([]);
-          return;
-        }
-
-        setTeams(normalizeTeams(result.data));
-      } catch {
-        if (!cancelled) {
-          toast.error("Unable to load teams.");
-          setTeams([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setTeamsLoading(false);
-        }
-      }
-    }
-
-    void loadTeams();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const teamsQuery = useTeams();
+  const teams = normalizeTeams(teamsQuery.data?.items ?? []);
+  const teamsLoading = teamsQuery.isLoading;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -265,45 +223,10 @@ export function ProjectList({
     };
   }, [searchInput]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadProjects() {
-      setLoading(true);
-
-      try {
-        const result = await getAllProjects(getProjectQuery());
-
-        if (cancelled) return;
-
-        if (!result.ok) {
-          toast.error(result.message ?? "Unable to load projects.");
-          setProjects([]);
-          setPagination(DEFAULT_PAGINATION);
-          return;
-        }
-
-        setProjects(result.data?.projects ?? []);
-        setPagination(result.data?.pagination ?? DEFAULT_PAGINATION);
-      } catch {
-        if (!cancelled) {
-          toast.error("Unable to load projects.");
-          setProjects([]);
-          setPagination(DEFAULT_PAGINATION);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadProjects();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [page, limit, search, status, teamId, sortBy, sortOrder]);
+  const projectsQuery = useProjects(getProjectQuery());
+  const projects = projectsQuery.data?.projects ?? [];
+  const pagination = projectsQuery.data?.pagination ?? DEFAULT_PAGINATION;
+  const loading = projectsQuery.isLoading;
 
   function resetFilters() {
     setSearchInput("");
@@ -338,23 +261,7 @@ export function ProjectList({
   }
 
   async function refreshProjects() {
-    setLoading(true);
-
-    try {
-      const result = await getAllProjects(getProjectQuery());
-
-      if (!result.ok) {
-        toast.error(result.message ?? "Unable to refresh projects.");
-        return;
-      }
-
-      setProjects(result.data?.projects ?? []);
-      setPagination(result.data?.pagination ?? DEFAULT_PAGINATION);
-    } catch {
-      toast.error("Unable to refresh projects.");
-    } finally {
-      setLoading(false);
-    }
+    await projectsQuery.refetch();
   }
 
   async function handleDelete(project: Project) {
@@ -722,6 +629,12 @@ export function ProjectList({
         <div className="rounded-lg border p-10 text-center">
           <p className="text-sm text-muted-foreground">Loading projects...</p>
         </div>
+      ) : projectsQuery.isError ? (
+        <ErrorState
+          title="Projects unavailable"
+          error={projectsQuery.error}
+          onRetry={() => void projectsQuery.refetch()}
+        />
       ) : projects.length === 0 ? (
         <div className="rounded-lg border border-dashed p-6 text-center sm:p-10">
           <p className="font-medium">No projects found</p>

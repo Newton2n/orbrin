@@ -17,6 +17,22 @@ export type BackendResult<T> = {
   payload: T | null;
 };
 
+export type ActionSuccess<T> = {
+  ok: true;
+  success: true;
+  data: T;
+  message: string;
+};
+
+export type ActionFailure<T = never> = {
+  ok: false;
+  success: false;
+  data?: T | null;
+  message: string;
+};
+
+export type ActionResult<T> = ActionSuccess<T> | ActionFailure<T>;
+
 function isBodyInit(body: unknown): body is BodyInit {
   return (
     typeof body === "string" ||
@@ -73,12 +89,20 @@ export async function backendRequest<T>(
   }
 }
 
-export function actionFailure<T>(message: string, data: T) {
-  return { success: false as const, message, data };
+export function actionFailure<T>(
+  message: string,
+  data?: T | null,
+): ActionResult<T> {
+  return data === undefined
+    ? { ok: false, success: false, message }
+    : { ok: false, success: false, message, data };
 }
 
-export function actionSuccess<T>(data: T, message = "Request completed") {
-  return { success: true as const, message, data };
+export function actionSuccess<T>(
+  data: T,
+  message = "Request completed",
+): ActionResult<T> {
+  return { ok: true, success: true, message, data };
 }
 
 export function backendMessage(payload: unknown, fallback: string) {

@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 import {
-  getOrganizationMemberById,
   type OrganizationMember,
   type OrganizationRole,
 } from "@/actions/organization.action";
+import { useOrganizationMember } from "@/hooks/use-bff-queries";
 import { AvatarWithFallback } from "@/components/avatar-with-fallback";
 import { DialogErrorState } from "@/components/shared/dialog-error-state";
 import { Badge } from "@/components/ui/badge";
@@ -40,34 +39,17 @@ export function MemberDetailsDialog({
   canRemoveMembers: boolean;
   onMemberChanged?: () => void;
 }) {
-  const [member, setMember] = useState<OrganizationMember | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [roleOpen, setRoleOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
-  async function load() {
-    if (!memberId) return;
-    setLoading(true);
-    const result = await getOrganizationMemberById(memberId);
-    setLoading(false);
-    if (!result.success) {
-      setError(result.message);
-      setMember(null);
-      return;
-    }
-    setError(null);
-    setMember(result.data);
-  }
-  // Reload when the selected member dialog opens.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: load is intentionally scoped to the selected member
-  useEffect(() => {
-    if (open) void load();
-    else setMember(null);
-  }, [open, memberId]);
+  const query = useOrganizationMember(open ? memberId : null);
+  const member = query.data ?? null;
+  const loading = query.isLoading;
+  const error = query.error instanceof Error ? query.error.message : null;
+  const load = () => void query.refetch();
   const user = member?.user;
   const changed = () => {
-    void load();
+    void query.refetch();
     onMemberChanged?.();
   };
   const canEdit =

@@ -1,15 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   deleteSprint,
-  getSprintById,
-  getSprintsByProject,
   type Sprint,
-  type SprintPagination,
   type SprintStatus,
 } from "@/actions/sprint.action";
+import { useProjectSprints, useSprint } from "@/hooks/use-bff-queries";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -79,17 +77,11 @@ const taskStatusLabel: Record<string, string> = {
 
 export function SprintList({
   projectId,
-  role,
   canCreate = false,
   canEdit = false,
   canDelete = false,
   canViewDetails = true,
 }: SprintListProps) {
-  const [sprints, setSprints] = useState<Sprint[]>([]);
-  const [pagination, setPagination] = useState<SprintPagination | null>(null);
-
-  const [loading, setLoading] = useState(true);
-
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
 
@@ -108,50 +100,31 @@ export function SprintList({
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedSprint, setSelectedSprint] = useState<Sprint | null>(null);
+  const sprintQuery = useSprint(detailsOpen ? (selectedSprint?.id ?? "") : "");
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingSprint, setDeletingSprint] = useState<Sprint | null>(null);
 
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const loadSprints = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      const result = await getSprintsByProject(projectId, {
-        page,
-        limit: PAGE_LIMIT,
-        search: search || undefined,
-        sortBy,
-        sortOrder,
-        status: status === "ALL" ? undefined : status,
-      });
-
-      if (!result.ok) {
-        toast.error(result.message ?? "Unable to load sprints.");
-
-        setSprints([]);
-        setPagination(null);
-        return;
-      }
-
-      setSprints(result.data.sprints ?? []);
-      setPagination(result.data.pagination ?? null);
-    } catch (error) {
-      console.error("Failed to load sprints:", error);
-
-      toast.error("Unable to load sprints.");
-
-      setSprints([]);
-      setPagination(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId, page, search, sortBy, sortOrder, status]);
+  const sprintsQuery = useProjectSprints(projectId, {
+    page,
+    limit: PAGE_LIMIT,
+    search: search || undefined,
+    sortBy,
+    sortOrder,
+    status: status === "ALL" ? undefined : status,
+  });
+  const sprints = sprintsQuery.data?.sprints ?? [];
+  const pagination = sprintsQuery.data?.pagination ?? null;
+  const loading = sprintsQuery.isLoading;
+  const loadSprints = () => void sprintsQuery.refetch();
 
   useEffect(() => {
-    void loadSprints();
-  }, [loadSprints]);
+    if (sprintQuery.data) {
+      setSelectedSprint(sprintQuery.data);
+    }
+  }, [sprintQuery.data]);
 
   function handleSearchSubmit() {
     setPage(1);
@@ -191,26 +164,9 @@ export function SprintList({
     setFormOpen(true);
   }
 
-  async function handleView(sprint: Sprint) {
-    try {
-      setSelectedSprint(sprint);
-      setDetailsOpen(true);
-
-      const result = await getSprintById(sprint.id);
-
-      if (!result.ok) {
-        toast.error(result.message ?? "Unable to load sprint details.");
-        return;
-      }
-
-      if (result.data) {
-        setSelectedSprint(result.data);
-      }
-    } catch (error) {
-      console.error("Failed to load sprint details:", error);
-
-      toast.error("Unable to load sprint details.");
-    }
+  function handleView(sprint: Sprint) {
+    setSelectedSprint(sprint);
+    setDetailsOpen(true);
   }
 
   function handleDeleteClick(sprint: Sprint) {

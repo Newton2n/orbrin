@@ -1,24 +1,28 @@
+"use client";
 
-import { getMyProfile } from "@/actions/user.action";
+import { useUserProfile } from "@/hooks/use-bff-queries";
+
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { DeleteAccountDialog } from "@/components/profile/delete-account-dialog";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { ProfileImageUploader } from "@/components/profile/profile-image-uploader";
 import { ErrorState } from "@/components/shared/error-state";
 
-export default async function ProfilePage() {
-  const result = await getMyProfile();
+export default function ProfilePage() {
+  const { data: profile, isLoading, isError } = useUserProfile();
 
-  if (!result.success || !result.data) {
+  if (isLoading) {
+    return <div>Loading profile...</div>;
+  }
+
+  if (isError || !profile) {
     return (
       <ErrorState
         title="Profile unavailable"
-        description={result.message ?? "We couldn't load your profile."}
+        description="We couldn't load your profile."
       />
     );
   }
-
-  const profile = result.data;
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-8">
@@ -60,4 +64,3 @@ export default async function ProfilePage() {
     </div>
   );
 }
-

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import {
   AlertCircle,
@@ -13,11 +14,10 @@ import {
 
 import {
   deleteTask,
-  getMyCreatedTasks,
-  getMyTasks,
   type Task,
   type TaskPagination,
 } from "@/actions/task.action";
+import { useMyCreatedTasks, useMyTasks } from "@/hooks/use-bff-queries";
 
 import { Button } from "@/components/ui/button";
 
@@ -55,11 +55,6 @@ export function TaskPage({
   canUpdate = true,
   canDelete = false,
 }: TaskPageProps) {
-  const [tasks, setTasks] = useState<Task[]>([]);
-
-  const [pagination, setPagination] =
-    useState<TaskPagination>(initialPagination);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -70,82 +65,46 @@ export function TaskPage({
 
   const [deleting, setDeleting] = useState(false);
 
-
-  // Load tasks
-
-
-  const loadTasks = useCallback(async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const result =
-        mode === "created"
-          ? await getMyCreatedTasks({
-              page: 1,
-              limit: 20,
-              sortBy: "createdAt",
-              sortOrder: "desc",
-            })
-          : await getMyTasks({
-              page: 1,
-              limit: 20,
-              sortBy: "createdAt",
-              sortOrder: "desc",
-            });
-
-      if (!result.success) {
-        setTasks([]);
-        setPagination(initialPagination);
-        setError(result.message ?? "Unable to load tasks.");
-        return;
-      }
-
-      setTasks(result.data.tasks);
-      setPagination(result.data.pagination);
-    } catch (error) {
-      console.error("Failed to load tasks:", error);
-
-      setTasks([]);
-      setPagination(initialPagination);
-      setError("Something went wrong while loading tasks.");
-    } finally {
-      setLoading(false);
-    }
-  }, [mode]);
+  const queryParams = {
+    page: 1,
+    limit: 20,
+    sortBy: "createdAt" as const,
+    sortOrder: "desc" as const,
+  };
+  const createdQuery = useMyCreatedTasks(queryParams, mode === "created");
+  const assignedQuery = useMyTasks(queryParams, mode === "assigned");
+  const taskQuery = mode === "created" ? createdQuery : assignedQuery;
+  const queryClient = useQueryClient();
+  const tasks = taskQuery.data?.tasks ?? [];
+  const pagination = taskQuery.data?.pagination ?? initialPagination;
+  const loadTasks = () => taskQuery.refetch();
 
   useEffect(() => {
-    void loadTasks();
-  }, [loadTasks]);
-
+    setLoading(taskQuery.isLoading);
+    if (taskQuery.error) {
+      setError(taskQuery.error.message);
+    }
+  }, [taskQuery.data, taskQuery.error, taskQuery.isLoading]);
 
   // Task updated
 
-  const handleTaskUpdated = useCallback((updatedTask: Task) => {
-    setTasks((current) =>
-      current.map((task) =>
-        task.id === updatedTask.id
+  const handleTaskUpdated = useCallback(
+    (updatedTask: Task) => {
+      void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+
+      setSelectedTask((current) =>
+        current?.id === updatedTask.id
           ? {
-              ...task,
+              ...current,
               ...updatedTask,
             }
-          : task,
-      ),
-    );
+          : current,
+      );
+    },
+    [queryClient],
+  );
 
-    setSelectedTask((current) =>
-      current?.id === updatedTask.id
-        ? {
-            ...current,
-            ...updatedTask,
-          }
-        : current,
-    );
-  }, []);
-
-  
   // Open delete confirmation
- 
 
   const handleTaskDeleted = useCallback(
     (taskId: string) => {
@@ -179,15 +138,7 @@ export function TaskPage({
       }
 
       // Remove task from current list
-      setTasks((current) =>
-        current.filter((task) => task.id !== deleteTaskItem.id),
-      );
-
-      // Update total
-      setPagination((current) => ({
-        ...current,
-        total: Math.max(0, current.total - 1),
-      }));
+      await queryClient.invalidateQueries({ queryKey: ["tasks"] });
 
       // Close task detail
       setSelectedTask(null);
@@ -203,9 +154,7 @@ export function TaskPage({
     }
   };
 
-
   // Page content
- 
 
   const pageTitle = mode === "created" ? "My Created Tasks" : "My Tasks";
 
@@ -216,8 +165,6 @@ export function TaskPage({
 
   return (
     <div className="space-y-6">
-     
-
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
@@ -247,8 +194,6 @@ export function TaskPage({
         </Button>
       </div>
 
-     
-
       {error && (
         <div className="flex items-start gap-3 rounded-xl border border-destructive/20 bg-destructive/5 p-4">
           <AlertCircle className="mt-0.5 size-5 shrink-0 text-destructive" />
@@ -274,8 +219,6 @@ export function TaskPage({
         </div>
       )}
 
-      
-
       {loading && (
         <div className="flex min-h-[300px] items-center justify-center rounded-xl border bg-card">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -284,8 +227,6 @@ export function TaskPage({
           </div>
         </div>
       )}
-
- 
 
       {!loading && !error && tasks.length === 0 && (
         <div className="flex min-h-[300px] flex-col items-center justify-center rounded-xl border bg-card px-6 text-center">
@@ -306,8 +247,6 @@ export function TaskPage({
           </p>
         </div>
       )}
-
-    
 
       {!loading && !error && tasks.length > 0 && (
         <>
@@ -336,8 +275,6 @@ export function TaskPage({
         </>
       )}
 
-    
-
       <TaskDetailSheet
         task={selectedTask}
         open={Boolean(selectedTask)}
@@ -351,8 +288,6 @@ export function TaskPage({
         onUpdated={handleTaskUpdated}
         onDeleted={handleTaskDeleted}
       />
-
-    
 
       <Dialog
         open={Boolean(deleteTaskItem)}

@@ -2,16 +2,16 @@
 
 import { Eye, Pencil, Plus, Trash2, Users } from "lucide-react";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { toast } from "sonner";
 
 import {
   deleteTeam,
-  getTeams,
   type Team,
   type TeamListParams,
 } from "@/actions/team.action";
+import { useTeams } from "@/hooks/use-bff-queries";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,12 +69,6 @@ export function TeamList({
   canManageMembers = false,
   canViewDetails = false,
 }: TeamListProps) {
-  const [result, setResult] = useState<TeamListResult>();
-
-  const [loading, setLoading] = useState(true);
-
-  const [error, setError] = useState<string>();
-
   const [page, setPage] = useState(1);
 
   const [search, setSearch] = useState("");
@@ -91,32 +85,17 @@ export function TeamList({
 
   const [deleting, setDeleting] = useState(false);
 
-  async function loadTeams() {
-    setLoading(true);
-    setError(undefined);
-
-    const response = await getTeams({
-      page,
-      limit: 10,
-      search: search || undefined,
-      sortBy,
-      sortOrder: "desc",
-    });
-
-    if (!response.ok) {
-      setError(response.message ?? "Unable to load teams.");
-      setResult(undefined);
-    } else {
-      setResult(response.data);
-    }
-
-    setLoading(false);
-  }
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reload when list query changes
-  useEffect(() => {
-    void loadTeams();
-  }, [page, search, sortBy]);
+  const query = useTeams({
+    page,
+    limit: 10,
+    search: search || undefined,
+    sortBy,
+    sortOrder: "desc",
+  });
+  const result = query.data;
+  const loading = query.isLoading;
+  const error = query.error instanceof Error ? query.error.message : undefined;
+  const loadTeams = () => void query.refetch();
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -136,7 +115,7 @@ export function TeamList({
     setDeleteTarget(null);
     setDeleting(false);
 
-    await loadTeams();
+    await query.refetch();
   }
 
   const actionsVisible =

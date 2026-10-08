@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import {
   actionFailure,
   actionSuccess,
+  type ActionResult,
   backendMessage,
   backendRequest,
   unwrapPayload,
@@ -61,26 +62,7 @@ export type TeamListParams = {
   sortOrder?: "asc" | "desc";
 };
 
-export type TeamActionResult<T> = {
-  ok: boolean;
-  success: boolean;
-  data: T;
-  message?: string;
-};
-
-function success<T>(data: T, message?: string): TeamActionResult<T> {
-  return {
-    ...actionSuccess(data, message),
-    ok: true,
-  };
-}
-
-function failure<T>(message: string, data: T): TeamActionResult<T> {
-  return {
-    ...actionFailure(message, data),
-    ok: false,
-  };
-}
+export type TeamActionResult<T> = ActionResult<T>;
 
 function normalizeList<T>(
   payload: unknown,
@@ -172,7 +154,7 @@ export async function getTeams(params: TeamListParams = {}) {
   );
 
   if (!result.ok) {
-    return failure(backendMessage(result.payload, "Unable to fetch teams."), {
+    return actionFailure(backendMessage(result.payload, "Unable to fetch teams."), {
       items: [],
       total: 0,
       page: params.page ?? 1,
@@ -181,7 +163,7 @@ export async function getTeams(params: TeamListParams = {}) {
     });
   }
 
-  return success(normalizeList<Team>(result.payload, params));
+  return actionSuccess(normalizeList<Team>(result.payload, params));
 }
 
 // Get team by ID
@@ -189,13 +171,13 @@ export async function getTeamById(id: string) {
   const result = await backendRequest<Team>(`/teams/${id}`);
 
   if (!result.ok) {
-    return failure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to fetch team."),
       null,
     );
   }
 
-  return success(unwrapPayload<Team>(result.payload));
+  return actionSuccess(unwrapPayload<Team>(result.payload));
 }
 
 // Create team
@@ -209,7 +191,7 @@ export async function createTeam(input: {
   });
 
   if (!result.ok) {
-    return failure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to create team."),
       null,
     );
@@ -217,7 +199,7 @@ export async function createTeam(input: {
 
   revalidateTeamPaths();
 
-  return success(unwrapPayload<Team>(result.payload), "Team created.");
+  return actionSuccess(unwrapPayload<Team>(result.payload), "Team created.");
 }
 
 // Update team
@@ -234,7 +216,7 @@ export async function updateTeam(
   });
 
   if (!result.ok) {
-    return failure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to update team."),
       null,
     );
@@ -242,7 +224,7 @@ export async function updateTeam(
 
   revalidateTeamPaths();
 
-  return success(unwrapPayload<Team>(result.payload), "Team updated.");
+  return actionSuccess(unwrapPayload<Team>(result.payload), "Team updated.");
 }
 
 // Delete team
@@ -252,7 +234,7 @@ export async function deleteTeam(id: string) {
   });
 
   if (!result.ok) {
-    return failure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to delete team."),
       null,
     );
@@ -260,7 +242,7 @@ export async function deleteTeam(id: string) {
 
   revalidateTeamPaths();
 
-  return success(null, "Team deleted.");
+  return actionSuccess(null, "Team deleted.");
 }
 
 // Team Members
@@ -268,7 +250,7 @@ export async function getTeamMembers(teamId: string) {
   const result = await backendRequest<unknown>(`/teams/${teamId}/members`);
 
   if (!result.ok) {
-    return failure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to fetch team members."),
       [],
     );
@@ -292,7 +274,7 @@ export async function getTeamMembers(teamId: string) {
           ? (payload as Record<string, unknown>).data
           : [];
 
-  return success(members as TeamMember[]);
+  return actionSuccess(members as TeamMember[]);
 }
 
 // Add team member
@@ -305,7 +287,7 @@ export async function addTeamMember(teamId: string, userId: string) {
   });
 
   if (!result.ok) {
-    return failure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to add team member."),
       null,
     );
@@ -313,7 +295,7 @@ export async function addTeamMember(teamId: string, userId: string) {
 
   revalidateTeamPaths();
 
-  return success(unwrapPayload<TeamMember>(result.payload), "Member added.");
+  return actionSuccess(unwrapPayload<TeamMember>(result.payload), "Member added.");
 }
 
 // Remove team member
@@ -326,7 +308,7 @@ export async function removeTeamMember(teamId: string, userId: string) {
   );
 
   if (!result.ok) {
-    return failure(
+    return actionFailure(
       backendMessage(result.payload, "Unable to remove team member."),
       null,
     );
@@ -334,5 +316,5 @@ export async function removeTeamMember(teamId: string, userId: string) {
 
   revalidateTeamPaths();
 
-  return success(null, "Member removed.");
+  return actionSuccess(null, "Member removed.");
 }
