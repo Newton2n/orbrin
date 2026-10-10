@@ -8,7 +8,7 @@ import {
   deleteProjectDocument,
   type Project,
 } from "@/actions/project.action";
-import { useProjects, useTeams } from "@/hooks/use-bff-queries";
+import { useProjects, useTeams } from "@/hooks/queries/use-bff-queries";
 import { ErrorState } from "@/components/shared/error-state";
 
 import { Badge } from "@/components/ui/badge";
@@ -796,7 +796,9 @@ export function ProjectList({
                   {showingFrom}
                 </span>
                 {" – "}
-                <span className="font-medium text-foreground">{showingTo}</span>{" "}
+                <span className="font-medium text-foreground">
+                  {showingTo}
+                </span>{" "}
                 of{" "}
                 <span className="font-medium text-foreground">
                   {pagination.total}

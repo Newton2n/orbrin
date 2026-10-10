@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import type { Project } from "@/actions/project.action";
-import { useProjects } from "@/hooks/use-bff-queries";
+import { useProjects } from "@/hooks/queries/use-bff-queries";
 
 import { Button } from "@/components/ui/button";
 

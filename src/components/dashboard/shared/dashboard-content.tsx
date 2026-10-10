@@ -1,3 +1,5 @@
+"use client";
+
 import {
   ArrowUpRight,
   CalendarDays,
@@ -6,7 +8,6 @@ import {
   Clock3,
   FolderKanban,
   ListTodo,
-  MoveUpRight,
   PersonStandingIcon,
   Plus,
   Sparkles,
@@ -14,19 +15,23 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { InviteMembersDialog } from "@/components/dashboard/invite-members-dialog";
-import { ProjectTable } from "@/components/dashboard/project-table";
 import { StatCard } from "@/components/dashboard/stat-card";
-import { TaskList } from "@/components/dashboard/task-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { AuthUser } from "@/features/auth/types/auth.types";
-
-const projects: any[] = [];
-const activities: any[] = [];
-const tasks: any[] = [];
+import {
+  type AdminStats,
+  type DashboardReportParams,
+  useAdminDashboardStats,
+  useDashboardReport,
+  useManagerDashboardStats,
+  useMemberDashboardStats,
+} from "@/hooks/queries/use-dashboard-stats";
 
 function initials(name?: string | null, email?: string) {
   return (name || email || "User")
@@ -35,6 +40,196 @@ function initials(name?: string | null, email?: string) {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+}
+
+function formatNumber(value: number | undefined | null) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value.toLocaleString()
+    : "0";
+}
+
+function DashboardLoadingState() {
+  const cards = ["teams", "projects", "members", "tasks"];
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {cards.map((card) => (
+        <Card key={card} className="rounded-2xl">
+          <CardContent className="animate-pulse space-y-4 p-5">
+            <div className="h-3 w-20 rounded bg-zinc-200 dark:bg-zinc-700" />
+            <div className="h-8 w-16 rounded bg-zinc-200 dark:bg-zinc-700" />
+            <div className="h-3 w-28 rounded bg-zinc-200 dark:bg-zinc-700" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function DashboardErrorState({
+  message,
+  onRetry,
+  title = "Unable to load dashboard stats",
+}: {
+  message: string;
+  onRetry: () => void;
+  title?: string;
+}) {
+  return (
+    <Card className="border-destructive/30 bg-destructive/5">
+      <CardContent className="flex flex-col items-start justify-between gap-4 p-5 sm:flex-row sm:items-center">
+        <div className="flex items-start gap-3">
+          <CircleAlert className="mt-0.5 size-5 text-destructive" />
+          <div>
+            <p className="text-sm font-medium text-foreground">{title}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{message}</p>
+          </div>
+        </div>
+        <Button variant="outline" onClick={onRetry}>
+          Retry
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function dateInputValue(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function addUtcDays(date: Date, days: number) {
+  const result = new Date(date);
+  result.setUTCDate(result.getUTCDate() + days);
+  return result;
+}
+
+function toUtcDayStart(date: string) {
+  return new Date(`${date}T00:00:00.000Z`).toISOString();
+}
+
+function toUtcDayEnd(date: string) {
+  return new Date(`${date}T23:59:59.999Z`).toISOString();
+}
+
+function ReportBreakdowns({ data }: { data: AdminStats }) {
+  return (
+    <div className="grid gap-4 lg:grid-cols-3">
+      <BreakdownCard
+        title="Tasks by status"
+        items={
+          Object.entries(data.tasks.byStatus ?? {}) as Array<[string, number]>
+        }
+      />
+      <BreakdownCard
+        title="Tasks by priority"
+        items={
+          Object.entries(data.tasks.byPriority ?? {}) as Array<[string, number]>
+        }
+      />
+      <BreakdownCard
+        title="Sprints by status"
+        items={
+          Object.entries(data.sprints.byStatus ?? {}) as Array<[string, number]>
+        }
+      />
+    </div>
+  );
+}
+
+function ReportStats({ data }: { data: AdminStats }) {
+  return (
+    <>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Total teams"
+          value={formatNumber(data.teams.total)}
+          detail="In the reporting period"
+          icon={Users}
+        />
+        <StatCard
+          label="Total projects"
+          value={formatNumber(data.projects.total)}
+          detail="In the reporting period"
+          icon={FolderKanban}
+        />
+        <StatCard
+          label="Total members"
+          value={formatNumber(data.members.total)}
+          detail="In the reporting period"
+          icon={Users}
+        />
+        <StatCard
+          label="Total tasks"
+          value={formatNumber(data.tasks.total)}
+          detail="Created in the reporting period"
+          icon={ListTodo}
+        />
+        <StatCard
+          label="Completed tasks"
+          value={formatNumber(data.tasks.completed)}
+          detail="Completed in the reporting period"
+          icon={CheckCircle2}
+          tone="success"
+        />
+        <StatCard
+          label="Total sprints"
+          value={formatNumber(data.sprints.total)}
+          detail="In the reporting period"
+          icon={Target}
+        />
+        <StatCard
+          label="Total comments"
+          value={formatNumber(data.comments.total)}
+          detail="In the reporting period"
+          icon={CalendarDays}
+        />
+        {data.billing && (
+          <StatCard
+            label="Completed payment amount"
+            value={`${data.billing.totalCompletedAmount.toLocaleString()} ${data.billing.currency}`}
+            detail={`${formatNumber(data.billing.completedPayments)} completed payments`}
+            icon={Sparkles}
+            tone="success"
+          />
+        )}
+      </div>
+      <ReportBreakdowns data={data} />
+    </>
+  );
+}
+
+function formatReportPeriod(from?: string, to?: string) {
+  if (from && to) {
+    return `${from} through ${to}`;
+  }
+
+  return from ? `From ${from}` : `Through ${to}`;
+}
+
+function BreakdownCard({
+  title,
+  items,
+}: {
+  title: string;
+  items: Array<[string, number]>;
+}) {
+  return (
+    <Card className="border-border/70 shadow-none">
+      <CardHeader>
+        <SectionHeading title={title} />
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {items.map(([label, value]) => (
+          <div key={label} className="flex items-center justify-between gap-3">
+            <Badge variant="secondary">{label.replace(/_/g, " ")}</Badge>
+            <span className="text-sm font-medium text-foreground">
+              {formatNumber(value)}
+            </span>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
 }
 
 function SectionHeading({ title, action }: { title: string; action?: string }) {
@@ -89,6 +284,120 @@ export function AdminDashboard({ user }: { user: AuthUser }) {
   const organizationId = user.memberships[0]?.organizationId;
   const firstName = (user.fullName || "there").split(" ")[0];
 
+  const { data, isLoading, error, refetch } = useAdminDashboardStats();
+
+  const [draftFrom, setDraftFrom] = useState("");
+  const [draftTo, setDraftTo] = useState("");
+  const [selectedPreset, setSelectedPreset] = useState<
+    "7" | "30" | "month" | "all" | null
+  >(null);
+
+  const [appliedParams, setAppliedParams] = useState<DashboardReportParams>({});
+
+  const {
+    data: report,
+    isLoading: isReportLoading,
+    error: reportError,
+    refetch: refetchReport,
+  } = useDashboardReport(appliedParams);
+
+  const today = dateInputValue(new Date());
+
+  const isFutureDate =
+    Boolean(draftFrom && draftFrom > today) ||
+    Boolean(draftTo && draftTo > today);
+
+  const isRangeInvalid =
+    Boolean(draftFrom && draftTo && draftFrom > draftTo) || isFutureDate;
+
+  const hasAppliedFilter = Boolean(appliedParams.from || appliedParams.to);
+
+  const appliedFrom = appliedParams.from?.slice(0, 10) ?? "";
+  const appliedTo = appliedParams.to?.slice(0, 10) ?? "";
+
+  const isDraftPending =
+    draftFrom !== appliedFrom || draftTo !== appliedTo;
+
+  useEffect(() => {
+    if (!draftFrom && !draftTo) {
+      setAppliedParams({});
+      return;
+    }
+
+    if (isRangeInvalid) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setAppliedParams({
+        from: draftFrom ? toUtcDayStart(draftFrom) : undefined,
+        to: draftTo ? toUtcDayEnd(draftTo) : undefined,
+      });
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [draftFrom, draftTo, isRangeInvalid]);
+
+  function clearReportFilter() {
+    setDraftFrom("");
+    setDraftTo("");
+    setAppliedParams({});
+    setSelectedPreset("all");
+  }
+
+  function handleManualDateChange(
+    type: "from" | "to",
+    value: string,
+  ) {
+    if (value && value > today) {
+      return;
+    }
+
+    if (type === "from") {
+      setDraftFrom(value);
+    } else {
+      setDraftTo(value);
+    }
+
+    setSelectedPreset(null);
+  }
+
+  function selectPreset(preset: "7" | "30" | "month" | "all") {
+    setSelectedPreset(preset);
+
+    if (preset === "all") {
+      clearReportFilter();
+      return;
+    }
+
+    const currentDate = new Date();
+    const end = dateInputValue(currentDate);
+
+    const start =
+      preset === "month"
+        ? dateInputValue(
+            new Date(
+              Date.UTC(
+                currentDate.getUTCFullYear(),
+                currentDate.getUTCMonth(),
+                1,
+              ),
+            ),
+          )
+        : dateInputValue(
+            addUtcDays(currentDate, preset === "7" ? -6 : -29),
+          );
+
+    setDraftFrom(start);
+    setDraftTo(end);
+  }
+
+  function getPresetButtonVariant(
+    preset: "7" | "30" | "month" | "all",
+  ) {
+    return selectedPreset === preset ? "default" : "outline";
+  }
+
   return (
     <div className="flex flex-col gap-7">
       <PageIntro
@@ -139,12 +448,224 @@ export function AdminDashboard({ user }: { user: AuthUser }) {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-border/70 shadow-none">
+        <CardHeader>
+          <SectionHeading title="Reports / Date range" />
+          <p className="text-sm text-muted-foreground">
+            Apply a period to view organization statistics for that date range.
+          </p>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="report-start">Start date</Label>
+              <Input
+                id="report-start"
+                type="date"
+                value={draftFrom}
+                max={today}
+                onChange={(event) =>
+                  handleManualDateChange("from", event.target.value)
+                }
+                aria-invalid={isRangeInvalid}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="report-end">End date</Label>
+              <Input
+                id="report-end"
+                type="date"
+                value={draftTo}
+                max={today}
+                onChange={(event) =>
+                  handleManualDateChange("to", event.target.value)
+                }
+                aria-invalid={isRangeInvalid}
+              />
+            </div>
+          </div>
+
+          {isFutureDate && (
+            <p className="text-sm text-destructive">
+              Future dates are not allowed.
+            </p>
+          )}
+
+          {draftFrom &&
+            draftTo &&
+            draftFrom > draftTo &&
+            !isFutureDate && (
+              <p className="text-sm text-destructive">
+                The start date must be on or before the end date.
+              </p>
+            )}
+
+          {!isRangeInvalid && (isDraftPending || isReportLoading) && (
+            <p className="text-sm text-muted-foreground">
+              Updating report...
+            </p>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant={getPresetButtonVariant("7")}
+              size="sm"
+              onClick={() => selectPreset("7")}
+            >
+              Last 7 days
+            </Button>
+
+            <Button
+              type="button"
+              variant={getPresetButtonVariant("30")}
+              size="sm"
+              onClick={() => selectPreset("30")}
+            >
+              Last 30 days
+            </Button>
+
+            <Button
+              type="button"
+              variant={getPresetButtonVariant("month")}
+              size="sm"
+              onClick={() => selectPreset("month")}
+            >
+              This month
+            </Button>
+
+            <Button
+              type="button"
+              variant={getPresetButtonVariant("all")}
+              size="sm"
+              onClick={() => selectPreset("all")}
+            >
+              All time
+            </Button>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={clearReportFilter}
+            disabled={!draftFrom && !draftTo && !hasAppliedFilter}
+          >
+            Clear filter
+          </Button>
+        </CardContent>
+      </Card>
+
+      {hasAppliedFilter ? (
+        <section className="flex flex-col gap-4">
+          <div>
+            <SectionHeading title="Filtered report" />
+            <p className="mt-1 text-sm text-muted-foreground">
+              Showing statistics for the selected period (
+              {formatReportPeriod(
+                appliedParams.from?.slice(0, 10),
+                appliedParams.to?.slice(0, 10),
+              )}
+              ).
+            </p>
+
+            {(draftFrom || draftTo) && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Selected dates: {draftFrom || "—"} to {draftTo || "—"}
+              </p>
+            )}
+          </div>
+
+          {isReportLoading && !report ? (
+            <DashboardLoadingState />
+          ) : reportError ? (
+            <DashboardErrorState
+              title="Unable to load filtered report"
+              message={
+                reportError instanceof Error
+                  ? reportError.message
+                  : "Unable to load the selected report."
+              }
+              onRetry={() => refetchReport()}
+            />
+          ) : report ? (
+            <ReportStats data={report as AdminStats} />
+          ) : null}
+        </section>
+      ) : isLoading && !data ? (
+        <DashboardLoadingState />
+      ) : error ? (
+        <DashboardErrorState
+          message={
+            error instanceof Error
+              ? error.message
+              : "Unable to load dashboard stats."
+          }
+          onRetry={() => refetch()}
+        />
+      ) : data ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Total teams"
+            value={formatNumber(data.teams.total)}
+            detail="Across your organization"
+            icon={Users}
+          />
+          <StatCard
+            label="Total projects"
+            value={formatNumber(data.projects.total)}
+            detail="Active and planned work"
+            icon={FolderKanban}
+          />
+          <StatCard
+            label="Total members"
+            value={formatNumber(data.members.total)}
+            detail="People contributing"
+            icon={Users}
+          />
+          <StatCard
+            label="Total tasks"
+            value={formatNumber(data.tasks.total)}
+            detail="Current workload"
+            icon={ListTodo}
+          />
+          <StatCard
+            label="Completed tasks"
+            value={formatNumber(data.tasks.completed)}
+            detail="Finished so far"
+            icon={CheckCircle2}
+            tone="success"
+          />
+          <StatCard
+            label="Active sprints"
+            value={formatNumber(data.sprints.byStatus.ACTIVE)}
+            detail="Currently in motion"
+            icon={Target}
+          />
+          <StatCard
+            label="Total comments"
+            value={formatNumber(data.comments.total)}
+            detail="Cross-team discussion"
+            icon={CalendarDays}
+          />
+          <StatCard
+            label="Completed payment amount"
+            value={`${data.billing.totalCompletedAmount.toLocaleString()} ${data.billing.currency}`}
+            detail={`${data.billing.completedPayments} completed of ${data.billing.totalPayments} payments`}
+            icon={Sparkles}
+            tone="success"
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
 
 export function ManagerDashboard({ user }: { user: AuthUser }) {
   const firstName = (user.fullName || "there").split(" ")[0];
+  const { data, isLoading, error, refetch } = useManagerDashboardStats();
 
   return (
     <div className="flex flex-col gap-7">
@@ -190,12 +711,112 @@ export function ManagerDashboard({ user }: { user: AuthUser }) {
           </CardContent>
         </Card>
       </div>
+
+      {isLoading && !data ? (
+        <DashboardLoadingState />
+      ) : error ? (
+        <DashboardErrorState
+          message={
+            error instanceof Error
+              ? error.message
+              : "Unable to load dashboard stats."
+          }
+          onRetry={() => refetch()}
+        />
+      ) : data ? (
+        <>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              label="Total teams"
+              value={formatNumber(data.teams.total)}
+              detail="Teams in your org"
+              icon={Users}
+            />
+            <StatCard
+              label="Total projects"
+              value={formatNumber(data.projects.total)}
+              detail="Portfolio health"
+              icon={FolderKanban}
+            />
+            <StatCard
+              label="Total members"
+              value={formatNumber(data.members.total)}
+              detail="Active contributors"
+              icon={Users}
+            />
+            <StatCard
+              label="Total tasks"
+              value={formatNumber(data.tasks.total)}
+              detail="Across the org"
+              icon={ListTodo}
+            />
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            <BreakdownCard
+              title="Task status"
+              items={
+                Object.entries(data.tasks.byStatus ?? {}) as Array<
+                  [string, number]
+                >
+              }
+            />
+            <BreakdownCard
+              title="Task priority"
+              items={
+                Object.entries(data.tasks.byPriority ?? {}) as Array<
+                  [string, number]
+                >
+              }
+            />
+            <BreakdownCard
+              title="Sprint status"
+              items={
+                Object.entries(data.sprints.byStatus ?? {}) as Array<
+                  [string, number]
+                >
+              }
+            />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              label="Completed tasks"
+              value={formatNumber(data.tasks.completed)}
+              detail="Finished work"
+              icon={CheckCircle2}
+              tone="success"
+            />
+            <StatCard
+              label="Total sprints"
+              value={formatNumber(data.sprints.total)}
+              detail="Program cadence"
+              icon={Target}
+            />
+            <StatCard
+              label="Total comments"
+              value={formatNumber(data.comments.total)}
+              detail="Team feedback"
+              icon={CalendarDays}
+            />
+            <StatCard
+              label="Overdue tasks"
+              value={formatNumber(data.tasks.overdue)}
+              detail="Need attention"
+              icon={Clock3}
+              tone="warning"
+            />
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }
 
 export function MemberDashboard({ user }: { user: AuthUser }) {
   const firstName = (user.fullName || "there").split(" ")[0];
+  const { data, isLoading, error, refetch } = useMemberDashboardStats();
+
   return (
     <div className="flex flex-col gap-7">
       <PageIntro
@@ -235,6 +856,74 @@ export function MemberDashboard({ user }: { user: AuthUser }) {
           </CardContent>
         </Card>
       </div>
+
+      {isLoading && !data ? (
+        <DashboardLoadingState />
+      ) : error ? (
+        <DashboardErrorState
+          message={
+            error instanceof Error
+              ? error.message
+              : "Unable to load dashboard stats."
+          }
+          onRetry={() => refetch()}
+        />
+      ) : data ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Assigned tasks"
+            value={formatNumber(data.tasks.total)}
+            detail="Your active workload"
+            icon={ListTodo}
+          />
+          <StatCard
+            label="To-dos"
+            value={formatNumber(data.tasks.todo)}
+            detail="Ready to start"
+            icon={Target}
+          />
+          <StatCard
+            label="In progress"
+            value={formatNumber(data.tasks.inProgress)}
+            detail="Currently moving"
+            icon={CalendarDays}
+          />
+          <StatCard
+            label="In review"
+            value={formatNumber(data.tasks.inReview)}
+            detail="Awaiting feedback"
+            icon={Clock3}
+          />
+          <StatCard
+            label="Completed"
+            value={formatNumber(data.tasks.completed)}
+            detail="Closed successfully"
+            icon={CheckCircle2}
+            tone="success"
+          />
+          {typeof data.tasks.overdue === "number" ? (
+            <StatCard
+              label="Overdue"
+              value={formatNumber(data.tasks.overdue)}
+              detail="Past due"
+              icon={CircleAlert}
+              tone="warning"
+            />
+          ) : null}
+          <StatCard
+            label="Projects"
+            value={formatNumber(data.projects.total)}
+            detail="Assigned to you"
+            icon={FolderKanban}
+          />
+          <StatCard
+            label="Comments authored"
+            value={formatNumber(data.comments.totalAuthored)}
+            detail="Your discussion count"
+            icon={Sparkles}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -335,7 +1024,7 @@ export const dashboardNavigation = {
     { href: "/dashboard/manager/members", label: "Members", icon: Users },
     { href: "/dashboard/manager/tasks", label: "Tasks", icon: ListTodo },
     { href: "/dashboard/manager/sprints", label: "Sprints", icon: Target },
-    
+
     {
       href: "/dashboard/profile",
       label: "User Profile",

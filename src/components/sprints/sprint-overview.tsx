@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarDays, Flag } from "lucide-react";
-import { useProjectSprints } from "@/hooks/use-bff-queries";
+import { useProjectSprints } from "@/hooks/queries/use-bff-queries";
 
 import { StatusBadge } from "@/components/badge-status";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

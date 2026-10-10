@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/select";
 
 import { toast } from "sonner";
-import { useProject, useTeams } from "@/hooks/use-bff-queries";
+import { useProject, useTeams } from "@/hooks/queries/use-bff-queries";
 
 type ProjectTeamsDialogProps = {
   open: boolean;

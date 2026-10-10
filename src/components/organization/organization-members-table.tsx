@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Eye, MoreHorizontal, Pencil, Search, Trash2 } from "lucide-react";
@@ -13,7 +12,7 @@ import type {
 } from "@/actions/organization.action";
 
 //hook imports
-import { useOrganizationMembers } from "@/hooks/use-bff-queries";
+import { useOrganizationMembers } from "@/hooks/queries/use-bff-queries";
 
 import { AvatarWithFallback } from "@/components/avatar-with-fallback";
 import { ErrorState } from "@/components/shared/error-state";
@@ -72,13 +71,13 @@ export function OrganizationMembersTable({
   const [sort, setSort] = useState<SortValue>("createdAt-desc");
 
   const [detailsId, setDetailsId] = useState<string | null>(null);
-  const [roleMember, setRoleMember] = useState<OrganizationMember | null>(
+  const [roleMember, setRoleMember] = useState<OrganizationMember | null>(null);
+  const [statusMember, setStatusMember] = useState<OrganizationMember | null>(
     null,
   );
-  const [statusMember, setStatusMember] =
-    useState<OrganizationMember | null>(null);
-  const [removeMember, setRemoveMember] =
-    useState<OrganizationMember | null>(null);
+  const [removeMember, setRemoveMember] = useState<OrganizationMember | null>(
+    null,
+  );
 
   const query = useOrganizationMembers(params);
 
@@ -88,8 +87,7 @@ export function OrganizationMembersTable({
   const loading = query.isLoading;
   const fetching = query.isFetching;
 
-  const error =
-    query.error instanceof Error ? query.error.message : null;
+  const error = query.error instanceof Error ? query.error.message : null;
 
   useEffect(() => {
     const nextSearch = search.trim() || undefined;
@@ -122,9 +120,7 @@ export function OrganizationMembersTable({
       search: search.trim() || undefined,
       role: role === "ALL" ? undefined : (role as OrganizationRole),
       status:
-        status === "ALL"
-          ? undefined
-          : (status as OrganizationMembershipStatus),
+        status === "ALL" ? undefined : (status as OrganizationMembershipStatus),
       sortBy,
       sortOrder,
     });
@@ -204,9 +200,7 @@ export function OrganizationMembersTable({
               <SelectContent>
                 <SelectItem value="createdAt-desc">Newest</SelectItem>
                 <SelectItem value="createdAt-asc">Oldest</SelectItem>
-                <SelectItem value="updatedAt-desc">
-                  Recently updated
-                </SelectItem>
+                <SelectItem value="updatedAt-desc">Recently updated</SelectItem>
                 <SelectItem value="role-asc">Role</SelectItem>
               </SelectContent>
             </Select>
@@ -311,9 +305,7 @@ export function OrganizationMembersTable({
 
                       <TableCell>
                         {member.createdAt
-                          ? new Date(
-                              member.createdAt,
-                            ).toLocaleDateString()
+                          ? new Date(member.createdAt).toLocaleDateString()
                           : "-"}
                       </TableCell>
 
@@ -329,9 +321,7 @@ export function OrganizationMembersTable({
                             }}
                           >
                             <Eye />
-                            <span className="sr-only">
-                              View member
-                            </span>
+                            <span className="sr-only">View member</span>
                           </Button>
 
                           {editable && (
@@ -346,9 +336,7 @@ export function OrganizationMembersTable({
                                 }}
                               >
                                 <Pencil />
-                                <span className="sr-only">
-                                  Change role
-                                </span>
+                                <span className="sr-only">Change role</span>
                               </Button>
 
                               <Button
@@ -361,9 +349,7 @@ export function OrganizationMembersTable({
                                 }}
                               >
                                 <MoreHorizontal />
-                                <span className="sr-only">
-                                  Change status
-                                </span>
+                                <span className="sr-only">Change status</span>
                               </Button>
                             </>
                           )}
@@ -381,9 +367,7 @@ export function OrganizationMembersTable({
                                 }}
                               >
                                 <Trash2 />
-                                <span className="sr-only">
-                                  Remove member
-                                </span>
+                                <span className="sr-only">Remove member</span>
                               </Button>
                             )}
                         </div>
@@ -404,9 +388,7 @@ export function OrganizationMembersTable({
               <Button
                 variant="outline"
                 size="sm"
-                disabled={
-                  fetching || (params.page ?? 1) <= 1
-                }
+                disabled={fetching || (params.page ?? 1) <= 1}
                 onClick={() =>
                   setParams((current) => ({
                     ...current,
@@ -420,10 +402,7 @@ export function OrganizationMembersTable({
               <Button
                 variant="outline"
                 size="sm"
-                disabled={
-                  fetching ||
-                  (params.page ?? 1) >= totalPages
-                }
+                disabled={fetching || (params.page ?? 1) >= totalPages}
                 onClick={() =>
                   setParams((current) => ({
                     ...current,

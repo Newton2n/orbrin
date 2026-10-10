@@ -4,7 +4,7 @@ import { MessageSquare, RefreshCw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { type Comment } from "@/actions/comment.action";
-import { useComments } from "@/hooks/use-bff-queries";
+import { useComments } from "@/hooks/queries/use-bff-queries";
 
 import { CommentForm } from "@/components/comments/comment-form";
 import { CommentItem } from "@/components/comments/comment-item";

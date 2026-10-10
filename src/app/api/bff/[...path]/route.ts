@@ -17,6 +17,7 @@ export async function GET(request: Request, context: RouteContext) {
     ["organizations", "members"],
     ["organizations", "me"],
     ["users", "me"],
+    ["stats"],
   ];
   const allowed = allowedPrefixes.some(
     (prefix) =>

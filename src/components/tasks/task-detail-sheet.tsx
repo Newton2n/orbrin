@@ -32,7 +32,7 @@ import type { Sprint } from "@/actions/sprint.action";
 import {
   useOrganizationMembers,
   useProjectSprints,
-} from "@/hooks/use-bff-queries";
+} from "@/hooks/queries/use-bff-queries";
 
 import { CommentList } from "@/components/comments/comment-list";
 
@@ -366,7 +366,6 @@ export function TaskDetailSheet({
 
       setEditMode(false);
     } catch (error) {
-     
       setError("Something went wrong while updating the task.");
     }
   }
@@ -389,7 +388,6 @@ export function TaskDetailSheet({
 
       onOpenChange(false);
     } catch (error) {
-     
       setError("Something went wrong while deleting the task.");
     } finally {
       setDeleting(false);

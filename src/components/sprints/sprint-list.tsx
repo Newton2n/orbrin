@@ -7,7 +7,7 @@ import {
   type Sprint,
   type SprintStatus,
 } from "@/actions/sprint.action";
-import { useProjectSprints, useSprint } from "@/hooks/use-bff-queries";
+import { useProjectSprints, useSprint } from "@/hooks/queries/use-bff-queries";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -198,7 +198,6 @@ export function SprintList({
 
       await loadSprints();
     } catch (error) {
-     
       toast.error("Unable to delete sprint.");
     } finally {
       setDeleteLoading(false);

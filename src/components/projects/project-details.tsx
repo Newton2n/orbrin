@@ -9,7 +9,7 @@ import { TaskList } from "@/components/tasks/task-list";
 import {
   useProject,
   useProjectSprints,
-} from "@/hooks/use-queries";
+} from "@/hooks/queries/use-queries";
 
 type ProjectRole = "ADMIN" | "MANAGER" | "MEMBER";
 
