@@ -1,8 +1,8 @@
-import { PublicLayout } from "../components/public-site";
+import { PublicLayoutClient } from "../components/public-site";
 
 export default function HomeLoading() {
   return (
-    <PublicLayout isAuthenticated={false}>
+    <PublicLayoutClient>
       <main className="overflow-hidden animate-pulse">
         <section className="relative mx-auto max-w-7xl px-5 pb-20 pt-16 sm:pt-24 lg:px-8 lg:pb-32 lg:pt-32">
           <div className="mx-auto max-w-3xl text-center flex flex-col items-center">
@@ -59,6 +59,6 @@ export default function HomeLoading() {
           </div>
         </section>
       </main>
-    </PublicLayout>
+    </PublicLayoutClient>
   );
 }

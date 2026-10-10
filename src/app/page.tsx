@@ -8,21 +8,23 @@ import {
   Layers,
 } from "lucide-react";
 import Link from "next/link";
-import { hasValidAccessToken } from "../actions/auth.action";
+import { getCurrentUser } from "../actions/auth.action";
 import {
   FeatureGrid,
   ProductPreview,
-  PublicLayout,
   SectionIntro,
   WorkflowSteps,
 } from "../components/public-site";
+import { PublicLayout } from "../components/public-layout";
 import { Button } from "../components/ui/button";
 
 export default async function Home() {
-  const isAuthenticated = await hasValidAccessToken();
+  const result = await getCurrentUser();
+  const user = result.success ? result.data : null;
+  const isAuthenticated = Boolean(user);
 
   return (
-    <PublicLayout isAuthenticated={isAuthenticated}>
+    <PublicLayout user={user}>
       <main className="overflow-hidden">
         <section className="relative mx-auto max-w-7xl px-5 pb-20 pt-16 sm:pt-24 lg:px-8 lg:pb-32 lg:pt-32">
           <div className="absolute left-1/2 top-1/3 -z-10 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl lg:h-[450px] lg:w-[450px]" />

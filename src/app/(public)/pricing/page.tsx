@@ -1,16 +1,18 @@
 import { Check, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { hasValidAccessToken } from "@/actions/auth.action";
-import { PublicLayout } from "@/components/public-site";
+import { getCurrentUser } from "@/actions/auth.action";
+import { PublicLayout } from "@/components/public-layout";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function PricingPage() {
-  const isAuthenticated = await hasValidAccessToken();
+  const result = await getCurrentUser();
+  const user = result.success ? result.data : null;
+  const isAuthenticated = Boolean(user);
 
   return (
-    <PublicLayout isAuthenticated={isAuthenticated}>
+    <PublicLayout user={user}>
       <main className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <div className="mb-2 flex items-center justify-center gap-2">

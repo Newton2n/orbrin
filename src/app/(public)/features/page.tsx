@@ -1,28 +1,27 @@
 import {
-  FolderKanban,
   CheckCircle,
   Users,
-  Zap,
   Kanban,
   MessageSquare,
-  ShieldCheck,
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
-import { hasValidAccessToken } from "../../../actions/auth.action";
+import { getCurrentUser } from "../../../actions/auth.action";
 import {
   FeatureGrid,
-  PublicLayout,
   SectionIntro,
   WorkflowSteps,
 } from "../../../components/public-site";
+import { PublicLayout } from "../../../components/public-layout";
 import { Button } from "../../../components/ui/button";
 
 export default async function FeaturesPage() {
-  const isAuthenticated = await hasValidAccessToken();
+  const result = await getCurrentUser();
+  const user = result.success ? result.data : null;
+  const isAuthenticated = Boolean(user);
 
   return (
-    <PublicLayout isAuthenticated={isAuthenticated}>
+    <PublicLayout user={user}>
       <main className="mx-auto max-w-7xl px-5 py-20 lg:px-8 lg:py-28">
         <div className="mx-auto max-w-3xl text-center">
           <p className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-3.5 py-1 text-xs font-medium text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">

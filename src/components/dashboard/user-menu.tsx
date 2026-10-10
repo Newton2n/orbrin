@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, LogOut, Settings } from "lucide-react";
+import { LayoutDashboard, LogOut, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { logout } from "@/actions/auth.action";
@@ -19,7 +19,15 @@ import type { AuthUser, Role } from "@/features/auth/types/auth.types";
 
 import { UserInitials, UserRoleLabel } from "./shared/dashboard-content";
 
-export function UserMenu({ user, role }: { user: AuthUser; role: Role }) {
+export function UserMenu({
+  user,
+  role,
+  showDashboard = false,
+}: {
+  user: AuthUser;
+  role: Role;
+  showDashboard?: boolean;
+}) {
   const router = useRouter();
 
   const label = user.fullName || user.email || "Account";
@@ -75,6 +83,15 @@ export function UserMenu({ user, role }: { user: AuthUser; role: Role }) {
         </div>
 
         <DropdownMenuSeparator />
+
+        {showDashboard && (
+          <DropdownMenuItem
+            onClick={() => router.push(`/dashboard/${role.toLowerCase()}`)}
+          >
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            <span>Dashboard</span>
+          </DropdownMenuItem>
+        )}
 
         {role === "ADMIN" && (
           <DropdownMenuItem
