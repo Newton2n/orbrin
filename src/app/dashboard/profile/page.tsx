@@ -11,7 +11,7 @@ import { ProfileSkeleton } from "@/components/shared/skeletons";
 
 export default function ProfilePage() {
   const { data: profile, isLoading, isError } = useUserProfile();
-  console.log("ProfilePage profile:", profile);
+  
 
   if (isLoading) {
     return <ProfileSkeleton />;

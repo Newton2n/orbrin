@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { AuthUser, Role } from "@/features/auth/types/auth.types";
 import { DashboardHeader } from "./dashboard-header";
 import { DashboardSidebar } from "./dashboard-sidebar";
@@ -62,11 +62,11 @@ function FloatingWarning({
         onClick={() => setExpanded(true)}
         aria-label={`Expand ${title}`}
         title={title}
-        className={`self-end flex size-10 cursor-pointer items-center justify-center rounded-full border bg-background/95 shadow-lg backdrop-blur-md transition-transform hover:scale-105 sm:h-auto sm:w-auto sm:rounded-xl sm:px-3 sm:py-2 ${borderClasses}`}
+        className={`flex size-10 cursor-pointer items-center justify-center rounded-full border bg-background/95 shadow-lg backdrop-blur-md transition-transform hover:scale-105 sm:h-auto sm:w-auto sm:rounded-xl sm:px-3 sm:py-2 ${borderClasses}`}
       >
         <Icon className="size-4" aria-hidden="true" />
 
-        <span className="hidden max-w-40 truncate text-xs font-medium text-foreground sm:block pl-1">
+        <span className="hidden max-w-40 truncate pl-1 text-xs font-medium text-foreground sm:block">
           {title}
         </span>
 
@@ -149,7 +149,7 @@ export function DashboardShell({
   subscriptionExpired: boolean;
 }) {
   const role = roleForUser(user);
-  const [collapsed, setCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const organization =
     user.memberships[0]?.organization?.name || "Orbrin workspace";
@@ -162,13 +162,134 @@ export function DashboardShell({
   const showAnyWarning =
     emailUnverified || showSubscriptionWarning || showExpiredWarning;
 
+  const warningsRef = useRef<HTMLDivElement | null>(null);
+  const dragState = useRef({
+    dragging: false,
+    moved: false,
+    startX: 0,
+    startY: 0,
+    startLeft: 0,
+    startTop: 0,
+  });
+
+  const [position, setPosition] = useState({ x: 16, y: 80 });
+  const [isDragging, setIsDragging] = useState(false);
+
+  const clampPosition = useCallback((x: number, y: number) => {
+    const element = warningsRef.current;
+
+    if (!element) return { x, y };
+
+    const rect = element.getBoundingClientRect();
+    const padding = 16;
+
+    const maxX = window.innerWidth - rect.width - padding;
+    const maxY = window.innerHeight - rect.height - padding;
+
+    return {
+      x: Math.min(Math.max(x, padding), Math.max(padding, maxX)),
+      y: Math.min(Math.max(y, padding), Math.max(padding, maxY)),
+    };
+  }, []);
+
+  // Set the default position to the right side after mount.
+  useEffect(() => {
+    const element = warningsRef.current;
+
+    if (!element) return;
+
+    const rect = element.getBoundingClientRect();
+    const padding = 16;
+
+    setPosition({
+      x: Math.max(padding, window.innerWidth - rect.width - padding),
+      y: 80,
+    });
+  }, [showAnyWarning]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setPosition((current) => clampPosition(current.x, current.y));
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, [clampPosition]);
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    const element = warningsRef.current;
+
+    if (!element) return;
+
+    const rect = element.getBoundingClientRect();
+
+    dragState.current = {
+      dragging: true,
+      moved: false,
+      startX: event.clientX,
+      startY: event.clientY,
+      startLeft: rect.left,
+      startTop: rect.top,
+    };
+
+    setIsDragging(true);
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const state = dragState.current;
+
+    if (!state.dragging) return;
+
+    const deltaX = event.clientX - state.startX;
+    const deltaY = event.clientY - state.startY;
+
+    // Only treat it as a drag after real movement.
+    if (Math.abs(deltaX) < 4 && Math.abs(deltaY) < 4) {
+      return;
+    }
+
+    if (!state.moved) {
+      state.moved = true;
+      warningsRef.current?.setPointerCapture(event.pointerId);
+    }
+
+    setPosition(
+      clampPosition(state.startLeft + deltaX, state.startTop + deltaY),
+    );
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    const state = dragState.current;
+
+    if (state.moved) {
+      warningsRef.current?.releasePointerCapture(event.pointerId);
+    }
+
+    state.dragging = false;
+    setIsDragging(false);
+
+    if (state.moved) {
+      setTimeout(() => {
+        state.moved = false;
+      }, 50);
+    }
+  };
+
+  const handleClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (dragState.current.moved) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+  };
+
   return (
     <div className="flex min-h-svh bg-background">
       <DashboardSidebar
         role={role}
         organization={organization}
-        collapsed={collapsed}
-        onToggle={() => setCollapsed((value) => !value)}
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed((value) => !value)}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -179,7 +300,22 @@ export function DashboardShell({
         />
 
         {showAnyWarning ? (
-          <div className="pointer-events-none fixed right-4 top-20 z-50 flex w-[calc(100%-2rem)] max-w-sm flex-col items-end gap-3">
+          <div
+            ref={warningsRef}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            onClickCapture={handleClickCapture}
+            style={{
+              left: position.x,
+              top: position.y,
+              touchAction: "none",
+            }}
+            className={`fixed z-50 flex w-[calc(100%-2rem)] max-w-sm cursor-grab flex-col items-end gap-3 select-none active:cursor-grabbing ${
+              isDragging ? "opacity-95" : ""
+            }`}
+          >
             {emailUnverified ? (
               <div className="pointer-events-auto w-full">
                 <FloatingWarning
