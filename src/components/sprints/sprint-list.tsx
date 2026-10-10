@@ -1,44 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import {
-  deleteSprint,
-  type Sprint,
-  type SprintStatus,
-} from "@/actions/sprint.action";
-import { useProjectSprints, useSprint } from "@/hooks/queries/use-bff-queries";
-
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
 import {
   CalendarDays,
   ChevronLeft,
@@ -51,11 +12,44 @@ import {
   Target,
   Trash2,
 } from "lucide-react";
-
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-
-import { SprintFormDialog } from "./sprint-form-dialog";
+import {
+  deleteSprint,
+  type Sprint,
+  type SprintStatus,
+} from "@/actions/sprint.action";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useProjectSprints, useSprint } from "@/hooks/queries/use-bff-queries";
+import { useUrlQueryState } from "@/hooks/use-url-query-state";
 import { SprintDetailsDialog } from "./sprint-details-dialog";
+import { SprintFormDialog } from "./sprint-form-dialog";
 
 type SprintListProps = {
   projectId: string;
@@ -82,18 +76,32 @@ export function SprintList({
   canDelete = false,
   canViewDetails = true,
 }: SprintListProps) {
-  const [search, setSearch] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-
-  const [status, setStatus] = useState<"ALL" | SprintStatus>("ALL");
-
-  const [sortBy, setSortBy] = useState<"name" | "createdAt" | "updatedAt">(
-    "createdAt",
+  const { searchParams, updateQuery } = useUrlQueryState();
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
+  const [searchInput, setSearchInput] = useState(
+    () => searchParams.get("search") ?? "",
   );
 
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [status, setStatus] = useState<"ALL" | SprintStatus>(
+    () => (searchParams.get("status") as SprintStatus | null) ?? "ALL",
+  );
 
-  const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState<"name" | "createdAt" | "updatedAt">(
+    () =>
+      searchParams.get("sortBy") === "name" ||
+      searchParams.get("sortBy") === "updatedAt"
+        ? (searchParams.get("sortBy") as "name" | "updatedAt")
+        : "createdAt",
+  );
+
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() =>
+    searchParams.get("sortOrder") === "asc" ? "asc" : "desc",
+  );
+
+  const [page, setPage] = useState(() => {
+    const value = Number(searchParams.get("page"));
+    return Number.isInteger(value) && value > 0 ? value : 1;
+  });
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
@@ -124,10 +132,26 @@ export function SprintList({
     const timer = window.setTimeout(() => {
       setPage(1);
       setSearch(searchInput.trim());
+      updateQuery({ search: searchInput.trim() || null, page: null });
     }, 550);
 
     return () => window.clearTimeout(timer);
-  }, [searchInput]);
+  }, [searchInput, updateQuery]);
+
+  useEffect(() => {
+    const nextPage = Number(searchParams.get("page"));
+    setPage(Number.isInteger(nextPage) && nextPage > 0 ? nextPage : 1);
+    setSearchInput(searchParams.get("search") ?? "");
+    setSearch(searchParams.get("search") ?? "");
+    setStatus((searchParams.get("status") as SprintStatus | null) ?? "ALL");
+    setSortBy(
+      searchParams.get("sortBy") === "name" ||
+        searchParams.get("sortBy") === "updatedAt"
+        ? (searchParams.get("sortBy") as "name" | "updatedAt")
+        : "createdAt",
+    );
+    setSortOrder(searchParams.get("sortOrder") === "asc" ? "asc" : "desc");
+  }, [searchParams]);
 
   useEffect(() => {
     if (sprintQuery.data) {
@@ -142,6 +166,7 @@ export function SprintList({
 
     setPage(1);
     setStatus(value);
+    updateQuery({ status: value === "ALL" ? null : value, page: null });
   }
 
   function handleSortChange(value: "createdAt" | "updatedAt" | "name" | null) {
@@ -149,6 +174,7 @@ export function SprintList({
 
     setPage(1);
     setSortBy(value);
+    updateQuery({ sortBy: value === "createdAt" ? null : value, page: null });
   }
 
   function handleSortOrderChange(value: "asc" | "desc" | null) {
@@ -156,6 +182,7 @@ export function SprintList({
 
     setPage(1);
     setSortOrder(value);
+    updateQuery({ sortOrder: value === "desc" ? null : value, page: null });
   }
 
   function handleCreate() {
@@ -197,7 +224,7 @@ export function SprintList({
       setDeletingSprint(null);
 
       await loadSprints();
-    } catch (error) {
+    } catch {
       toast.error("Unable to delete sprint.");
     } finally {
       setDeleteLoading(false);
@@ -535,7 +562,16 @@ export function SprintList({
               variant="outline"
               size="sm"
               disabled={!hasPreviousPage}
-              onClick={() => setPage((value) => Math.max(1, value - 1))}
+              onClick={() => {
+                setPage((value) => {
+                  const nextPage = Math.max(1, value - 1);
+                  updateQuery(
+                    { page: nextPage === 1 ? null : nextPage },
+                    "push",
+                  );
+                  return nextPage;
+                });
+              }}
             >
               <ChevronLeft className="mr-1 size-4" />
               Previous
@@ -545,7 +581,13 @@ export function SprintList({
               variant="outline"
               size="sm"
               disabled={!hasNextPage}
-              onClick={() => setPage((value) => value + 1)}
+              onClick={() => {
+                setPage((value) => {
+                  const nextPage = value + 1;
+                  updateQuery({ page: nextPage }, "push");
+                  return nextPage;
+                });
+              }}
             >
               Next
               <ChevronRight className="ml-1 size-4" />

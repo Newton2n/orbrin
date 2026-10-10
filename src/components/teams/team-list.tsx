@@ -11,13 +11,10 @@ import {
   type Team,
   type TeamListParams,
 } from "@/actions/team.action";
-import { useTeams } from "@/hooks/queries/use-bff-queries";
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-
 import {
   Select,
   SelectContent,
@@ -25,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 import {
   Table,
   TableBody,
@@ -34,6 +30,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTeams } from "@/hooks/queries/use-bff-queries";
+import { useUrlQueryState } from "@/hooks/use-url-query-state";
 
 import { DeleteConfirmDialog } from "./delete-confirm-dialog";
 import { TeamDetailsDialog } from "./team-details-dialog";
@@ -53,14 +51,6 @@ export type TeamListProps = {
 
 type FormState = { mode: "create" } | { mode: "edit"; team: Team } | null;
 
-type TeamListResult = {
-  items: Team[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-};
-
 export function TeamList({
   role,
   canCreate = false,
@@ -69,12 +59,24 @@ export function TeamList({
   canManageMembers = false,
   canViewDetails = false,
 }: TeamListProps) {
-  const [page, setPage] = useState(1);
+  const { searchParams, updateQuery } = useUrlQueryState();
+  const [page, setPage] = useState(() => {
+    const value = Number(searchParams.get("page"));
+    return Number.isInteger(value) && value > 0 ? value : 1;
+  });
 
-  const [search, setSearch] = useState("");
-  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
+  const [searchInput, setSearchInput] = useState(
+    () => searchParams.get("search") ?? "",
+  );
 
-  const [sortBy, setSortBy] = useState<TeamListParams["sortBy"]>("createdAt");
+  const [sortBy, setSortBy] = useState<TeamListParams["sortBy"]>(() =>
+    (["name", "createdAt", "updatedAt"] as const).includes(
+      searchParams.get("sortBy") as "name" | "createdAt" | "updatedAt",
+    )
+      ? (searchParams.get("sortBy") as TeamListParams["sortBy"])
+      : "createdAt",
+  );
 
   const [form, setForm] = useState<FormState>(null);
 
@@ -96,16 +98,30 @@ export function TeamList({
   const result = query.data;
   const loading = query.isLoading;
   const error = query.error instanceof Error ? query.error.message : undefined;
-  const loadTeams = () => void query.refetch();
-
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setSearch(searchInput.trim());
       setPage(1);
+      updateQuery({ search: searchInput.trim() || null, page: null });
     }, 550);
 
     return () => window.clearTimeout(timer);
-  }, [searchInput]);
+  }, [searchInput, updateQuery]);
+
+  useEffect(() => {
+    const nextPage = Number(searchParams.get("page"));
+    const nextSortBy = searchParams.get("sortBy");
+    setPage(Number.isInteger(nextPage) && nextPage > 0 ? nextPage : 1);
+    setSearchInput(searchParams.get("search") ?? "");
+    setSearch(searchParams.get("search") ?? "");
+    setSortBy(
+      nextSortBy === "name" ||
+        nextSortBy === "createdAt" ||
+        nextSortBy === "updatedAt"
+        ? nextSortBy
+        : "createdAt",
+    );
+  }, [searchParams]);
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -151,6 +167,10 @@ export function TeamList({
             onValueChange={(value) => {
               setSortBy((value as TeamListParams["sortBy"]) ?? "createdAt");
               setPage(1);
+              updateQuery({
+                sortBy: value === "createdAt" ? null : value,
+                page: null,
+              });
             }}
           >
             <SelectTrigger className="md:w-44">
@@ -345,7 +365,15 @@ export function TeamList({
                     variant="outline"
                     size="sm"
                     disabled={result.page <= 1 || loading}
-                    onClick={() => setPage(result.page - 1)}
+                    onClick={() => {
+                      setPage(result.page - 1);
+                      updateQuery(
+                        {
+                          page: result.page - 1 === 1 ? null : result.page - 1,
+                        },
+                        "push",
+                      );
+                    }}
                   >
                     Previous
                   </Button>
@@ -354,7 +382,10 @@ export function TeamList({
                     variant="outline"
                     size="sm"
                     disabled={result.page >= result.totalPages || loading}
-                    onClick={() => setPage(result.page + 1)}
+                    onClick={() => {
+                      setPage(result.page + 1);
+                      updateQuery({ page: result.page + 1 }, "push");
+                    }}
                   >
                     Next
                   </Button>

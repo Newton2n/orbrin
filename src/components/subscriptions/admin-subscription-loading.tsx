@@ -3,14 +3,12 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 export function AdminSubscriptionPageLoading() {
   return (
     <div className="space-y-6 animate-pulse">
-      {/* Page Header Skeleton */}
       <div className="space-y-2">
         <div className="h-3 w-16 rounded bg-zinc-200 dark:bg-zinc-800" />
         <div className="h-8 w-48 rounded bg-zinc-200 dark:bg-zinc-800" />
         <div className="h-4 w-72 rounded bg-zinc-200 dark:bg-zinc-800" />
       </div>
 
-      {/* Active Subscription Card Skeleton */}
       <Card className="border-border/70 shadow-none">
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div className="space-y-2 w-1/2">
@@ -21,7 +19,6 @@ export function AdminSubscriptionPageLoading() {
         </CardHeader>
 
         <CardContent className="space-y-5">
-          {/* Plan Info Box Skeleton */}
           <div className="rounded-xl border bg-muted/20 p-5">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-2 w-1/2">
@@ -33,13 +30,11 @@ export function AdminSubscriptionPageLoading() {
             </div>
           </div>
 
-          {/* Grid Dates Skeleton */}
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="h-16 rounded-lg border bg-zinc-50 dark:bg-zinc-900/50" />
             <div className="h-16 rounded-lg border bg-zinc-50 dark:bg-zinc-900/50" />
           </div>
 
-          {/* Footer Action Skeleton */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-5">
             <div className="space-y-1.5 w-1/2">
               <div className="h-4 w-40 rounded bg-zinc-200 dark:bg-zinc-800" />
@@ -50,7 +45,6 @@ export function AdminSubscriptionPageLoading() {
         </CardContent>
       </Card>
 
-      {/* Payment History Section Skeleton */}
       <Card className="border-border/70 shadow-none">
         <CardHeader className="gap-4">
           <div className="flex items-center justify-between gap-4">
@@ -60,7 +54,6 @@ export function AdminSubscriptionPageLoading() {
             </div>
             <div className="size-5 rounded bg-zinc-200 dark:bg-zinc-800 shrink-0" />
           </div>
-          {/* Filters Bar Skeleton */}
           <div className="h-10 w-full rounded-md bg-zinc-200 dark:bg-zinc-800" />
         </CardHeader>
 

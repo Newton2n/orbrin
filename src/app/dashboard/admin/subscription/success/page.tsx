@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 export default async function SubscriptionSuccessPage() {
   const result = await getSubscriptionHistory();
 
-  // Make sure the payment has actually activated the subscription.
+  // Verify that payment activated the subscription.
   if (!result.success || result.data?.status !== "ACTIVE") {
     redirect("/dashboard/admin/subscription");
   }

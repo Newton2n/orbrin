@@ -1,19 +1,13 @@
 "use client";
 
 import { Eye, MoreHorizontal, Pencil, Search, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-//type imports
 import type {
   OrganizationMember,
-  OrganizationMemberListParams,
   OrganizationMembershipStatus,
   OrganizationRole,
 } from "@/actions/organization.action";
-
-//hook imports
-import { useOrganizationMembers } from "@/hooks/queries/use-bff-queries";
-
 import { AvatarWithFallback } from "@/components/avatar-with-fallback";
 import { ErrorState } from "@/components/shared/error-state";
 import { Badge } from "@/components/ui/badge";
@@ -35,17 +29,57 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useOrganizationMembers } from "@/hooks/queries/use-bff-queries";
+import { useUrlQueryState } from "@/hooks/use-url-query-state";
 
 import { MemberDetailsDialog } from "./member-details-dialog";
 import { MemberRoleDialog } from "./member-role-dialog";
 import { MemberStatusDialog } from "./member-status-dialog";
 import { RemoveMemberDialog } from "./remove-member-dialog";
 
-type SortValue =
-  | "createdAt-desc"
-  | "createdAt-asc"
-  | "updatedAt-desc"
-  | "role-asc";
+type SortBy = "createdAt" | "updatedAt" | "role";
+type SortOrder = "asc" | "desc";
+type SortValue = `${SortBy}-${SortOrder}`;
+
+const VALID_ROLES: OrganizationRole[] = ["ADMIN", "MANAGER", "MEMBER"];
+
+const VALID_STATUSES: OrganizationMembershipStatus[] = [
+  "ACTIVE",
+  "INACTIVE",
+  "SUSPENDED",
+];
+
+const VALID_SORT_BY: SortBy[] = ["createdAt", "updatedAt", "role"];
+
+function parsePage(value: string | null) {
+  const page = Number(value);
+
+  return Number.isInteger(page) && page > 0 ? page : 1;
+}
+
+function parseSortBy(value: string | null): SortBy {
+  return VALID_SORT_BY.includes(value as SortBy)
+    ? (value as SortBy)
+    : "createdAt";
+}
+
+function parseSortOrder(value: string | null): SortOrder {
+  return value === "asc" ? "asc" : "desc";
+}
+
+function parseRole(value: string | null): OrganizationRole | undefined {
+  return VALID_ROLES.includes(value as OrganizationRole)
+    ? (value as OrganizationRole)
+    : undefined;
+}
+
+function parseStatus(
+  value: string | null,
+): OrganizationMembershipStatus | undefined {
+  return VALID_STATUSES.includes(value as OrganizationMembershipStatus)
+    ? (value as OrganizationMembershipStatus)
+    : undefined;
+}
 
 export function OrganizationMembersTable({
   currentUserRole,
@@ -58,18 +92,18 @@ export function OrganizationMembersTable({
   canManageMembers: boolean;
   canRemoveMembers: boolean;
 }) {
-  const [params, setParams] = useState<OrganizationMemberListParams>({
-    page: 1,
-    limit: 10,
-    sortBy: "createdAt",
-    sortOrder: "desc",
-  });
+  const { searchParams, updateQuery } = useUrlQueryState();
 
-  const [search, setSearch] = useState("");
-  const [role, setRole] = useState("ALL");
-  const [status, setStatus] = useState("ALL");
-  const [sort, setSort] = useState<SortValue>("createdAt-desc");
+  const urlSearch = searchParams.get("search") ?? "";
+  const roleFilter = parseRole(searchParams.get("role"));
+  const statusFilter = parseStatus(searchParams.get("status"));
+  const sortBy = parseSortBy(searchParams.get("sortBy"));
+  const sortOrder = parseSortOrder(searchParams.get("sortOrder"));
+  const page = parsePage(searchParams.get("page"));
 
+  const sortValue: SortValue = `${sortBy}-${sortOrder}`;
+
+  const [searchInput, setSearchInput] = useState(urlSearch);
   const [detailsId, setDetailsId] = useState<string | null>(null);
   const [roleMember, setRoleMember] = useState<OrganizationMember | null>(null);
   const [statusMember, setStatusMember] = useState<OrganizationMember | null>(
@@ -79,51 +113,108 @@ export function OrganizationMembersTable({
     null,
   );
 
-  const query = useOrganizationMembers(params);
+  const searchTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    setSearchInput(urlSearch);
+  }, [urlSearch]);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const query = useOrganizationMembers({
+    page,
+    limit: 10,
+    search: urlSearch.trim() || undefined,
+    role: roleFilter,
+    status: statusFilter,
+    sortBy,
+    sortOrder,
+  });
 
   const members = query.data?.items ?? [];
   const totalPages = query.data?.totalPages ?? 0;
-
   const loading = query.isLoading;
   const fetching = query.isFetching;
-
   const error = query.error instanceof Error ? query.error.message : null;
 
-  useEffect(() => {
-    const nextSearch = search.trim() || undefined;
-    const timer = window.setTimeout(() => {
-      setParams((current) => {
-        if (current.search === nextSearch && current.page === 1) {
-          return current;
-        }
-
-        return {
-          ...current,
-          page: 1,
-          search: nextSearch,
-        };
-      });
-    }, 550);
-
-    return () => window.clearTimeout(timer);
-  }, [search]);
-
-  function applyFilters() {
-    const [sortBy, sortOrder] = sort.split("-") as [
-      "createdAt" | "updatedAt" | "role",
-      "asc" | "desc",
-    ];
-
-    setParams({
-      page: 1,
-      limit: 10,
-      search: search.trim() || undefined,
-      role: role === "ALL" ? undefined : (role as OrganizationRole),
-      status:
-        status === "ALL" ? undefined : (status as OrganizationMembershipStatus),
-      sortBy,
-      sortOrder,
+  function updateFilters({
+    nextSearch = urlSearch,
+    nextRole = roleFilter,
+    nextStatus = statusFilter,
+    nextSortBy = sortBy,
+    nextSortOrder = sortOrder,
+  }: {
+    nextSearch?: string;
+    nextRole?: OrganizationRole | undefined;
+    nextStatus?: OrganizationMembershipStatus | undefined;
+    nextSortBy?: SortBy;
+    nextSortOrder?: SortOrder;
+  }) {
+    updateQuery({
+      search: nextSearch.trim() || null,
+      role: nextRole ?? null,
+      status: nextStatus ?? null,
+      sortBy: nextSortBy === "createdAt" ? null : nextSortBy,
+      sortOrder:
+        nextSortBy === "createdAt" && nextSortOrder === "desc"
+          ? null
+          : nextSortOrder,
+      page: null,
     });
+  }
+
+  function handleSearchChange(value: string) {
+    setSearchInput(value);
+
+    if (searchTimeoutRef.current) {
+      window.clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = window.setTimeout(() => {
+      updateFilters({
+        nextSearch: value,
+      });
+    }, 400);
+  }
+
+  function handleRoleChange(value: string | null) {
+    if (!value) return;
+    updateFilters({
+      nextRole: value === "ALL" ? undefined : (value as OrganizationRole),
+    });
+  }
+
+  function handleStatusChange(value: string | null) {
+    if (!value) return;
+    updateFilters({
+      nextStatus:
+        value === "ALL" ? undefined : (value as OrganizationMembershipStatus),
+    });
+  }
+
+  function handleSortChange(value: string | null) {
+    if (!value) return;
+    const [nextSortBy, nextSortOrder] = value.split("-") as [SortBy, SortOrder];
+
+    updateFilters({
+      nextSortBy,
+      nextSortOrder,
+    });
+  }
+
+  function goToPage(nextPage: number) {
+    updateQuery(
+      {
+        page: nextPage === 1 ? null : nextPage,
+      },
+      "push",
+    );
   }
 
   function refresh() {
@@ -146,16 +237,14 @@ export function OrganizationMembersTable({
               <Input
                 className="pl-9"
                 placeholder="Search by name or email"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                value={searchInput}
+                onChange={(event) => handleSearchChange(event.target.value)}
               />
             </div>
 
             <Select
-              value={role}
-              onValueChange={(value) => {
-                setRole(value ?? "ALL");
-              }}
+              value={roleFilter ?? "ALL"}
+              onValueChange={handleRoleChange}
             >
               <SelectTrigger>
                 <SelectValue placeholder="All roles" />
@@ -170,10 +259,8 @@ export function OrganizationMembersTable({
             </Select>
 
             <Select
-              value={status}
-              onValueChange={(value) => {
-                setStatus(value ?? "ALL");
-              }}
+              value={statusFilter ?? "ALL"}
+              onValueChange={handleStatusChange}
             >
               <SelectTrigger>
                 <SelectValue placeholder="All statuses" />
@@ -187,12 +274,7 @@ export function OrganizationMembersTable({
               </SelectContent>
             </Select>
 
-            <Select
-              value={sort}
-              onValueChange={(value) => {
-                setSort((value ?? "createdAt-desc") as SortValue);
-              }}
-            >
+            <Select value={sortValue} onValueChange={handleSortChange}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -204,10 +286,6 @@ export function OrganizationMembersTable({
                 <SelectItem value="role-asc">Role</SelectItem>
               </SelectContent>
             </Select>
-
-            <Button variant="outline" onClick={applyFilters}>
-              Apply
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -381,20 +459,15 @@ export function OrganizationMembersTable({
 
           <div className="flex items-center justify-between border-t px-4 py-3 text-xs text-muted-foreground">
             <span>
-              Page {params.page ?? 1} of {Math.max(totalPages, 1)}
+              Page {page} of {Math.max(totalPages, 1)}
             </span>
 
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                disabled={fetching || (params.page ?? 1) <= 1}
-                onClick={() =>
-                  setParams((current) => ({
-                    ...current,
-                    page: (current.page ?? 1) - 1,
-                  }))
-                }
+                disabled={fetching || page <= 1}
+                onClick={() => goToPage(page - 1)}
               >
                 Previous
               </Button>
@@ -402,13 +475,8 @@ export function OrganizationMembersTable({
               <Button
                 variant="outline"
                 size="sm"
-                disabled={fetching || (params.page ?? 1) >= totalPages}
-                onClick={() =>
-                  setParams((current) => ({
-                    ...current,
-                    page: (current.page ?? 1) + 1,
-                  }))
-                }
+                disabled={fetching || page >= totalPages}
+                onClick={() => goToPage(page + 1)}
               >
                 Next
               </Button>
