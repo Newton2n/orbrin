@@ -163,11 +163,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
           </div>
 
           <div className="flex flex-wrap gap-x-6 gap-y-2 border-t pt-4 text-sm">
-            <div>
-              <span className="text-muted-foreground">Role</span>
-              <p className="mt-0.5 font-medium">{profile.role ?? "Member"}</p>
-            </div>
-
+            
             <div>
               <span className="text-muted-foreground">Status</span>
               <p className="mt-0.5 font-medium">{profile.status ?? "Active"}</p>

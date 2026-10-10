@@ -9,15 +9,38 @@ import {
   unwrapPayload,
 } from "../lib/server/backend-api";
 
-export type UserProfile = {
+
+
+export type AuthProvider = 'LOCAL' | 'GOOGLE'  | string;
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | string;
+export type UserRole = 'ADMIN' | 'MEMBER' | 'MANAGER' | string;
+
+export interface Organization {
   id: string;
-  fullName: string;
+  name: string;
+  slug: string;
+}
+
+export interface Membership {
+  id: string;
+  role: UserRole;
+  organization: Organization;
+}
+
+export interface UserProfile {
+  id: string;
   email: string;
-  profileImageUrl?: string | null;
-  role?: string;
-  status?: string;
-  [key: string]: unknown;
-};
+  fullName: string;
+  emailVerified: boolean;
+  profileImageUrl: string | null;
+  authProvider: AuthProvider;
+  status: UserStatus;
+  memberships: Membership[];
+  createdAt: string; 
+  updatedAt: string; 
+}
+
+
 
 export async function getUserProfile() {
   const result = await backendRequest<unknown>("/users/me");

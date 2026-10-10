@@ -46,7 +46,6 @@ export function ProfileImageUploader({ profile }: { profile: UserProfile }) {
   const [saving, setSaving] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
- 
   useEffect(() => {
     return () => {
       if (previewUrl) {
@@ -73,7 +72,6 @@ export function ProfileImageUploader({ profile }: { profile: UserProfile }) {
       return;
     }
 
-    
     const objectUrl = URL.createObjectURL(file);
 
     setPreviewUrl((previous) => {
@@ -117,11 +115,7 @@ export function ProfileImageUploader({ profile }: { profile: UserProfile }) {
       await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
 
       router.refresh();
-
-      
     } catch (error) {
-     
-
       toast.error("Something went wrong.");
 
       setPreviewUrl((current) => {
@@ -167,8 +161,6 @@ export function ProfileImageUploader({ profile }: { profile: UserProfile }) {
 
       router.refresh();
     } catch (error) {
-      
-
       toast.error("Something went wrong.");
     } finally {
       setSaving(false);
@@ -222,10 +214,6 @@ export function ProfileImageUploader({ profile }: { profile: UserProfile }) {
             </p>
 
             <div className="mt-2 flex items-center justify-center gap-2 text-xs text-muted-foreground sm:justify-start">
-              <span className="rounded-md bg-muted px-2 py-1">
-                {profile.role ?? "Member"}
-              </span>
-
               {profile.status && (
                 <span className="rounded-md bg-muted px-2 py-1">
                   {profile.status}
