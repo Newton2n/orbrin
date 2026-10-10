@@ -161,14 +161,6 @@ export function AuthSkeleton() {
 export function DashboardShellSkeleton() {
   return (
     <div className="flex min-h-svh" aria-busy="true">
-      <aside className="hidden w-64 border-r border-border p-5 lg:block">
-        <Skeleton className="h-8 w-32" />
-        <div className="mt-10 flex flex-col gap-3">
-          {[1, 2, 3, 4, 5].map((item) => (
-            <Skeleton key={item} className="h-9 w-full" />
-          ))}
-        </div>
-      </aside>
       <main className="flex min-w-0 flex-1 flex-col">
         <div className="flex h-16 items-center justify-between border-b border-border px-4 sm:px-8">
           <Skeleton className="h-8 w-32" />

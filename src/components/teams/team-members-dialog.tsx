@@ -12,7 +12,7 @@ import type { OrganizationMember } from "@/actions/organization.action";
 import {
   useOrganizationMembers,
   useTeamMembers,
-} from "@/hooks/use-bff-queries";
+} from "@/hooks/queries/use-bff-queries";
 
 import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
@@ -139,7 +139,6 @@ export function TeamMembersDialog({
 
       await loadMembers();
     } catch (error) {
-     
       toast.error(
         error instanceof Error ? error.message : "Unable to add member.",
       );
@@ -169,7 +168,6 @@ export function TeamMembersDialog({
 
       await loadMembers();
     } catch (error) {
-     
       toast.error(
         error instanceof Error ? error.message : "Unable to remove member.",
       );

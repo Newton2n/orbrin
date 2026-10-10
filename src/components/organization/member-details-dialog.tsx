@@ -5,7 +5,7 @@ import {
   type OrganizationMember,
   type OrganizationRole,
 } from "@/actions/organization.action";
-import { useOrganizationMember } from "@/hooks/use-bff-queries";
+import { useOrganizationMember } from "@/hooks/queries/use-bff-queries";
 import { AvatarWithFallback } from "@/components/avatar-with-fallback";
 import { DialogErrorState } from "@/components/shared/dialog-error-state";
 import { Badge } from "@/components/ui/badge";

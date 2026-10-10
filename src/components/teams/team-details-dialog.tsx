@@ -3,11 +3,8 @@
 import { Users } from "lucide-react";
 import { useState } from "react";
 
-import {
-  type Team,
-  type TeamMember,
-} from "@/actions/team.action";
-import { useTeamMembers } from "@/hooks/use-bff-queries";
+import { type Team, type TeamMember } from "@/actions/team.action";
+import { useTeamMembers } from "@/hooks/queries/use-bff-queries";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

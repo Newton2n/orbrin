@@ -11,7 +11,7 @@ import {
   type Team,
   type TeamListParams,
 } from "@/actions/team.action";
-import { useTeams } from "@/hooks/use-bff-queries";
+import { useTeams } from "@/hooks/queries/use-bff-queries";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

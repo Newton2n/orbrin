@@ -1,6 +1,6 @@
 "use client";
 
-import { useUserProfile } from "@/hooks/use-bff-queries";
+import { useUserProfile } from "@/hooks/queries/use-bff-queries";
 
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { DeleteAccountDialog } from "@/components/profile/delete-account-dialog";

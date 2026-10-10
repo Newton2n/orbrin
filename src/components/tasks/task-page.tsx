@@ -17,7 +17,7 @@ import {
   type Task,
   type TaskPagination,
 } from "@/actions/task.action";
-import { useMyCreatedTasks, useMyTasks } from "@/hooks/use-bff-queries";
+import { useMyCreatedTasks, useMyTasks } from "@/hooks/queries/use-bff-queries";
 
 import { Button } from "@/components/ui/button";
 
@@ -85,7 +85,6 @@ export function TaskPage({
     }
   }, [taskQuery.data, taskQuery.error, taskQuery.isLoading]);
 
-
   const handleTaskUpdated = useCallback(
     (updatedTask: Task) => {
       void queryClient.invalidateQueries({ queryKey: ["tasks"] });
@@ -102,7 +101,6 @@ export function TaskPage({
     [queryClient],
   );
 
-
   const handleTaskDeleted = useCallback(
     (taskId: string) => {
       const task = tasks.find((item) => item.id === taskId);
@@ -115,7 +113,6 @@ export function TaskPage({
     },
     [tasks],
   );
-
 
   const handleConfirmDelete = async () => {
     if (!deleteTaskItem) {
@@ -139,13 +136,11 @@ export function TaskPage({
 
       setDeleteTaskItem(null);
     } catch (error) {
-     
       setError("Something went wrong while deleting the task.");
     } finally {
       setDeleting(false);
     }
   };
-
 
   const pageTitle = mode === "created" ? "My Created Tasks" : "My Tasks";
 
