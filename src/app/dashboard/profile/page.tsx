@@ -25,6 +25,7 @@ import {
 
 export default function ProfilePage() {
   const { data: profile, isLoading, isError } = useUserProfile();
+
   if (isLoading) {
     return <ProfileSkeleton />;
   }
@@ -37,9 +38,12 @@ export default function ProfilePage() {
       />
     );
   }
-
   const memberships = profile.memberships ?? [];
   const emailVerified = Boolean(profile.emailVerified);
+
+  const isAdmin = memberships.some(
+    (membership) => membership.role?.toUpperCase() === "ADMIN",
+  );
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8">
@@ -210,19 +214,21 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      <section className="rounded-xl border border-destructive/30 p-5">
-        <div className="mb-4">
-          <h2 className="text-sm font-semibold text-destructive">
-            Danger zone
-          </h2>
+      {!isAdmin ? (
+        <section className="rounded-xl border border-destructive/30 p-5">
+          <div className="mb-4">
+            <h2 className="text-sm font-semibold text-destructive">
+              Danger zone
+            </h2>
 
-          <p className="mt-1 text-sm text-muted-foreground">
-            Permanently remove your account and associated access.
-          </p>
-        </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Permanently remove your account and associated access.
+            </p>
+          </div>
 
-        <DeleteAccountDialog />
-      </section>
+          <DeleteAccountDialog />
+        </section>
+      ) : null}
     </div>
   );
 }
