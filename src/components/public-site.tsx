@@ -1,5 +1,6 @@
 "use client";
 
+
 import {
   ArrowRight,
   Check,
@@ -23,6 +24,7 @@ import Logo from "./shared/logo";
 import { UserMenu } from "./dashboard/user-menu";
 import type { AuthUser, Role } from "@/features/auth/types/auth.types";
 
+
 const links = [
   { href: "/", label: "Home" },
   { href: "/features", label: "Features" },
@@ -30,28 +32,33 @@ const links = [
   { href: "/about", label: "About" },
 ];
 
+
 interface PublicHeaderProps {
   user?: AuthUser | null;
 }
+
 
 interface PublicNavProps {
   isMobile?: boolean;
   closeSheet?: () => void;
 }
 
+
 function PublicNav({ isMobile = false, closeSheet }: PublicNavProps) {
   const pathname = usePathname();
+
 
   return (
     <nav
       className={
         isMobile
-          ? "mt-6 flex flex-col gap-1"
+          ? "mt-4 flex flex-col gap-1.5 px-1"
           : "hidden items-center gap-7 md:flex"
       }
     >
       {links.map((link) => {
         const isActive = pathname === link.href;
+
 
         if (isMobile) {
           return (
@@ -59,7 +66,7 @@ function PublicNav({ isMobile = false, closeSheet }: PublicNavProps) {
               key={link.href}
               href={link.href}
               onClick={closeSheet}
-              className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={`flex min-h-11 items-center rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${
                 isActive
                   ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-50"
                   : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
@@ -69,6 +76,7 @@ function PublicNav({ isMobile = false, closeSheet }: PublicNavProps) {
             </Link>
           );
         }
+
 
         return (
           <Link
@@ -88,10 +96,12 @@ function PublicNav({ isMobile = false, closeSheet }: PublicNavProps) {
   );
 }
 
+
 export function PublicHeader({
   user = null,
 }: PublicHeaderProps) {
   const role: Role = user?.memberships[0]?.role ?? "MEMBER";
+
 
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/80 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/80">
@@ -105,10 +115,14 @@ export function PublicHeader({
           <span className="truncate">ORBRIN</span>
         </Link>
 
+
         <PublicNav />
+
 
         <div className="hidden items-center gap-2 md:flex">
           <ThemeToggle />
+
+
           {user ? (
             <UserMenu user={user} role={role} showDashboard />
           ) : (
@@ -120,6 +134,8 @@ export function PublicHeader({
               >
                 <Link href="/login">Sign in</Link>
               </Button>
+
+
               <Button
                 asChild
                 className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
@@ -132,49 +148,57 @@ export function PublicHeader({
           )}
         </div>
 
+
         <Sheet>
           <SheetTrigger
             render={
               <button
                 type="button"
-                className="inline-flex size-9 items-center justify-center rounded-md text-zinc-700 transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:focus-visible:ring-zinc-600 md:hidden"
+                className="inline-flex size-10 items-center justify-center rounded-xl text-zinc-700 transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:focus-visible:ring-zinc-600 md:hidden"
                 aria-label="Open navigation"
               />
             }
           >
             <Menu aria-hidden="true" />
           </SheetTrigger>
-          <SheetContent className="flex flex-col justify-between">
-            <div>
+
+
+          <SheetContent className="flex w-full flex-col justify-between overflow-y-auto p-0 sm:max-w-sm">
+            <div className="px-5 pb-6 pt-5">
               <div className="flex items-center justify-between border-b border-zinc-200 pb-4 dark:border-zinc-800">
                 <SheetTitle className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
                   ORBRIN navigation
                 </SheetTitle>
               </div>
 
+
               <PublicNav isMobile />
 
-              <Separator className="my-3 dark:bg-zinc-800" />
 
-              <div className="flex flex-col gap-1">
+              <Separator className="my-5 dark:bg-zinc-800" />
+
+
+              <div className="flex flex-col gap-2">
                 {user ? (
-                  <div className="flex items-center gap-2 px-3 py-2">
-                    <UserMenu user={user} role={role} showDashboard />
-                    <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                      Account
-                    </span>
-                  </div>
+                  <UserMenu
+                    user={user}
+                    role={role}
+                    showDashboard
+                    variant="labeled"
+                  />
                 ) : (
                   <>
                     <Link
                       href="/login"
-                      className="rounded-md px-3 py-2.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
+                      className="flex min-h-11 items-center rounded-xl px-4 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
                     >
                       Sign in
                     </Link>
+
+
                     <Button
                       asChild
-                      className="mt-2 w-full bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+                      className="mt-2 h-11 w-full rounded-xl bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
                     >
                       <Link href="/register">Get started</Link>
                     </Button>
@@ -183,10 +207,13 @@ export function PublicHeader({
               </div>
             </div>
 
-            <div className="border-t border-zinc-200 pt-4 dark:border-zinc-800">
-              <p className="mb-2 text-xs font-medium text-zinc-400 dark:text-zinc-500">
+
+            <div className="border-t border-zinc-200 px-5 py-5 dark:border-zinc-800">
+              <p className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
                 Theme preference
               </p>
+
+
               <div className="flex justify-center">
                 <ThemeOptions />
               </div>
@@ -197,6 +224,7 @@ export function PublicHeader({
     </header>
   );
 }
+
 
 export function PublicFooter() {
   return (
@@ -211,10 +239,14 @@ export function PublicFooter() {
             <Logo className="h-7 w-auto dark:invert" />
             ORBRIN
           </Link>
+
+
           <p className="mt-3 max-w-xs text-sm leading-6 text-zinc-500 dark:text-zinc-400">
             A focused workspace for teams that want clarity without complexity.
           </p>
         </div>
+
+
         {[
           {
             title: "Product",
@@ -242,6 +274,8 @@ export function PublicFooter() {
             <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-200">
               {group.title}
             </p>
+
+
             <div className="mt-4 flex flex-col gap-3">
               {group.items.map(([label, href]) => (
                 <Link
@@ -256,6 +290,8 @@ export function PublicFooter() {
           </div>
         ))}
       </div>
+
+
       <div className="mx-auto flex max-w-7xl flex-col gap-3 border-t border-zinc-200/80 px-5 py-5 text-xs text-zinc-400 sm:flex-row sm:items-center sm:justify-between lg:px-8 dark:border-zinc-800">
         <span>© {new Date().getFullYear()} ORBRIN</span>
         <span>Built for thoughtful delivery.</span>
@@ -263,6 +299,7 @@ export function PublicFooter() {
     </footer>
   );
 }
+
 
 export function ProductPreview() {
   return (
@@ -273,12 +310,16 @@ export function ProductPreview() {
         <span className="size-2 rounded-full bg-emerald-400" />
         <span className="ml-3 text-xs text-zinc-400">orbrin / workspace</span>
       </div>
+
+
       <div className="grid min-h-72 sm:grid-cols-[150px_1fr]">
         <div className="hidden border-r border-zinc-200 bg-zinc-50/50 p-4 text-zinc-600 sm:block dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-400">
           <div className="mb-8 flex items-center gap-2 text-xs font-semibold text-zinc-900 dark:text-zinc-100">
             <Logo className="h-5 w-auto shrink-0 dark:invert" />
             ORBRIN
           </div>
+
+
           <div className="flex flex-col gap-3 text-xs text-zinc-500">
             <span className="rounded bg-zinc-200/70 px-2 py-1 font-medium text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100">
               Overview
@@ -288,13 +329,19 @@ export function ProductPreview() {
             <span>Teams</span>
           </div>
         </div>
+
+
         <div className="p-5 sm:p-7">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
             Workspace overview
           </p>
+
+
           <h3 className="mt-2 text-xl font-semibold text-zinc-900 dark:text-zinc-50">
             Good morning, team.
           </h3>
+
+
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             {["Active projects", "Open tasks", "Team members"].map((label) => (
               <div
@@ -304,24 +351,34 @@ export function ProductPreview() {
                 <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                   {label}
                 </p>
+
+
                 <p className="mt-3 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
                   —
                 </p>
+
+
                 <p className="mt-1 text-[10px] text-zinc-400">
                   Connect your data
                 </p>
               </div>
             ))}
           </div>
+
+
           <div className="mt-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-zinc-900 dark:text-zinc-200">
                 Delivery health
               </span>
+
+
               <span className="text-[10px] text-zinc-400">
                 Ready for live data
               </span>
             </div>
+
+
             <div className="mt-4 flex items-end gap-1">
               {[35, 52, 44, 68, 61, 82, 74, 90].map((height) => (
                 <span
@@ -337,6 +394,7 @@ export function ProductPreview() {
     </div>
   );
 }
+
 
 export const featureCards = [
   {
@@ -371,6 +429,7 @@ export const featureCards = [
   },
 ];
 
+
 export function FeatureGrid() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -381,9 +440,13 @@ export function FeatureGrid() {
         >
           <CardContent className="p-6">
             <Icon className="size-5 text-zinc-900 dark:text-zinc-100" />
+
+
             <h3 className="mt-6 text-base font-semibold text-zinc-900 dark:text-zinc-50">
               {title}
             </h3>
+
+
             <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
               {body}
             </p>
@@ -393,6 +456,7 @@ export function FeatureGrid() {
     </div>
   );
 }
+
 
 export function SectionIntro({
   eyebrow,
@@ -408,15 +472,20 @@ export function SectionIntro({
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
         {eyebrow}
       </p>
+
+
       <h2 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-4xl">
         {title}
       </h2>
+
+
       <p className="mt-4 text-base leading-7 text-zinc-500 dark:text-zinc-400">
         {body}
       </p>
     </div>
   );
 }
+
 
 export function PublicLayoutClient({
   children,
@@ -433,6 +502,7 @@ export function PublicLayoutClient({
     </div>
   );
 }
+
 
 export function WorkflowSteps() {
   return (
@@ -466,9 +536,13 @@ export function WorkflowSteps() {
           <span className="font-mono text-xs font-semibold text-zinc-400">
             {step.n}
           </span>
+
+
           <h3 className="mt-4 font-semibold text-zinc-900 dark:text-zinc-50">
             {step.title}
           </h3>
+
+
           <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
             {step.body}
           </p>
@@ -478,9 +552,12 @@ export function WorkflowSteps() {
   );
 }
 
+
 export function HeroIcon() {
   return <Sparkles className="size-4" aria-hidden="true" />;
 }
+
+
 export function Dot() {
   return (
     <Circle

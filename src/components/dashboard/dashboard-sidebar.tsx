@@ -6,6 +6,7 @@ import type { Role } from "@/features/auth/types/auth.types";
 import { cn } from "@/utils/utils";
 import { NavLinks } from "./nav-links";
 import Logo from "../shared/logo";
+import Link from "next/link";
 
 export function DashboardSidebar({
   role,
@@ -31,9 +32,9 @@ export function DashboardSidebar({
           <Logo className="h-7 w-auto dark:invert" />
         </div>
         {!collapsed && (
-          <span className="font-heading text-lg font-semibold tracking-tight">
+          <Link href="/" className="font-heading text-lg font-semibold tracking-tight">
             Orbrin
-          </span>
+          </Link>
         )}
       </div>
       <div className="border-b border-sidebar-border p-3">

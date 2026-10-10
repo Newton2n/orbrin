@@ -771,7 +771,6 @@ export function AdminDashboard({ user }: { user: AuthUser }) {
 export function ManagerDashboard({ user }: { user: AuthUser }) {
   const firstName = (user.fullName || "there").split(" ")[0];
   const { data, isLoading, error, refetch } = useManagerDashboardStats();
-
   return (
     <div className="flex flex-col gap-7">
       <PageIntro
@@ -903,13 +902,6 @@ export function ManagerDashboard({ user }: { user: AuthUser }) {
               value={formatNumber(data.comments.total)}
               detail="Team feedback"
               icon={CalendarDays}
-            />
-            <StatCard
-              label="Overdue tasks"
-              value={formatNumber(data.tasks.overdue)}
-              detail="Need attention"
-              icon={Clock3}
-              tone="warning"
             />
           </div>
         </>

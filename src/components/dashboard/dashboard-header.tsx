@@ -85,9 +85,9 @@ export function DashboardHeader({
                   <Logo className="h-7 w-auto dark:invert" />
                 </div>
 
-                <span className="font-heading text-lg font-semibold">
+                <Link href="/" className="font-heading text-lg font-semibold">
                   Orbrin
-                </span>
+                </Link>
               </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto">
