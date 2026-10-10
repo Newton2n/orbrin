@@ -18,16 +18,13 @@ export default async function DashboardLayout({
   const subscriptionResult = await getSubscriptionHistory();
 
   
-// Get the subscription data if available
   const subscription = subscriptionResult.success
     ? subscriptionResult.data
     : null;
 
-  // Determine if the subscription warning should be shown
   const showSubscriptionWarning =
     !subscriptionResult.success || subscription === null;
 
-  // Determine if the subscription has expired
   const subscriptionExpired =
     subscription !== null &&
     subscription.currentPeriodEnd !== null &&

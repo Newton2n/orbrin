@@ -47,7 +47,6 @@ export function DashboardShell({
 
         <main className="flex-1 overflow-auto">
           <div className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">
-            {/* Not subscribed */}
             {showSubscriptionWarning ? (
               <div className="fixed right-4 top-20 z-50 w-[calc(100%-2rem)] max-w-sm">
                 <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-background p-3 shadow-lg">
@@ -79,7 +78,6 @@ export function DashboardShell({
               </div>
             ) : null}
 
-            {/* Subscription expired */}
             {subscriptionExpired && !showSubscriptionWarning ? (
               <div className="fixed right-4 top-20 z-50 w-[calc(100%-2rem)] max-w-sm">
                 <div className="flex items-start gap-3 rounded-lg border border-red-500/30 bg-background p-3 shadow-lg">

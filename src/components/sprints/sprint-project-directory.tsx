@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { Project } from "@/actions/project.action";
 import { useProjects } from "@/hooks/queries/use-bff-queries";
+import { useUrlQueryState } from "@/hooks/use-url-query-state";
 
 import { Button } from "@/components/ui/button";
 
@@ -32,6 +33,7 @@ type SprintProjectDirectoryProps = {
 };
 
 export function SprintProjectDirectory({ role }: SprintProjectDirectoryProps) {
+  const { searchParams, updateQuery } = useUrlQueryState();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -45,9 +47,22 @@ export function SprintProjectDirectory({ role }: SprintProjectDirectoryProps) {
   const projects = query.data?.projects ?? [];
   const loading = query.isLoading;
 
+  useEffect(() => {
+    const projectId = searchParams.get("project");
+    setSelectedProject(
+      projects.find((project) => project.id === projectId) ?? null,
+    );
+    setDialogOpen(
+      Boolean(
+        projectId && projects.some((project) => project.id === projectId),
+      ),
+    );
+  }, [projects, searchParams]);
+
   function handleOpen(project: Project) {
     setSelectedProject(project);
     setDialogOpen(true);
+    updateQuery({ project: project.id }, "push");
   }
 
   function handleDialogChange(open: boolean) {
@@ -55,6 +70,7 @@ export function SprintProjectDirectory({ role }: SprintProjectDirectoryProps) {
 
     if (!open) {
       setSelectedProject(null);
+      updateQuery({ project: null }, "push");
     }
   }
 

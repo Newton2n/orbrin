@@ -2,50 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { z } from "zod";
-
-import {
-  createTask,
-  type Task,
-  type TaskPriority,
-  type TaskStatus,
-} from "@/actions/task.action";
-
-import type { OrganizationMember } from "@/actions/organization.action";
-
-import type { Sprint } from "@/actions/sprint.action";
-
-import { TaskDetailSheet } from "@/components/tasks/task-detail-sheet";
-import { TaskCard } from "@/components/tasks/task-card";
-
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-
-import { Input } from "@/components/ui/input";
-
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-import { Textarea } from "@/components/ui/textarea";
-
 import {
   ChevronLeft,
   ChevronRight,
@@ -56,12 +12,45 @@ import {
   Search,
   Target,
 } from "lucide-react";
-
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
+import type { OrganizationMember } from "@/actions/organization.action";
+import type { Sprint } from "@/actions/sprint.action";
+import {
+  createTask,
+  type Task,
+  type TaskPriority,
+  type TaskStatus,
+} from "@/actions/task.action";
+import { TaskCard } from "@/components/tasks/task-card";
+import { TaskDetailSheet } from "@/components/tasks/task-detail-sheet";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   useOrganizationMembers,
   useProjectTasks,
 } from "@/hooks/queries/use-bff-queries";
+import { useUrlQueryState } from "@/hooks/use-url-query-state";
 
 type TaskRole = "ADMIN" | "MANAGER" | "MEMBER";
 
@@ -139,18 +128,29 @@ export function TaskList({
   canDelete = false,
   canViewDetails = true,
 }: TaskListProps) {
+  const { searchParams, updateQuery } = useUrlQueryState();
   const [view, setView] = useState<"board" | "list">("board");
 
-  const [search, setSearch] = useState("");
-  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
+  const [searchInput, setSearchInput] = useState(
+    () => searchParams.get("search") ?? "",
+  );
 
-  const [status, setStatus] = useState<"ALL" | TaskStatus>("ALL");
+  const [status, setStatus] = useState<"ALL" | TaskStatus>(
+    () => (searchParams.get("status") as TaskStatus | null) ?? "ALL",
+  );
 
-  const [priority, setPriority] = useState<"ALL" | TaskPriority>("ALL");
+  const [priority, setPriority] = useState<"ALL" | TaskPriority>(
+    () => (searchParams.get("priority") as TaskPriority | null) ?? "ALL",
+  );
 
-  const [sprintFilter, setSprintFilter] = useState("ALL");
+  const [sprintFilter, setSprintFilter] = useState(
+    () => searchParams.get("sprintId") ?? "ALL",
+  );
 
-  const [assigneeFilter, setAssigneeFilter] = useState("ALL");
+  const [assigneeFilter, setAssigneeFilter] = useState(
+    () => searchParams.get("assigneeId") ?? "ALL",
+  );
 
   const [assignees, setAssignees] = useState<AssigneeOption[]>([]);
 
@@ -162,7 +162,10 @@ export function TaskList({
 
   const [createOpen, setCreateOpen] = useState(false);
 
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(() => {
+    const value = Number(searchParams.get("page"));
+    return Number.isInteger(value) && value > 0 ? value : 1;
+  });
 
   const [error, setError] = useState<string | null>(null);
 
@@ -234,10 +237,22 @@ export function TaskList({
     const timer = window.setTimeout(() => {
       setPage(1);
       setSearch(searchInput.trim());
+      updateQuery({ search: searchInput.trim() || null, page: null });
     }, 550);
 
     return () => window.clearTimeout(timer);
-  }, [searchInput]);
+  }, [searchInput, updateQuery]);
+
+  useEffect(() => {
+    const nextPage = Number(searchParams.get("page"));
+    setPage(Number.isInteger(nextPage) && nextPage > 0 ? nextPage : 1);
+    setSearchInput(searchParams.get("search") ?? "");
+    setSearch(searchParams.get("search") ?? "");
+    setStatus((searchParams.get("status") as TaskStatus | null) ?? "ALL");
+    setPriority((searchParams.get("priority") as TaskPriority | null) ?? "ALL");
+    setSprintFilter(searchParams.get("sprintId") ?? "ALL");
+    setAssigneeFilter(searchParams.get("assigneeId") ?? "ALL");
+  }, [searchParams]);
 
   function resetCreateForm() {
     reset({
@@ -294,7 +309,7 @@ export function TaskList({
       resetCreateForm();
 
       await loadTasks();
-    } catch (error) {
+    } catch {
       toast.error("Unable to create task.");
     }
   }
@@ -376,7 +391,12 @@ export function TaskList({
                 onValueChange={(value) => {
                   if (value !== null) {
                     setPage(1);
-                    setStatus(value as "ALL" | TaskStatus);
+                    const nextStatus = value as "ALL" | TaskStatus;
+                    setStatus(nextStatus);
+                    updateQuery({
+                      status: nextStatus === "ALL" ? null : nextStatus,
+                      page: null,
+                    });
                   }
                 }}
               >
@@ -402,7 +422,12 @@ export function TaskList({
                 onValueChange={(value) => {
                   if (value !== null) {
                     setPage(1);
-                    setPriority(value as "ALL" | TaskPriority);
+                    const nextPriority = value as "ALL" | TaskPriority;
+                    setPriority(nextPriority);
+                    updateQuery({
+                      priority: nextPriority === "ALL" ? null : nextPriority,
+                      page: null,
+                    });
                   }
                 }}
               >
@@ -427,6 +452,10 @@ export function TaskList({
                   if (value !== null) {
                     setPage(1);
                     setSprintFilter(value);
+                    updateQuery({
+                      sprintId: value === "ALL" ? null : value,
+                      page: null,
+                    });
                   }
                 }}
               >
@@ -451,6 +480,10 @@ export function TaskList({
                   if (value !== null) {
                     setPage(1);
                     setAssigneeFilter(value);
+                    updateQuery({
+                      assigneeId: value === "ALL" ? null : value,
+                      page: null,
+                    });
                   }
                 }}
               >
@@ -624,7 +657,16 @@ export function TaskList({
               variant="outline"
               size="sm"
               disabled={!hasPreviousPage}
-              onClick={() => setPage((value) => Math.max(1, value - 1))}
+              onClick={() => {
+                setPage((value) => {
+                  const nextPage = Math.max(1, value - 1);
+                  updateQuery(
+                    { page: nextPage === 1 ? null : nextPage },
+                    "push",
+                  );
+                  return nextPage;
+                });
+              }}
             >
               <ChevronLeft className="mr-1 size-4" />
               Previous
@@ -635,7 +677,13 @@ export function TaskList({
               variant="outline"
               size="sm"
               disabled={!hasNextPage}
-              onClick={() => setPage((value) => value + 1)}
+              onClick={() => {
+                setPage((value) => {
+                  const nextPage = value + 1;
+                  updateQuery({ page: nextPage }, "push");
+                  return nextPage;
+                });
+              }}
             >
               Next
               <ChevronRight className="ml-1 size-4" />

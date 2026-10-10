@@ -1,14 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import Link from "next/link";
-
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   deleteProject,
   deleteProjectDocument,
   type Project,
 } from "@/actions/project.action";
-import { useProjects, useTeams } from "@/hooks/queries/use-bff-queries";
 import { ErrorState } from "@/components/shared/error-state";
 
 import { Badge } from "@/components/ui/badge";
@@ -29,19 +38,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-
-import {
-  ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
-  ExternalLink,
-  Plus,
-  Search,
-  SlidersHorizontal,
-  X,
-} from "lucide-react";
-
-import { toast } from "sonner";
+import { useProjects, useTeams } from "@/hooks/queries/use-bff-queries";
+import { useUrlQueryState } from "@/hooks/use-url-query-state";
 
 import { ProjectDetailsDialog } from "./project-details-dialog";
 import { ProjectFormDialog } from "./project-form-dialog";
@@ -171,20 +169,40 @@ export function ProjectList({
   canManageTeams = false,
   canViewDetails = true,
 }: ProjectListProps) {
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const { searchParams, updateQuery } = useUrlQueryState();
+  const [page, setPage] = useState(() => {
+    const value = Number(searchParams.get("page"));
+    return Number.isInteger(value) && value > 0 ? value : 1;
+  });
+  const [limit, setLimit] = useState(() => {
+    const value = Number(searchParams.get("limit"));
+    return [10, 20, 50].includes(value) ? value : 10;
+  });
 
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState(
+    () => searchParams.get("search") ?? "",
+  );
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
 
-  const [status, setStatus] = useState("all");
-  const [teamId, setTeamId] = useState("all");
-
-  const [sortBy, setSortBy] = useState<"name" | "createdAt" | "updatedAt">(
-    "createdAt",
+  const [status, setStatus] = useState(
+    () => searchParams.get("status") ?? "all",
+  );
+  const [teamId, setTeamId] = useState(
+    () => searchParams.get("teamId") ?? "all",
   );
 
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sortBy, setSortBy] = useState<"name" | "createdAt" | "updatedAt">(
+    () =>
+      (["name", "createdAt", "updatedAt"] as const).includes(
+        searchParams.get("sortBy") as "name" | "createdAt" | "updatedAt",
+      )
+        ? (searchParams.get("sortBy") as "name" | "createdAt" | "updatedAt")
+        : "createdAt",
+  );
+
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() =>
+    searchParams.get("sortOrder") === "asc" ? "asc" : "desc",
+  );
 
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
@@ -216,12 +234,36 @@ export function ProjectList({
     const timer = window.setTimeout(() => {
       setSearch(searchInput.trim());
       setPage(1);
+      updateQuery({
+        search: searchInput.trim() || null,
+        page: null,
+      });
     }, 550);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [searchInput]);
+  }, [searchInput, updateQuery]);
+
+  useEffect(() => {
+    const nextPage = Number(searchParams.get("page"));
+    const nextLimit = Number(searchParams.get("limit"));
+    const nextSortBy = searchParams.get("sortBy");
+    setPage(Number.isInteger(nextPage) && nextPage > 0 ? nextPage : 1);
+    setLimit([10, 20, 50].includes(nextLimit) ? nextLimit : 10);
+    setSearchInput(searchParams.get("search") ?? "");
+    setSearch(searchParams.get("search") ?? "");
+    setStatus(searchParams.get("status") ?? "all");
+    setTeamId(searchParams.get("teamId") ?? "all");
+    setSortBy(
+      nextSortBy === "name" ||
+        nextSortBy === "createdAt" ||
+        nextSortBy === "updatedAt"
+        ? nextSortBy
+        : "createdAt",
+    );
+    setSortOrder(searchParams.get("sortOrder") === "asc" ? "asc" : "desc");
+  }, [searchParams]);
 
   const projectsQuery = useProjects(getProjectQuery());
   const projects = projectsQuery.data?.projects ?? [];
@@ -236,6 +278,15 @@ export function ProjectList({
     setSortBy("createdAt");
     setSortOrder("desc");
     setPage(1);
+    updateQuery({
+      search: null,
+      status: null,
+      teamId: null,
+      sortBy: null,
+      sortOrder: null,
+      page: null,
+      limit: null,
+    });
   }
 
   const hasActiveFilters =
@@ -454,6 +505,10 @@ export function ProjectList({
 
                     setStatus(value);
                     setPage(1);
+                    updateQuery({
+                      status: value === "all" ? null : value,
+                      page: null,
+                    });
                   }}
                 >
                   <SelectTrigger className="w-full">
@@ -486,6 +541,10 @@ export function ProjectList({
 
                     setTeamId(value);
                     setPage(1);
+                    updateQuery({
+                      teamId: value === "all" ? null : value,
+                      page: null,
+                    });
                   }}
                   disabled={teamsLoading}
                 >
@@ -529,6 +588,7 @@ export function ProjectList({
 
                     setSortBy(value);
                     setPage(1);
+                    updateQuery({ sortBy: value, page: null });
                   }}
                 >
                   <SelectTrigger className="w-full">
@@ -561,6 +621,7 @@ export function ProjectList({
 
                     setSortOrder(value);
                     setPage(1);
+                    updateQuery({ sortOrder: value, page: null });
                   }}
                 >
                   <SelectTrigger className="w-full">
@@ -596,6 +657,10 @@ export function ProjectList({
 
                     setLimit(nextLimit);
                     setPage(1);
+                    updateQuery({
+                      limit: nextLimit === 10 ? null : nextLimit,
+                      page: null,
+                    });
                   }}
                 >
                   <SelectTrigger className="w-full">
@@ -796,9 +861,7 @@ export function ProjectList({
                   {showingFrom}
                 </span>
                 {" – "}
-                <span className="font-medium text-foreground">
-                  {showingTo}
-                </span>{" "}
+                <span className="font-medium text-foreground">{showingTo}</span>{" "}
                 of{" "}
                 <span className="font-medium text-foreground">
                   {pagination.total}
@@ -813,7 +876,14 @@ export function ProjectList({
                     size="icon"
                     disabled={!pagination.hasPreviousPage || loading}
                     onClick={() =>
-                      setPage((current) => Math.max(1, current - 1))
+                      setPage((current) => {
+                        const nextPage = Math.max(1, current - 1);
+                        updateQuery(
+                          { page: nextPage === 1 ? null : nextPage },
+                          "push",
+                        );
+                        return nextPage;
+                      })
                     }
                     aria-label="Previous page"
                   >
@@ -843,7 +913,13 @@ export function ProjectList({
                         variant={active ? "default" : "outline"}
                         size="icon"
                         disabled={loading}
-                        onClick={() => setPage(pageNumber)}
+                        onClick={() => {
+                          setPage(pageNumber);
+                          updateQuery(
+                            { page: pageNumber === 1 ? null : pageNumber },
+                            "push",
+                          );
+                        }}
                         aria-label={`Go to page ${pageNumber}`}
                       >
                         {pageNumber}
@@ -855,7 +931,13 @@ export function ProjectList({
                     variant="outline"
                     size="icon"
                     disabled={!pagination.hasNextPage || loading}
-                    onClick={() => setPage((current) => current + 1)}
+                    onClick={() => {
+                      setPage((current) => {
+                        const nextPage = current + 1;
+                        updateQuery({ page: nextPage }, "push");
+                        return nextPage;
+                      });
+                    }}
                     aria-label="Next page"
                   >
                     <ChevronRight className="size-4" />

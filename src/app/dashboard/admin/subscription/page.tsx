@@ -10,6 +10,7 @@ import {
 import {
   getSubscriptionHistory,
   type SubscriptionHistory,
+  type SubscriptionHistoryQuery,
 } from "@/actions/subscription.action";
 
 import { SubscriptionActions } from "@/components/subscriptions/subscription-actions";
@@ -20,6 +21,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 type SearchParams = Promise<{
   search?: string;
   status?: string;
+  page?: string;
+  limit?: string;
+  sortBy?: string;
+  sortOrder?: string;
 }>;
 
 export default async function AdminSubscriptionPage({
@@ -29,26 +34,26 @@ export default async function AdminSubscriptionPage({
 }) {
   const params = await searchParams;
 
-  const validStatuses = [
-    "PENDING",
-    "COMPLETED",
-    "FAILED",
-    "REFUNDED",
-  ] as const;
+  const validStatuses = ["PENDING", "COMPLETED", "FAILED", "REFUNDED"] as const;
 
   const status = validStatuses.includes(
     params.status as (typeof validStatuses)[number],
   )
     ? (params.status as (typeof validStatuses)[number])
     : undefined;
+  const page = Number(params.page);
+  const limit = Number(params.limit);
+  const sortBy = params.sortBy === "updatedAt" ? "updatedAt" : "createdAt";
+  const sortOrder: SubscriptionHistoryQuery["sortOrder"] =
+    params.sortOrder === "asc" ? "asc" : "desc";
 
   const result = await getSubscriptionHistory({
-    page: 1,
-    limit: 10,
+    page: Number.isInteger(page) && page > 0 ? page : 1,
+    limit: Number.isInteger(limit) && limit > 0 && limit <= 100 ? limit : 10,
     search: params.search,
     status,
-    sortBy: "createdAt",
-    sortOrder: "desc",
+    sortBy,
+    sortOrder,
   });
 
   const subscription: SubscriptionHistory | null = result.success
@@ -145,9 +150,7 @@ function ActiveSubscription({
         >
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Plan
-              </p>
+              <p className="text-sm font-medium text-muted-foreground">Plan</p>
 
               <h2 className="mt-1 text-xl font-semibold">
                 {formatPlanName(subscription.planName)}
@@ -293,8 +296,8 @@ function EmptyPaymentResults() {
       <h3 className="mt-4 text-sm font-semibold">No payments found</h3>
 
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-        No payment matches your current search or status filter. Try a
-        different search.
+        No payment matches your current search or status filter. Try a different
+        search.
       </p>
     </div>
   );

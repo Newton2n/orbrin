@@ -73,56 +73,6 @@ function revalidateOrganizationPaths() {
   revalidatePath("/dashboard/profile");
 }
 
-function normalizeMembers(
-  payload: unknown,
-): PaginatedResponse<OrganizationMember> {
-  const raw = payload && typeof payload === "object" ? payload : {};
-  const rawRecord = raw as Record<string, unknown>;
-  const source = unwrapPayload<unknown>(payload);
-  const value = source && typeof source === "object" ? source : {};
-  const record = value as Record<string, unknown>;
-  const nested =
-    record.data && typeof record.data === "object"
-      ? (record.data as Record<string, unknown>)
-      : record;
-  const items = Array.isArray(nested.items)
-    ? nested.items
-    : Array.isArray(nested.members)
-      ? nested.members
-      : Array.isArray(nested.data)
-        ? nested.data
-        : Array.isArray(source)
-          ? source
-          : [];
-  const pagination =
-    nested.pagination && typeof nested.pagination === "object"
-      ? (nested.pagination as Record<string, unknown>)
-      : rawRecord.pagination && typeof rawRecord.pagination === "object"
-        ? (rawRecord.pagination as Record<string, unknown>)
-        : record.pagination && typeof record.pagination === "object"
-          ? (record.pagination as Record<string, unknown>)
-          : {};
-  const page = Number(pagination.page ?? nested.page ?? record.page ?? 1);
-  const limit = Number(pagination.limit ?? nested.limit ?? record.limit ?? 10);
-  const total = Number(
-    pagination.total ?? nested.total ?? record.total ?? items.length,
-  );
-  const totalPages = Number(
-    pagination.totalPages ??
-      nested.totalPages ??
-      record.totalPages ??
-      Math.max(1, Math.ceil(total / Math.max(1, limit))),
-  );
-
-  return {
-    items: items as OrganizationMember[],
-    total,
-    page,
-    limit,
-    totalPages,
-  };
-}
-
 export async function getMyOrganization(): Promise<
   ActionResult<Organization | null>
 > {
@@ -136,25 +86,6 @@ export async function getMyOrganization(): Promise<
 }
 
 export const getOrganization = getMyOrganization;
-
-// export async function getOrganizationMembers(
-//   params: OrganizationMemberListParams = {},
-// ): Promise<ActionResult<PaginatedResponse<OrganizationMember>>> {
-//   const query = new URLSearchParams();
-//   for (const [key, value] of Object.entries(params)) {
-//     if (value !== undefined && value !== "") query.set(key, String(value));
-//   }
-//   const endpoint = query.size
-//     ? `/organizations/members?${query.toString()}`
-//     : "/organizations/members";
-//   const result = await backendRequest<unknown>(endpoint);
-//   return result.ok
-//     ? actionSuccess(normalizeMembers(result.payload))
-//     : actionFailure(
-//         backendMessage(result.payload, "Unable to fetch members."),
-//         { items: [], total: 0, page: 1, limit: 10, totalPages: 0 },
-//       );
-// }
 
 export async function updateOrganization(input: {
   name?: string;
@@ -189,19 +120,6 @@ export async function deleteOrganization(): Promise<ActionResult<null>> {
   return actionSuccess(null, "Organization deleted.");
 }
 
-// export async function getOrganizationMemberById(
-//   memberId: string,
-// ): Promise<ActionResult<OrganizationMember | null>> {
-//   const result = await backendRequest<unknown>(
-//     `/organizations/members/${memberId}`,
-//   );
-//   return result.ok
-//     ? actionSuccess(unwrapPayload<OrganizationMember | null>(result.payload))
-//     : actionFailure(
-//         backendMessage(result.payload, "Unable to fetch member."),
-//         null,
-//       );
-// }
 
 export async function updateOrganizationMemberRole(
   memberId: string,

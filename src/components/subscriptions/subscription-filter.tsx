@@ -64,7 +64,7 @@ export function SubscriptionFilters() {
         }
       });
 
-      // Filters should always start from page 1.
+      // Reset pagination when filters change.
       params.delete("page");
 
       const query = params.toString();

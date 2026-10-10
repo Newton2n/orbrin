@@ -32,6 +32,8 @@ import {
   useManagerDashboardStats,
   useMemberDashboardStats,
 } from "@/hooks/queries/use-dashboard-stats";
+import { useUrlQueryState } from "@/hooks/use-url-query-state";
+import { useMemo } from "react";
 
 function initials(name?: string | null, email?: string) {
   return (name || email || "User")
@@ -109,6 +111,30 @@ function toUtcDayStart(date: string) {
 
 function toUtcDayEnd(date: string) {
   return new Date(`${date}T23:59:59.999Z`).toISOString();
+}
+
+function isValidDateInput(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+}
+
+function getReportUrlParams(searchParams: {
+  get(name: string): string | null;
+}) {
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
+  const validFrom = from && !Number.isNaN(Date.parse(from)) ? from : undefined;
+  const validTo = to && !Number.isNaN(Date.parse(to)) ? to : undefined;
+
+  if (validFrom && validTo && validFrom > validTo) {
+    return {};
+  }
+
+  return { from: validFrom, to: validTo };
 }
 
 function ReportBreakdowns({ data }: { data: AdminStats }) {
@@ -284,15 +310,29 @@ export function AdminDashboard({ user }: { user: AuthUser }) {
   const organizationId = user.memberships[0]?.organizationId;
   const firstName = (user.fullName || "there").split(" ")[0];
 
+  const { searchParams, updateQuery } = useUrlQueryState();
+
   const { data, isLoading, error, refetch } = useAdminDashboardStats();
 
-  const [draftFrom, setDraftFrom] = useState("");
-  const [draftTo, setDraftTo] = useState("");
+  const initialReportParams = getReportUrlParams(searchParams);
+
+  const [draftFrom, setDraftFrom] = useState(
+    () => initialReportParams.from?.slice(0, 10) ?? "",
+  );
+  const [draftTo, setDraftTo] = useState(
+    () => initialReportParams.to?.slice(0, 10) ?? "",
+  );
+
   const [selectedPreset, setSelectedPreset] = useState<
     "7" | "30" | "month" | "all" | null
   >(null);
 
-  const [appliedParams, setAppliedParams] = useState<DashboardReportParams>({});
+  const [appliedParams, setAppliedParams] = useState<DashboardReportParams>(
+    () => ({
+      from: initialReportParams.from,
+      to: initialReportParams.to,
+    }),
+  );
 
   const {
     data: report,
@@ -303,52 +343,114 @@ export function AdminDashboard({ user }: { user: AuthUser }) {
 
   const today = dateInputValue(new Date());
 
-  const isFutureDate =
-    Boolean(draftFrom && draftFrom > today) ||
-    Boolean(draftTo && draftTo > today);
+  const validationErrors = useMemo(() => {
+    const errors: {
+      from?: string;
+      to?: string;
+      range?: string;
+    } = {};
 
-  const isRangeInvalid =
-    Boolean(draftFrom && draftTo && draftFrom > draftTo) || isFutureDate;
+    if (draftFrom && !isValidDateInput(draftFrom)) {
+      errors.from =
+        "Start date is invalid. Use a valid date in YYYY-MM-DD format.";
+    }
+
+    if (draftTo && !isValidDateInput(draftTo)) {
+      errors.to = "End date is invalid. Use a valid date in YYYY-MM-DD format.";
+    }
+
+    if (draftFrom && draftFrom > today) {
+      errors.from = "Start date cannot be in the future.";
+    }
+
+    if (draftTo && draftTo > today) {
+      errors.to = "End date cannot be in the future.";
+    }
+
+    if (
+      draftFrom &&
+      draftTo &&
+      isValidDateInput(draftFrom) &&
+      isValidDateInput(draftTo) &&
+      draftFrom > draftTo
+    ) {
+      errors.range =
+        "Start date must be earlier than or equal to the end date.";
+    }
+
+    return errors;
+  }, [draftFrom, draftTo, today]);
+
+  const hasValidationErrors = Boolean(
+    validationErrors.from || validationErrors.to || validationErrors.range,
+  );
 
   const hasAppliedFilter = Boolean(appliedParams.from || appliedParams.to);
 
   const appliedFrom = appliedParams.from?.slice(0, 10) ?? "";
   const appliedTo = appliedParams.to?.slice(0, 10) ?? "";
 
-  const isDraftPending =
-    draftFrom !== appliedFrom || draftTo !== appliedTo;
+  const isDraftPending = draftFrom !== appliedFrom || draftTo !== appliedTo;
+
+  useEffect(() => {
+    const nextParams = getReportUrlParams(searchParams);
+
+    setDraftFrom(nextParams.from?.slice(0, 10) ?? "");
+    setDraftTo(nextParams.to?.slice(0, 10) ?? "");
+    setAppliedParams(nextParams);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!draftFrom && !draftTo) {
       setAppliedParams({});
+
+      if (searchParams.has("from") || searchParams.has("to")) {
+        updateQuery({ from: null, to: null });
+      }
+
       return;
     }
 
-    if (isRangeInvalid) {
+    if (hasValidationErrors) {
       return;
     }
 
     const timeoutId = setTimeout(() => {
+      const nextFrom = draftFrom ? toUtcDayStart(draftFrom) : null;
+      const nextTo = draftTo ? toUtcDayEnd(draftTo) : null;
+
       setAppliedParams({
-        from: draftFrom ? toUtcDayStart(draftFrom) : undefined,
-        to: draftTo ? toUtcDayEnd(draftTo) : undefined,
+        from: nextFrom ?? undefined,
+        to: nextTo ?? undefined,
       });
+
+      if (
+        searchParams.get("from") !== nextFrom ||
+        searchParams.get("to") !== nextTo
+      ) {
+        updateQuery({
+          from: nextFrom,
+          to: nextTo,
+        });
+      }
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [draftFrom, draftTo, isRangeInvalid]);
+  }, [draftFrom, draftTo, hasValidationErrors, searchParams, updateQuery]);
 
   function clearReportFilter() {
     setDraftFrom("");
     setDraftTo("");
     setAppliedParams({});
     setSelectedPreset("all");
+
+    updateQuery({
+      from: null,
+      to: null,
+    });
   }
 
-  function handleManualDateChange(
-    type: "from" | "to",
-    value: string,
-  ) {
+  function handleManualDateChange(type: "from" | "to", value: string) {
     if (value && value > today) {
       return;
     }
@@ -384,17 +486,13 @@ export function AdminDashboard({ user }: { user: AuthUser }) {
               ),
             ),
           )
-        : dateInputValue(
-            addUtcDays(currentDate, preset === "7" ? -6 : -29),
-          );
+        : dateInputValue(addUtcDays(currentDate, preset === "7" ? -6 : -29));
 
     setDraftFrom(start);
     setDraftTo(end);
   }
 
-  function getPresetButtonVariant(
-    preset: "7" | "30" | "month" | "all",
-  ) {
+  function getPresetButtonVariant(preset: "7" | "30" | "month" | "all") {
     return selectedPreset === preset ? "default" : "outline";
   }
 
@@ -461,6 +559,7 @@ export function AdminDashboard({ user }: { user: AuthUser }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="report-start">Start date</Label>
+
               <Input
                 id="report-start"
                 type="date"
@@ -469,12 +568,22 @@ export function AdminDashboard({ user }: { user: AuthUser }) {
                 onChange={(event) =>
                   handleManualDateChange("from", event.target.value)
                 }
-                aria-invalid={isRangeInvalid}
+                aria-invalid={Boolean(validationErrors.from)}
+                aria-describedby={
+                  validationErrors.from ? "report-start-error" : undefined
+                }
               />
+
+              {validationErrors.from && (
+                <p id="report-start-error" className="text-sm text-destructive">
+                  {validationErrors.from}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="report-end">End date</Label>
+
               <Input
                 id="report-end"
                 type="date"
@@ -483,30 +592,26 @@ export function AdminDashboard({ user }: { user: AuthUser }) {
                 onChange={(event) =>
                   handleManualDateChange("to", event.target.value)
                 }
-                aria-invalid={isRangeInvalid}
+                aria-invalid={Boolean(validationErrors.to)}
+                aria-describedby={
+                  validationErrors.to ? "report-end-error" : undefined
+                }
               />
+
+              {validationErrors.to && (
+                <p id="report-end-error" className="text-sm text-destructive">
+                  {validationErrors.to}
+                </p>
+              )}
             </div>
           </div>
 
-          {isFutureDate && (
-            <p className="text-sm text-destructive">
-              Future dates are not allowed.
-            </p>
+          {validationErrors.range && (
+            <p className="text-sm text-destructive">{validationErrors.range}</p>
           )}
 
-          {draftFrom &&
-            draftTo &&
-            draftFrom > draftTo &&
-            !isFutureDate && (
-              <p className="text-sm text-destructive">
-                The start date must be on or before the end date.
-              </p>
-            )}
-
-          {!isRangeInvalid && (isDraftPending || isReportLoading) && (
-            <p className="text-sm text-muted-foreground">
-              Updating report...
-            </p>
+          {!hasValidationErrors && (isDraftPending || isReportLoading) && (
+            <p className="text-sm text-muted-foreground">Updating report...</p>
           )}
 
           <div className="flex flex-wrap gap-2">
@@ -558,7 +663,7 @@ export function AdminDashboard({ user }: { user: AuthUser }) {
         </CardContent>
       </Card>
 
-      {hasAppliedFilter ? (
+      {hasAppliedFilter && !hasValidationErrors ? (
         <section className="flex flex-col gap-4">
           <div>
             <SectionHeading title="Filtered report" />

@@ -137,7 +137,6 @@ export function ProjectDetails({
 
   return (
     <div className="space-y-8">
-      {/* Project header */}
       <section className="space-y-4">
         <div
           className={
@@ -185,7 +184,6 @@ export function ProjectDetails({
         </div>
       </section>
 
-      {/* Sprints */}
       <section className="space-y-4">
         <div>
           <h2 className="text-xl font-semibold sm:text-2xl">
@@ -211,7 +209,6 @@ export function ProjectDetails({
         />
       </section>
 
-      {/* Tasks */}
       <section className="space-y-4">
         <div>
           <h2 className="text-xl font-semibold sm:text-2xl">

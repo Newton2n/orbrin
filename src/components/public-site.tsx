@@ -120,7 +120,7 @@ export function PublicHeader({ isAuthenticated = false }: PublicHeaderProps) {
                 asChild
                 className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
               >
-                <Link href="/register">
+                <Link href="/register-owner">
                   Get started <ArrowRight className="ml-1.5 size-4" />
                 </Link>
               </Button>
