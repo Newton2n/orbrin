@@ -518,7 +518,7 @@ export function ProjectList({
                   <SelectContent>
                     <SelectItem value="all">All statuses</SelectItem>
 
-                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
 
                     <SelectItem value="IN_PROGRESS">In progress</SelectItem>
 

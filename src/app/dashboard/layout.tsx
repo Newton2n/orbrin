@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 import { getCurrentUser } from "@/actions/auth.action";
+import { DashboardShellSkeleton } from "@/components/shared/skeletons";
 import { getSubscriptionHistory } from "@/actions/subscription.action";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
@@ -9,6 +11,14 @@ export default async function DashboardLayout({
 }: {
   children: ReactNode;
 }) {
+  return (
+    <Suspense fallback={<DashboardShellSkeleton />}>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </Suspense>
+  );
+}
+
+async function DashboardLayoutContent({ children }: { children: ReactNode }) {
   const result = await getCurrentUser();
 
   if (!result.success || !result.data) {
